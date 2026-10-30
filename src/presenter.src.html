@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live Quiz — Presenter</title>
+<style>
+:root{
+  --bg:#f4f3ef; --panel:#ffffff; --ink:#15171c; --muted:#5b616d; --line:#d9d6ce;
+  --accent:#2350b8; --accent-ink:#ffffff; --accent-soft:#dbe4f8;
+  --sure:#2350b8; --guess:#9db1e6; --ghost:#c9c6bd;
+  --good:#16804a; --good-soft:#d7efe0; --bad:#b93a27; --bad-soft:#f6ddd8; --warn:#a86a10;
+  font-size:clamp(16px,1.3vw,28px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.4}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.screen{height:100vh;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
+.top{display:flex;align-items:center;gap:.8rem;padding:.7rem 1.4rem;border-bottom:1px solid var(--line);background:var(--panel)}
+.top .title{font-weight:700;font-size:1.15rem}
+.spacer{flex:1}
+.qnum{font-weight:800;font-size:1.35rem;letter-spacing:-.01em}
+.qnum span{font-weight:500;color:var(--muted);margin-left:.3rem;font-size:1rem}
+.badge{padding:.25rem .7rem;border-radius:999px;font-weight:700;font-size:.85rem}
+.badge.r2{background:#fbe9c6;color:#7a4a00}
+.chip{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .8rem;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:.95rem}
+button.chip:hover{border-color:var(--accent)}
+.net{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--muted)}
+.net i{width:.7rem;height:.7rem;border-radius:50%;background:var(--warn);display:inline-block}
+.net.ok i{background:var(--good)} .net.err i{background:var(--bad)}
+.warn{color:var(--bad);font-weight:600}
+.hint{color:var(--muted);font-size:.85rem}
+
+/* question screen */
+.grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:1.2rem;padding:1rem 1.4rem;min-height:0}
+.left,.right{min-height:0;overflow:auto}
+.left{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.2rem 1.4rem}
+.stem p{margin:0 0 .7rem}
+.stem ul{margin:.2rem 0 .8rem 1.2rem;padding:0}
+.stem li{margin:.15rem 0}
+.lead{font-weight:700;margin:.9rem 0 0;font-size:1.05rem}
+figure.qimg{margin:.6rem 0 .8rem;text-align:center}
+figure.qimg img{max-width:100%;max-height:40vh;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;background:#fff}
+figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
+.right{display:flex;flex-direction:column;gap:.6rem}
+.status{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.55rem 1rem;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem}
+.status .count{font-size:1.25rem}
+.status .count b{font-size:1.7rem}
+.status .timer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:800;font-size:1.7rem}
+.status .timer.low{color:var(--bad)}
+.tbar{flex-basis:100%;height:.4rem;background:#ebe9e3;border-radius:99px;overflow:hidden}
+.tbar span{display:block;height:100%;background:var(--accent);transition:width .25s linear}
+.status .note{flex-basis:100%;color:var(--muted);font-size:.85rem}
+.legend{display:inline-flex;gap:.9rem;font-size:.85rem;color:var(--muted);margin-left:auto}
+.legend span::before{content:"";display:inline-block;width:.9rem;height:.6rem;margin-right:.3rem;vertical-align:middle;border-radius:2px;background:var(--sure)}
+.legend span.g::before{background:repeating-linear-gradient(45deg,var(--guess) 0 4px,#c3d0f1 4px 7px)}
+.opts{display:flex;flex-direction:column;gap:.45rem}
+.opt{display:grid;grid-template-columns:2.1rem 1fr auto;gap:.7rem;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:.45rem .8rem}
+.opt .letter{width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;background:#eceae4}
+.opt .otext{min-width:0}
+.opt .bar{position:relative;height:.75rem;margin-top:.3rem;background:#efede8;border-radius:99px;overflow:hidden;display:flex}
+.opt .bar span{height:100%}
+.opt .bar .s{background:var(--sure)}
+.opt .bar .g{background:repeating-linear-gradient(45deg,var(--guess) 0 4px,#c3d0f1 4px 7px)}
+.opt .ghost{height:.3rem;margin-top:.25rem;background:#f1efea;border-radius:99px;overflow:hidden}
+.opt .ghost span{display:block;height:100%;background:var(--ghost)}
+.opt .ocount{text-align:right;font-variant-numeric:tabular-nums;min-width:3.6rem}
+.opt .ocount b{font-size:1.25rem;display:block;line-height:1.05}
+.opt .ocount small{color:var(--muted);font-size:.75rem}
+.opt .r1{font-size:.75rem;color:var(--muted)}
+.opt.correct{border-color:var(--good);background:var(--good-soft)}
+.opt.correct .letter{background:var(--good);color:#fff}
+.opt.correct .bar .s{background:var(--good)}
+.opt.correct .bar .g{background:repeating-linear-gradient(45deg,#7cc39b 0 4px,#b5dfc6 4px 7px)}
+.opt.dim{opacity:.62}
+.explain .ans{display:flex;gap:.7rem;align-items:baseline;padding:.6rem .9rem;border-radius:10px;background:var(--good-soft);border:1px solid #a9d8bb;margin-bottom:.8rem}
+.explain .ans b{font-size:1.5rem;color:var(--good)}
+.explain h3{margin:1rem 0 .4rem;font-size:1rem}
+.explain ul.why{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.explain ul.why li{padding:.35rem .6rem;border-radius:8px}
+.explain ul.why li.top{background:var(--bad-soft)}
+.explain ul.why b{display:inline-block;width:1.4rem}
+.tag{font-style:normal;font-size:.78rem;font-weight:700;color:var(--bad);margin-left:.3rem;white-space:nowrap}
+.obj{margin-top:1rem;padding-top:.7rem;border-top:1px dashed var(--line)}
+.link{background:none;border:0;color:var(--accent);text-decoration:underline;padding:0;margin-top:.8rem;font-size:.9rem}
+.controls{display:flex;align-items:center;gap:.7rem;padding:.7rem 1.4rem;border-top:1px solid var(--line);background:var(--panel)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:.6rem 1.1rem;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--bad)}
+.btn.small{padding:.3rem .7rem;font-size:.85rem}
+.btn kbd{font:inherit;font-size:.72rem;opacity:.75;margin-left:.45rem;border:1px solid currentColor;border-radius:4px;padding:0 .3rem}
+
+/* library + lobby */
+.libgrid,.lobbygrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1.4rem;padding:1.2rem 1.4rem;min-height:0;overflow:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.2rem 1.4rem}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.6rem;border:2px dashed var(--line)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop h1{margin:0}
+.filebtn{display:inline-block;cursor:pointer}
+.loaderr{max-width:34rem;text-align:left}
+.loaderr ul{margin:.3rem 0 0 1rem;padding:0}
+.recent{display:flex;flex-direction:column;gap:.5rem}
+.rrow{display:grid;grid-template-columns:1fr auto auto;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
+.rrow .rt{font-weight:600}
+.rrow .rm{color:var(--muted);font-size:.8rem}
+.join{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.6rem}
+.join .qr{width:min(48vh,28rem);aspect-ratio:1;background:#fff;border-radius:12px;padding:.2rem}
+.join .qr svg{width:100%;height:100%;display:block}
+.join .code{font-size:2.6rem;font-weight:800;letter-spacing:.18em}
+.join .url{font-size:.95rem;color:var(--muted);word-break:break-all;max-width:36rem}
+.join .joined{font-size:1.5rem}
+.join .warn{max-width:30rem}
+.settings h2{margin:0 0 .8rem;font-size:1.2rem}
+.settings .pack{display:flex;gap:.6rem;align-items:center;padding:.6rem .8rem;background:var(--accent-soft);border-radius:10px;margin-bottom:.4rem}
+.settings .pack b{flex:1}
+.settings label{display:block;margin:.75rem 0 .2rem;font-weight:600;font-size:.95rem}
+.settings input[type=url],.settings input[type=number],.settings select{width:100%;padding:.5rem .6rem;border:1px solid var(--line);border-radius:8px;background:#fff;font-weight:400}
+.settings input[type=number]{width:6rem}
+.settings .check{display:flex;gap:.5rem;align-items:flex-start;font-weight:400}
+.settings .check input{margin-top:.3rem}
+.settings small{color:var(--muted);display:block;font-size:.8rem}
+.settings .row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.btn.big{font-size:1.2rem;padding:.8rem 1.6rem;margin-top:1.2rem;width:100%}
+
+/* overlays */
+.qrover,.zoomover{position:fixed;inset:0;background:rgba(244,243,239,.97);display:none;align-items:center;justify-content:center;z-index:10}
+.qrover.open,.zoomover.open{display:flex}
+.qrover .box{display:flex;flex-direction:column;align-items:center;gap:.6rem;text-align:center}
+.qrover .qr{width:min(70vh,40rem);aspect-ratio:1}
+.qrover .qr svg{width:100%;height:100%}
+.qrover .code{font-size:3rem;font-weight:800;letter-spacing:.18em}
+.zoomover{cursor:zoom-out;padding:2vh 2vw}
+.zoomover img{max-width:96vw;max-height:94vh;background:#fff;border-radius:8px;box-shadow:0 6px 30px rgba(0,0,0,.2)}
+
+/* end */
+.endgrid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:1.4rem;padding:1.2rem 1.4rem;min-height:0}
+.endgrid .card{overflow:auto}
+.avg{font-size:5rem;font-weight:800;line-height:1}
+.hard{display:grid;grid-template-columns:3.2rem 1fr 6.5rem;gap:.4rem .8rem;align-items:center}
+.hard .lbl{font-weight:700}
+.hard .hb{height:.9rem;background:#efede8;border-radius:99px;overflow:hidden}
+.hard .hb span{display:block;height:100%;background:var(--good)}
+.hard .hb span.low{background:var(--bad)}
+.hard .hb span.mid{background:var(--warn)}
+.hard .pc{text-align:right;font-variant-numeric:tabular-nums}
+
+.center{display:flex;align-items:center;justify-content:center;padding:2rem}
+.center .card{max-width:38rem}
+.center h1{margin-top:0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>/*__PEERJS__*/</script>
+<script>/*__QRCODE__*/</script>
+<script>
+(function(){
+'use strict';
+var APP_VERSION = '2';
+var LET = 'ABCDEFGH'.split('');
+function letters(n){ return LET.slice(0, n); }
+var app = document.getElementById('app');
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+var store = {
+  get: function(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set: function(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del: function(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+var SESSION_KEY = 'livequiz-session-v2', SETTINGS_KEY = 'livequiz-settings-v1';
+
+/* ---------- remembered quiz packs (IndexedDB; optional — everything works without it) ---------- */
+var idb = (function(){
+  var dbp = null;
+  function open(){
+    if (!dbp) dbp = new Promise(function(res, rej){
+      try { var r = indexedDB.open('livequiz', 1);
+        r.onupgradeneeded = function(){ r.result.createObjectStore('packs', { keyPath: 'key' }); };
+        r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); };
+      } catch(e){ rej(e); }
+    });
+    return dbp;
+  }
+  function run(mode, fn){
+    return open().then(function(db){ return new Promise(function(res, rej){
+      var t = db.transaction('packs', mode), out, req = fn(t.objectStore('packs'));
+      if (req) req.onsuccess = function(){ out = req.result; };
+      t.oncomplete = function(){ res(out); }; t.onerror = function(){ rej(t.error); }; t.onabort = function(){ rej(t.error); };
+    }); });
+  }
+  return {
+    put: function(rec){ return run('readwrite', function(s){ return s.put(rec); }); },
+    get: function(k){ return run('readonly', function(s){ return s.get(k); }); },
+    all: function(){ return run('readonly', function(s){ return s.getAll(); }); },
+    del: function(k){ return run('readwrite', function(s){ return s.delete(k); }); }
+  };
+})();
+function hash(str){ var h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (var i=0, ch; i<str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909); h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(36); }
+
+/* ---------- pack checking ---------- */
+var IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
+function checkPack(p){
+  var errs = [], warns = [];
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return { errs: ['This file is not a quiz pack.'], warns: [] };
+  if (!Array.isArray(p.questions) || !p.questions.length) return { errs: ['The file has no questions.'], warns: [] };
+  var images = (p.images && typeof p.images === 'object') ? p.images : {};
+  Object.keys(images).forEach(function(k){ if (typeof images[k] !== 'string' || !IMG_RE.test(images[k])) errs.push('Image “' + k + '” is not a valid embedded picture.'); });
+  p.questions.forEach(function(q, i){
+    var n = 'Question ' + (i+1) + ': ';
+    if (!q || typeof q !== 'object') { errs.push(n + 'is empty.'); return; }
+    if (typeof q.stem !== 'string' || !q.stem.trim()) errs.push(n + 'the case text is missing.');
+    if (typeof q.lead !== 'string' || !q.lead.trim()) errs.push(n + 'the question line is missing.');
+    if (!Array.isArray(q.options) || q.options.length < 2 || q.options.length > 8 || q.options.some(function(o){ return typeof o !== 'string' || !o.trim(); })) { errs.push(n + 'needs 2 to 8 answer options, none empty.'); return; }
+    var ls = letters(q.options.length);
+    if (ls.indexOf(q.answer) < 0) errs.push(n + 'the correct answer must be one of ' + ls.join(', ') + '.');
+    ['image', 'explainImage'].forEach(function(k){ if (q[k] && !images[q[k]]) errs.push(n + 'picture “' + q[k] + '” is missing from the pack.'); });
+    if (!q.explain) warns.push('Question ' + (i+1) + ' has no explanation.');
+  });
+  return { errs: errs, warns: warns };
+}
+function packKey(p){ var base = String(p.id || p.title || 'quiz').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'quiz'; return base + '-' + hash(JSON.stringify(p.questions) + JSON.stringify(Object.keys(p.images || {}))); }
+
+/* ---------- library: choose a quiz pack ---------- */
+function library(msgHtml){
+  app.innerHTML =
+    '<div class="screen"><header class="top"><div class="title">Live quiz · presenter</div><div class="spacer"></div><span class="hint">v'+APP_VERSION+'</span></header>'+
+    '<main class="libgrid">'+
+      '<section class="card drop" id="drop"><h1>Load a quiz</h1>'+
+        '<p>Choose a quiz pack file (<b>.quiz.json</b>), for example from your Google Drive folder, or drag it onto this box.</p>'+
+        '<label class="btn primary big filebtn">Choose quiz file…<input type="file" id="file" accept=".json,application/json" hidden></label>'+
+        '<div class="loaderr" id="loaderr">'+(msgHtml || '')+'</div></section>'+
+      '<section class="card"><h2 style="margin-top:0">Recent quizzes</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>'+
+        '<p class="hint">Quizzes you load are remembered in this browser on this computer.</p></section>'+
+    '</main><footer></footer></div>';
+  var drop = document.getElementById('drop'), inp = document.getElementById('file');
+  inp.addEventListener('change', function(){ if (inp.files && inp.files[0]) readFile(inp.files[0]); inp.value = ''; });
+  ['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function(e){ var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) readFile(f); });
+  renderRecent();
+}
+function renderRecent(){
+  var el = document.getElementById('recent'); if (!el) return;
+  idb.all().then(function(list){
+    list = (list || []).sort(function(a,b){ return b.loadedAt - a.loadedAt; });
+    if (!list.length) { el.innerHTML = '<p class="hint">None yet.</p>'; return; }
+    el.innerHTML = list.map(function(r){ return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div><div class="rm">'+r.n+' questions · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
+      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
+    el.onclick = function(e){
+      var u = e.target.closest('[data-use]'), f = e.target.closest('[data-forget]');
+      if (u) idb.get(u.getAttribute('data-use')).then(function(r){ if (r) { r.loadedAt = Date.now(); idb.put(r).catch(function(){}); start(r.pack, r.key, 'new'); } });
+      if (f) idb.del(f.getAttribute('data-forget')).then(renderRecent, renderRecent);
+    };
+  }, function(){ el.innerHTML = '<p class="hint">This browser can’t remember quizzes here — just choose the file each time.</p>'; });
+}
+function showLoadError(lines){
+  var el = document.getElementById('loaderr'); if (!el) return;
+  el.innerHTML = '<p class="warn">This file can’t be used:</p><ul class="warn">' + lines.slice(0, 8).map(function(l){ return '<li>'+esc(l)+'</li>'; }).join('') + (lines.length > 8 ? '<li>…and '+(lines.length-8)+' more</li>' : '') + '</ul>';
+}
+function readFile(file){
+  var fr = new FileReader();
+  fr.onload = function(){
+    var p; try { p = JSON.parse(fr.result); } catch(e){ showLoadError(['It is not a quiz pack (the file could not be read as JSON).']); return; }
+    var c = checkPack(p); if (c.errs.length) { showLoadError(c.errs); return; }
+    var key = packKey(p), rec = { key: key, title: p.title || file.name.replace(/\.quiz\.json$|\.json$/i, ''), n: p.questions.length, loadedAt: Date.now(), pack: p };
+    p.title = rec.title;
+    idb.put(rec).catch(function(){}).then(function(){ start(p, key, 'new', c.warns); });
+  };
+  fr.onerror = function(){ showLoadError(['The file could not be opened.']); };
+  fr.readAsText(file);
+}
+
+/* ---------- boot ---------- */
+var started = false;
+function start(pack, key, mode, warns){ if (started) return; started = true; runApp(pack, key, mode, warns || checkPack(pack).warns); }
+(function boot(){
+  var saved = store.get(SESSION_KEY);
+  if (saved && saved.packKey && saved.savedAt && Date.now() - saved.savedAt < 12*3600*1000 && (saved.played || []).length) {
+    idb.get(saved.packKey).then(function(rec){
+      if (!rec || !rec.pack) { library('<p class="hint">Your last session used “'+esc(saved.packTitle || 'a quiz')+'”. Load that file again to continue it, or choose another quiz.</p>'); return; }
+      var where = saved.phase === 'end' ? 'finished' : 'at question ' + (saved.qi+1) + ' of ' + rec.n;
+      app.innerHTML = '<div class="screen"><header class="top"><div class="title">Live quiz · presenter</div></header><main class="center"><div class="card">'+
+        '<h1>Continue the last session?</h1><p><b>'+esc(rec.title)+'</b> — session <b>'+esc(saved.code)+'</b> was '+where+', with '+Object.keys(saved.everyone||{}).length+' students. Phones reconnect by themselves if you continue.</p>'+
+        '<p><button class="btn primary big" id="resumeBtn">Continue session '+esc(saved.code)+'</button></p>'+
+        '<p><button class="btn" id="freshBtn">Choose a quiz instead</button></p></div></main><footer></footer></div>';
+      document.getElementById('resumeBtn').onclick = function(){ start(rec.pack, rec.key, 'resume'); };
+      document.getElementById('freshBtn').onclick = function(){ store.del(SESSION_KEY); library(); };
+    }, function(){ library(); });
+    return;
+  }
+  library();
+})();
+
+/* =====================================================================================
+   The live session, for one quiz pack
+   ===================================================================================== */
+function runApp(QUIZ, PACK_KEY, MODE, WARNS){
+var QUESTIONS = QUIZ.questions, TOTAL = QUESTIONS.length, IMAGES = QUIZ.images || {};
+function LQ(qi){ return letters(QUESTIONS[qi].options.length); }
+
+/* connection settings (optional own relay server via ?ph=&pp=&ps=&pt=) */
+var params = new URLSearchParams(location.search);
+var peerOpts = { debug: 0 }, passParams = new URLSearchParams();
+if (params.get('ph')) { peerOpts.host = params.get('ph'); passParams.set('ph', params.get('ph')); }
+if (params.get('pp')) { peerOpts.port = +params.get('pp'); passParams.set('pp', params.get('pp')); }
+if (params.get('ps')) { peerOpts.secure = params.get('ps') === '1'; passParams.set('ps', params.get('ps')); }
+if (params.get('pt')) { peerOpts.path = params.get('pt'); passParams.set('pt', params.get('pt')); }
+var ID_PREFIX = 'acsom-livequiz-';
+
+var settings = Object.assign({ studentUrl:'', t1:90, t2:60, autoClose:true, confidence:true, startAt:1 }, store.get(SETTINGS_KEY) || {});
+if (!settings.studentUrl && /^https?:$/.test(location.protocol)) settings.studentUrl = new URL('./', location.href).href;
+
+var S = null, conns = {}, peer = null, peerStatus = 'offline';
+var screenKey = '', qrOpen = false, showStem = false, armed = { k:'', t:0 };
+
+function makeCode(){ var a='ABCDEFGHJKMNPQRSTUVWXYZ23456789', s=''; for (var i=0;i<5;i++) s += a[Math.floor(Math.random()*a.length)]; return s; }
+function save(){ if (S) { S.savedAt = Date.now(); store.set(SESSION_KEY, S); } }
+function saveSettings(){ store.set(SETTINGS_KEY, settings); }
+function isArmed(k){ return armed.k === k && Date.now() - armed.t < 4000; }
+function arm(k, rerender){ armed = { k:k, t:Date.now() }; rerender(); setTimeout(function(){ if (armed.k === k) { armed = { k:'', t:0 }; rerender(); } }, 4100); }
+
+function newSession(){
+  S = { code: makeCode(), packKey: PACK_KEY, packTitle: QUIZ.title, phase:'lobby', qi:-1, round:1, answers:{}, played:[], deadline:null, everyone:{}, createdAt:Date.now() };
+  conns = {}; save(); startPeer(); render(true);
+}
+
+/* ---------- PeerJS: this page is the hub ---------- */
+var reconnectTimer = null, watchdog = null, lastErr = '';
+function startPeer(){
+  clearTimeout(reconnectTimer); clearTimeout(watchdog);
+  if (peer) { try { peer.destroy(); } catch(e){} }
+  if (peerStatus !== 'unreachable') peerStatus = 'connecting';
+  renderNet();
+  var p;
+  try { p = peer = new peerjs.Peer(ID_PREFIX + S.code.toLowerCase(), peerOpts); }
+  catch (e) { peer = null; lastErr = (e && e.message) || String(e); peerStatus = 'unreachable'; renderNet(); refreshCounts(); reconnectTimer = setTimeout(startPeer, 5000); return; }
+  watchdog = setTimeout(function(){
+    if (p !== peer || peerStatus === 'online') return;
+    peerStatus = 'unreachable'; if (!lastErr) lastErr = 'no answer from the PeerJS server';
+    renderNet(); refreshCounts(); reconnectTimer = setTimeout(startPeer, 4000);
+  }, 12000);
+  p.on('open', function(){ if (p !== peer) return; clearTimeout(watchdog); lastErr = ''; peerStatus = 'online'; renderNet(); refreshCounts(); });
+  p.on('connection', function(conn){ setupConn(conn); });
+  p.on('disconnected', function(){
+    if (p !== peer || p.destroyed) return;
+    peerStatus = 'reconnecting'; renderNet();
+    reconnectTimer = setTimeout(function(){ if (p === peer && !p.destroyed && p.disconnected) { try { p.reconnect(); } catch(e){ startPeer(); } } }, 1500);
+  });
+  p.on('error', function(err){
+    if (p !== peer) return;
+    var type = err && err.type;
+    if (type === 'unavailable-id') {
+      if (!S.played.length && !Object.keys(S.everyone).length && S.phase === 'lobby') { S.code = makeCode(); save(); render(true); startPeer(); return; }
+      peerStatus = 'busy'; renderNet(); reconnectTimer = setTimeout(startPeer, 3000); return;
+    }
+    if (type === 'peer-unavailable') return;
+    lastErr = (type || 'error') + (err && err.message ? ' — ' + err.message : '');
+    if (peerStatus !== 'unreachable') peerStatus = 'reconnecting';
+    renderNet();
+    reconnectTimer = setTimeout(function(){ if (p !== peer) return; if (p.destroyed) startPeer(); else if (p.disconnected) { try { p.reconnect(); } catch(e){ startPeer(); } } }, 3000);
+  });
+}
+
+function setupConn(conn){
+  var sid = null;
+  conn.on('data', function(msg){
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.t === 'hello') {
+      if (typeof msg.sid !== 'string' || !/^[A-Za-z0-9]{6,40}$/.test(msg.sid)) return;
+      sid = msg.sid;
+      var prev = conns[sid];
+      if (prev && prev.conn !== conn) { try { prev.conn.close(); } catch(e){} }
+      conns[sid] = { conn: conn, last: Date.now(), sent: {} };
+      if (!S.everyone[sid]) { S.everyone[sid] = 1; save(); }
+      send(sid); refreshCounts();
+      return;
+    }
+    if (!sid || !conns[sid] || conns[sid].conn !== conn) return;
+    conns[sid].last = Date.now();
+    if (msg.t === 'hb') { try { conn.send({ t:'pong' }); } catch(e){} return; }
+    if (msg.t === 'answer') onAnswer(sid, msg);
+  });
+  conn.on('close', function(){ if (sid && conns[sid] && conns[sid].conn === conn) { delete conns[sid]; refreshCounts(); } });
+  conn.on('error', function(){});
+}
+function onlineSids(){ var now = Date.now(), out = []; for (var sid in conns) { var c = conns[sid]; if (c.conn.open && now - c.last < 16000) out.push(sid); } return out; }
+
+/* ---------- answers & tallies ---------- */
+function bucket(qi, round){ var a = S.answers[qi] || (S.answers[qi] = {}); return a[round] || (a[round] = {}); }
+function peekBucket(qi, round){ return (S.answers[qi] && S.answers[qi][round]) || {}; }
+function finalBucket(qi){ var b1 = peekBucket(qi,1), b2 = peekBucket(qi,2), out = {}, k; for (k in b1) out[k] = b1[k]; for (k in b2) out[k] = b2[k]; return out; }
+function tallyOf(b, qi){ var ls = LQ(qi), t = { n:0, opts: ls.map(function(){ return { s:0, g:0, all:0 }; }) }; for (var sid in b) { var i = ls.indexOf(b[sid].c); if (i < 0) continue; t.n++; t.opts[i].all++; if (b[sid].sure === false) t.opts[i].g++; else t.opts[i].s++; } return t; }
+
+function onAnswer(sid, m){
+  if (!S || S.phase !== 'vote' || m.qi !== S.qi || m.round !== S.round || LQ(S.qi).indexOf(m.c) < 0) { send(sid); return; }
+  var b = bucket(S.qi, S.round);
+  if (!b[sid]) { b[sid] = { c: m.c, sure: settings.confidence ? m.sure !== false : null }; save(); }
+  send(sid); refreshCounts(); maybeAutoClose();
+}
+function maybeAutoClose(){
+  if (!S || S.phase !== 'vote' || !settings.autoClose) return;
+  var on = onlineSids(); if (!on.length) return;
+  var b = peekBucket(S.qi, S.round);
+  for (var i=0;i<on.length;i++) if (!b[on[i]]) return;
+  setTimeout(function(){ if (S.phase === 'vote') { var b2 = peekBucket(S.qi, S.round), on2 = onlineSids(); if (on2.length && on2.every(function(s){ return b2[s]; })) closeVoting(); } }, 700);
+}
+
+/* ---------- messages to phones ---------- */
+function imgRef(id, cap){ return id && IMAGES[id] ? { id: PACK_KEY + ':' + id, caption: cap || '' } : null; }
+function stateFor(sid){
+  var st = { t:'state', v: 2, title: QUIZ.title, phase: S.phase, qi: S.qi, total: TOTAL, round: S.round, confidence: !!settings.confidence };
+  if (S.phase === 'vote' || S.phase === 'closed' || S.phase === 'reveal') {
+    var q = QUESTIONS[S.qi];
+    st.q = { stem: q.stem, lead: q.lead, options: q.options, image: imgRef(q.image, q.imageCaption) };
+    st.mine = peekBucket(S.qi, S.round)[sid] || null;
+    st.first = S.round === 2 ? (peekBucket(S.qi, 1)[sid] || null) : null;
+    if (S.phase === 'vote' && S.deadline) st.remaining = Math.max(0, Math.round((S.deadline - Date.now())/1000));
+    if (S.phase === 'reveal') { st.reveal = { answer: q.answer, explain: q.explain || '', why: q.why || {}, objective: q.objective || '', image: imgRef(q.explainImage, q.explainCaption) }; st.final = finalBucket(S.qi)[sid] || null; }
+  }
+  if (S.phase === 'end') st.result = resultFor(sid);
+  return st;
+}
+var CHUNK = 15000;
+function pushImages(sid){
+  var c = conns[sid]; if (!c || !c.conn.open || ['vote','closed','reveal'].indexOf(S.phase) < 0) return;
+  var q = QUESTIONS[S.qi], ids = [];
+  if (q.image) ids.push(q.image);
+  if (S.phase === 'reveal' && q.explainImage) ids.push(q.explainImage);
+  ids.forEach(function(id){
+    var key = PACK_KEY + ':' + id, data = IMAGES[id];
+    if (!data || c.sent[key]) return;
+    c.sent[key] = 1;
+    var n = Math.ceil(data.length / CHUNK);
+    for (var i=0;i<n;i++) { try { c.conn.send({ t:'img', id: key, i: i, n: n, d: data.slice(i*CHUNK, (i+1)*CHUNK) }); } catch(e){ c.sent[key] = 0; return; } }
+  });
+}
+function resultFor(sid){
+  var items = [], score = 0;
+  S.played.forEach(function(qi){ var a = finalBucket(qi)[sid] || null, corr = QUESTIONS[qi].answer; if (a && a.c === corr) score++; items.push({ n: qi+1, mine: a ? a.c : null, correct: corr }); });
+  return { score: score, total: S.played.length, items: items };
+}
+function send(sid){ var c = conns[sid]; if (c && c.conn.open) { try { c.conn.send(stateFor(sid)); } catch(e){} pushImages(sid); } }
+function broadcast(){ for (var sid in conns) send(sid); }
+
+/* ---------- flow ---------- */
+function startQuiz(){ var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)); S.qi = s-1; startVote(1); }
+function startVote(round){
+  S.phase = 'vote'; S.round = round; showStem = false;
+  if (S.played.indexOf(S.qi) < 0) S.played.push(S.qi);
+  var secs = +(round === 1 ? settings.t1 : settings.t2);
+  S.deadline = secs > 0 ? Date.now() + secs*1000 : null;
+  S.dur = secs; save(); broadcast(); render(true);
+}
+function closeVoting(){ if (S.phase !== 'vote') return; S.phase = 'closed'; S.deadline = null; save(); broadcast(); render(true); }
+function reveal(){ S.phase = 'reveal'; showStem = false; save(); broadcast(); render(true); }
+function next(){ if (S.qi < TOTAL-1) { S.qi++; startVote(1); } else finish(); }
+function finish(){ S.phase = 'end'; S.deadline = null; save(); broadcast(); render(true); }
+function addTime(){ if (S.phase !== 'vote') return; S.deadline = Math.max(S.deadline || Date.now(), Date.now()) + 30000; S.dur = (S.dur || 0) + 30; save(); broadcast(); updateQuestion(); }
+function leaveToLibrary(){ store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.reload(); }
+
+var actions = {
+  start: startQuiz,
+  close: closeVoting,
+  revote: function(){ if (S.phase === 'closed' && S.round === 1) startVote(2); },
+  reveal: function(){ if (S.phase === 'closed') reveal(); },
+  next: function(){ if (S.phase === 'reveal') next(); },
+  more: addTime,
+  qr: function(){ qrOpen = !qrOpen; var o = document.querySelector('.qrover'); if (o) o.classList.toggle('open', qrOpen); },
+  unzoom: function(){ var z = document.querySelector('.zoomover'); if (z) z.classList.remove('open'); },
+  togglestem: function(){ showStem = !showStem; renderLeft(); },
+  end: function(){ if (isArmed('end')) { armed.k = ''; finish(); } else arm('end', updateControls); },
+  csv: downloadCsv,
+  newsession: function(){ if (isArmed('new')) { armed.k = ''; store.del(SESSION_KEY); conns = {}; try { peer && peer.destroy(); } catch(e){} peer = null; newSession(); } else arm('new', function(){ render(true); }); },
+  change: function(){ if (S.phase === 'lobby' || isArmed('change')) leaveToLibrary(); else arm('change', function(){ render(true); }); }
+};
+document.addEventListener('click', function(e){
+  var z = e.target.closest('img[data-zoom]');
+  if (z) { var o = document.querySelector('.zoomover'); if (!o) { o = document.createElement('div'); o.className = 'zoomover'; o.setAttribute('data-act', 'unzoom'); o.innerHTML = '<img alt="">'; document.body.appendChild(o); } o.querySelector('img').src = z.src; o.classList.add('open'); return; }
+  var el = e.target.closest('[data-act]'); if (!el) return; var a = actions[el.getAttribute('data-act')]; if (a) a();
+});
+document.addEventListener('keydown', function(e){
+  if (!S || e.target.matches('input,select,textarea')) return;
+  var k = e.key, zo = document.querySelector('.zoomover.open');
+  if (k === 'Escape') { if (zo) return actions.unzoom(); if (qrOpen) return actions.qr(); }
+  if (k === 'q' || k === 'Q') return actions.qr();
+  if (k === 'Enter' || k === ' ' || k === 'ArrowRight') {
+    e.preventDefault(); if (zo) actions.unzoom();
+    if (S.phase === 'lobby') startQuiz(); else if (S.phase === 'vote') closeVoting(); else if (S.phase === 'closed') reveal(); else if (S.phase === 'reveal') next();
+  }
+  if ((k === 'd' || k === 'D') && S.phase === 'closed' && S.round === 1) startVote(2);
+  if (k === '+' && S.phase === 'vote') addTime();
+});
+document.addEventListener('change', function(e){
+  var el = e.target, key = el.getAttribute('data-set'); if (!key) return;
+  settings[key] = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.tagName === 'SELECT') ? +el.value : el.value.trim();
+  saveSettings(); if (key === 'studentUrl') updateLobby();
+});
+document.addEventListener('input', function(e){ if (e.target.getAttribute('data-set') === 'studentUrl') { settings.studentUrl = e.target.value.trim(); saveSettings(); updateLobby(); } });
+
+/* ---------- QR ---------- */
+function joinUrl(){
+  var u = (settings.studentUrl || '').trim(); if (!/^https?:\/\//i.test(u)) return '';
+  var qs = new URLSearchParams(passParams); qs.set('s', S.code);
+  return u + (u.indexOf('?') >= 0 ? '&' : '?') + qs.toString();
+}
+function qrSvg(text){
+  var qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  var n = qr.getModuleCount(), m = 2, size = n + m*2, d = '';
+  for (var r=0;r<n;r++) for (var c=0;c<n;c++) if (qr.isDark(r,c)) d += 'M'+(c+m)+' '+(r+m)+'h1v1h-1z';
+  return '<svg viewBox="0 0 '+size+' '+size+'" shape-rendering="crispEdges" role="img" aria-label="QR code to join the quiz"><rect width="'+size+'" height="'+size+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+}
+function qrOverlay(){
+  var u = joinUrl();
+  return '<div class="qrover'+(qrOpen?' open':'')+'" data-act="qr"><div class="box">'+(u ? '<div class="qr">'+qrSvg(u)+'</div>' : '<p class="warn">Add the phone page address in the lobby settings to show a QR code.</p>')+
+    '<div>Scan to join · code</div><div class="code">'+esc(S.code)+'</div><div class="url">'+esc(u)+'</div><div class="hint">Click anywhere or press Q to close</div></div></div>';
+}
+
+/* ---------- rendering ---------- */
+function netHtml(){
+  var m = { online:['ok','Live'], connecting:['','Connecting…'], reconnecting:['','Reconnecting…'], busy:['','Re-opening session…'], unreachable:['err','Can’t reach server · retrying'], offline:['err','Offline'] }[peerStatus] || ['err', peerStatus];
+  return '<span class="net '+m[0]+'" id="net" title="'+esc(lastErr || '')+'"><i></i>'+m[1]+'</span>';
+}
+function renderNet(){ var el = document.getElementById('net'); if (el) el.outerHTML = netHtml(); }
+function render(full){
+  if (!S) return;
+  var key = S.phase + ':' + S.qi + ':' + S.round;
+  if (!full && key === screenKey) { if (S.phase === 'lobby') updateLobby(); else if (S.phase !== 'end') updateQuestion(); return; }
+  screenKey = key;
+  if (S.phase === 'lobby') buildLobby(); else if (S.phase === 'end') buildEnd(); else buildQuestion();
+}
+function refreshCounts(){ if (!S) return; if (S.phase === 'lobby') updateLobby(); else if (S.phase !== 'end') updateQuestion(); }
+
+function buildLobby(){
+  var tOpts = function(sel, list){ return list.map(function(v){ return '<option value="'+v+'"'+(+sel===v?' selected':'')+'>'+(v ? (v+' seconds') : 'No time limit')+'</option>'; }).join(''); };
+  app.innerHTML =
+    '<div class="screen">'+
+      '<header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div>'+netHtml()+'</header>'+
+      '<main class="lobbygrid">'+
+        '<section class="card join" id="join"></section>'+
+        '<section class="card settings">'+
+          '<div class="pack"><b>'+esc(QUIZ.title)+'</b><span>'+TOTAL+' questions</span><button class="btn small" data-act="change" id="changeBtn">Change quiz</button></div>'+
+          (WARNS && WARNS.length ? '<small class="warn">'+esc(WARNS.slice(0,3).join(' '))+(WARNS.length>3?' …':'')+'</small>' : '')+
+          '<label for="su">Phone page address</label><input id="su" type="url" data-set="studentUrl" placeholder="https://your-name.github.io/live-quiz/" value="'+esc(settings.studentUrl)+'">'+
+          '<small>Where the phone page (index.html) is online. The QR code opens it.</small>'+
+          '<div class="row"><div><label for="t1">Time per question</label><select id="t1" data-set="t1">'+tOpts(settings.t1,[30,45,60,90,120,180,0])+'</select></div>'+
+          '<div><label for="t2">Revote time</label><select id="t2" data-set="t2">'+tOpts(settings.t2,[30,45,60,90,0])+'</select></div></div>'+
+          '<label class="check"><input type="checkbox" data-set="autoClose"'+(settings.autoClose?' checked':'')+'> Close voting automatically when every connected student has answered</label>'+
+          '<label class="check"><input type="checkbox" data-set="confidence"'+(settings.confidence?' checked':'')+'> Ask “sure or guessing?” with each answer</label>'+
+          '<label for="sa">Start at question</label><input id="sa" type="number" min="1" max="'+TOTAL+'" data-set="startAt" value="'+Math.min(TOTAL, settings.startAt||1)+'">'+
+          '<button class="btn primary big" data-act="start" id="startBtn">Start quiz ▶</button>'+
+          '<p class="hint">Keep this tab open and the computer awake until the end. Keys: Enter = next step, D = revote, + = 30 more seconds, Q = show QR. Ctrl + / Ctrl − changes text size.</p>'+
+        '</section>'+
+      '</main>'+
+    '</div>';
+  updateLobby();
+}
+function updateLobby(){
+  var el = document.getElementById('join'); if (!el || S.phase !== 'lobby') return;
+  var u = joinUrl(), n = onlineSids().length, warn = '';
+  if (!u) warn = '<p class="warn">Add the phone page address (right) to show the QR code.</p>';
+  else if (peerStatus === 'unreachable') warn = '<p class="warn" id="neterr">Can’t reach the PeerJS server ('+esc(lastErr)+'). Retrying… If this doesn’t clear, open this page from its https address in Chrome, or check that the network allows it.</p>';
+  else if (peerStatus !== 'online') warn = '<p class="hint">Connecting to the PeerJS server… phones can join once the corner shows “Live”.</p>';
+  el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + warn +
+    '<div>Scan to join · or enter code</div><div class="code" id="code">'+esc(S.code)+'</div>'+
+    (u ? '<div class="url">'+esc(u)+'</div>' : '') +
+    '<div class="joined" id="joined"><b>'+n+'</b> student'+(n===1?'':'s')+' connected</div>';
+}
+
+function stemHtml(stem){
+  var html = '', list = [];
+  function flush(){ if (list.length) { html += '<ul>' + list.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('') + '</ul>'; list = []; } }
+  String(stem).split('\n').forEach(function(ln){ if (ln.indexOf('• ') === 0) list.push(ln.slice(2)); else { flush(); if (ln.trim()) html += '<p>'+esc(ln)+'</p>'; } });
+  flush(); return html;
+}
+function figHtml(id, cap){ if (!id || !IMAGES[id]) return ''; return '<figure class="qimg"><img src="'+IMAGES[id]+'" alt="'+esc(cap || 'Image')+'" data-zoom title="Click to enlarge">'+(cap ? '<figcaption>'+esc(cap)+'</figcaption>' : '')+'</figure>'; }
+function buildQuestion(){
+  app.innerHTML =
+    '<div class="screen">'+
+      '<header class="top"><div class="qnum">Question '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
+      (S.round === 2 ? '<div class="badge r2">Round 2 · revote after discussion</div>' : '')+
+      '<div class="spacer"></div><button class="chip" data-act="qr" title="Show QR code (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
+      '<span class="chip" id="online"></span>'+netHtml()+'</header>'+
+      '<main class="grid"><section class="left" id="left"></section>'+
+      '<section class="right"><div class="status" id="status"></div><div class="opts" id="opts"></div></section></main>'+
+      '<footer class="controls" id="controls"></footer>'+
+    '</div>' + qrOverlay();
+  renderLeft(); updateQuestion();
+}
+function topWrong(qi){
+  var q = QUESTIONS[qi], ls = LQ(qi), t = tallyOf(finalBucket(qi), qi), best = null, max = 0;
+  t.opts.forEach(function(o,i){ if (ls[i] !== q.answer && o.all > max) { max = o.all; best = ls[i]; } });
+  return best;
+}
+function renderLeft(){
+  var el = document.getElementById('left'); if (!el) return;
+  var q = QUESTIONS[S.qi], ls = LQ(S.qi), why = q.why || {};
+  if (S.phase === 'reveal' && !showStem) {
+    var tw = topWrong(S.qi), wl = ls.filter(function(l){ return l !== q.answer && why[l]; });
+    el.innerHTML = '<div class="explain">'+
+      '<div class="ans">Correct answer <b>'+q.answer+'</b><span>'+esc(q.options[ls.indexOf(q.answer)])+'</span></div>'+
+      (q.explain ? '<p>'+esc(q.explain)+'</p>' : '') + figHtml(q.explainImage, q.explainCaption) +
+      (wl.length ? '<h3>Why not the others</h3><ul class="why">'+
+        wl.map(function(l){ return '<li'+(l===tw?' class="top"':'')+'><b>'+l+'</b>'+esc(why[l])+(l===tw?'<em class="tag">most chosen wrong answer</em>':'')+'</li>'; }).join('')+'</ul>' : '')+
+      (q.objective ? '<p class="obj"><b>Take-home:</b> '+esc(q.objective)+'</p>' : '')+
+      '<button class="link" data-act="togglestem">Show the question again</button></div>';
+  } else {
+    el.innerHTML = '<div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image, q.imageCaption)+'<p class="lead">'+esc(q.lead)+'</p>'+
+      (S.phase === 'reveal' ? '<button class="link" data-act="togglestem">Back to the explanation</button>' : '');
+  }
+  el.scrollTop = 0;
+}
+function fmt(ms){ var s = Math.max(0, Math.ceil(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function updateQuestion(){
+  if (!S || ['vote','closed','reveal'].indexOf(S.phase) < 0) return;
+  var q = QUESTIONS[S.qi], ls = LQ(S.qi), on = onlineSids().length;
+  var onEl = document.getElementById('online'); if (onEl) onEl.innerHTML = '👥 <b>'+on+'</b> connected';
+  var cur = peekBucket(S.qi, S.round), n = Object.keys(cur).length;
+  var st = document.getElementById('status'), html = '';
+  var legend = settings.confidence ? '<span class="legend"><span>sure</span><span class="g">guessing</span></span>' : '';
+  if (S.phase === 'vote') {
+    html = '<div class="count"><b>'+n+'</b> of '+on+' answered</div>' +
+      (S.deadline ? '<div class="timer" id="timer">'+fmt(S.deadline - Date.now())+'</div><div class="tbar"><span id="tfill"></span></div>' : '<div class="timer">no limit</div>') +
+      '<div class="note">Results stay hidden until voting closes.</div>';
+  } else if (S.phase === 'closed') {
+    html = '<div class="count">Voting closed · <b>'+n+'</b> answer'+(n===1?'':'s')+'</div>'+legend;
+  } else {
+    var fb = finalBucket(S.qi), t = tallyOf(fb, S.qi), k = t.opts[ls.indexOf(q.answer)].all, cw = 0;
+    for (var sid in fb) if (fb[sid].c !== q.answer && fb[sid].sure === true) cw++;
+    html = '<div class="count"><b>'+(t.n ? Math.round(k*100/t.n) : 0)+'%</b> correct ('+k+' of '+t.n+')</div>' +
+      (settings.confidence && t.n ? '<div class="chip">'+cw+' sure but wrong</div>' : '') + legend;
+  }
+  st.innerHTML = html; tickTimer(true);
+  var showBars = S.phase !== 'vote';
+  var tally = tallyOf(S.phase === 'reveal' ? finalBucket(S.qi) : cur, S.qi);
+  var t1 = S.round === 2 ? tallyOf(peekBucket(S.qi, 1), S.qi) : null;
+  document.getElementById('opts').innerHTML = q.options.map(function(o, i){
+    var cls = 'opt' + (S.phase === 'reveal' ? (ls[i] === q.answer ? ' correct' : ' dim') : '');
+    var bars = '', count = '';
+    if (showBars) {
+      var d = tally.n || 1, ti = tally.opts[i];
+      bars = (t1 ? '<div class="ghost" title="Round 1"><span style="width:'+(t1.n ? t1.opts[i].all*100/t1.n : 0)+'%"></span></div>' : '') +
+        '<div class="bar"><span class="s" style="width:'+(ti.s*100/d)+'%"></span><span class="g" style="width:'+(ti.g*100/d)+'%"></span></div>';
+      count = '<div class="ocount"><b>'+(tally.n ? Math.round(ti.all*100/tally.n) : 0)+'%</b><small>'+ti.all+'</small>'+(t1 ? '<div class="r1">R1 '+(t1.n ? Math.round(t1.opts[i].all*100/t1.n) : 0)+'%</div>' : '')+'</div>';
+    }
+    return '<div class="'+cls+'"><div class="letter">'+ls[i]+'</div><div class="otext">'+esc(o)+bars+'</div>'+count+'</div>';
+  }).join('');
+  updateControls();
+}
+function updateControls(){
+  var el = document.getElementById('controls'); if (!el) return;
+  var left = '<button class="btn danger" data-act="end">'+(isArmed('end') ? 'Click again to end the quiz' : 'End quiz')+'</button><div class="spacer"></div>';
+  var right = '';
+  if (S.phase === 'vote') right = (S.deadline ? '<button class="btn" data-act="more">+30 s<kbd>+</kbd></button>' : '') + '<button class="btn primary" data-act="close">Close voting<kbd>Enter</kbd></button>';
+  else if (S.phase === 'closed') right = (S.round === 1 ? '<button class="btn" data-act="revote">Discuss &amp; revote<kbd>D</kbd></button>' : '') + '<button class="btn primary" data-act="reveal">Reveal answer<kbd>Enter</kbd></button>';
+  else if (S.phase === 'reveal') right = '<button class="btn primary" data-act="next">'+(S.qi < TOTAL-1 ? 'Next question' : 'Finish &amp; show results')+'<kbd>Enter</kbd></button>';
+  el.innerHTML = left + right;
+}
+function tickTimer(displayOnly){
+  if (!S || S.phase !== 'vote' || !S.deadline) return;
+  var left = S.deadline - Date.now();
+  if (left <= 0) { if (!displayOnly) closeVoting(); return; }
+  var t = document.getElementById('timer'), f = document.getElementById('tfill');
+  if (t) { t.textContent = fmt(left); t.classList.toggle('low', left <= 10000); }
+  if (f && S.dur) f.style.width = Math.max(0, Math.min(100, left*100/(S.dur*1000))) + '%';
+}
+setInterval(function(){ tickTimer(false); }, 250);
+setInterval(function(){ if (S) { refreshCounts(); maybeAutoClose(); } }, 2500);
+
+function buildEnd(){
+  var rows = S.played.map(function(qi){ var t = tallyOf(finalBucket(qi), qi), k = t.opts[LQ(qi).indexOf(QUESTIONS[qi].answer)].all; return { qi: qi, n: t.n, pc: t.n ? k*100/t.n : 0 }; });
+  var withVotes = rows.filter(function(r){ return r.n; });
+  var avg = withVotes.length ? withVotes.reduce(function(a,r){ return a + r.pc; }, 0) / withVotes.length : 0;
+  rows.sort(function(a,b){ return a.pc - b.pc; });
+  app.innerHTML =
+    '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+' · results</div><div class="spacer"></div>'+netHtml()+'</header>'+
+    '<main class="endgrid"><section class="card"><div class="avg">'+Math.round(avg)+'%</div><p>class average · '+Object.keys(S.everyone).length+' students · '+S.played.length+' questions</p>'+
+    '<p class="hint">Each student now sees their own score on their phone. Nobody else sees it.</p>'+
+    '<p><button class="btn primary" data-act="csv">Download results (CSV)</button></p>'+
+    '<p><button class="btn" data-act="newsession">'+(isArmed('new') ? 'Click again — this clears these results' : 'Run this quiz again (new session)')+'</button></p>'+
+    '<p><button class="btn" data-act="change">'+(isArmed('change') ? 'Click again — this clears these results' : 'Load another quiz')+'</button></p></section>'+
+    '<section class="card"><h2 style="margin-top:0">Questions by % correct (hardest first)</h2><div class="hard">'+
+    rows.map(function(r){ var c = r.pc < 50 ? 'low' : r.pc < 70 ? 'mid' : ''; return '<div class="lbl">Q'+(r.qi+1)+'</div><div class="hb"><span class="'+c+'" style="width:'+r.pc+'%"></span></div><div class="pc">'+Math.round(r.pc)+'% <small>('+r.n+')</small></div>'; }).join('')+
+    '</div></section></main><footer class="controls"></footer></div>';
+}
+function downloadCsv(){
+  var maxN = S.played.reduce(function(m, qi){ return Math.max(m, QUESTIONS[qi].options.length); }, 0), LS = letters(maxN);
+  var head = ['Question','Correct','R1 answered','R1 % correct'].concat(LS.map(function(l){ return 'R1 '+l; }), ['R2 answered','R2 % correct'], LS.map(function(l){ return 'R2 '+l; }), ['Final answered','Final % correct','Sure but wrong']);
+  var lines = ['"' + String(QUIZ.title).replace(/"/g,'""') + '"', head.join(',')];
+  S.played.forEach(function(qi){
+    var q = QUESTIONS[qi], ai = LQ(qi).indexOf(q.answer), row = [qi+1, q.answer];
+    [1,2].forEach(function(r){ var t = tallyOf(peekBucket(qi, r), qi); row.push(t.n, t.n ? Math.round(t.opts[ai].all*100/t.n) : ''); LS.forEach(function(l, i){ row.push(t.opts[i] ? t.opts[i].all : ''); }); });
+    var fb = finalBucket(qi), tf = tallyOf(fb, qi), cw = 0; for (var s in fb) if (fb[s].c !== q.answer && fb[s].sure === true) cw++;
+    row.push(tf.n, tf.n ? Math.round(tf.opts[ai].all*100/tf.n) : '', cw);
+    lines.push(row.join(','));
+  });
+  var blob = new Blob([lines.join('\n')], { type:'text/csv' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'quiz-results-' + String(QUIZ.title).toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,40) + '-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* ---------- start ---------- */
+if (MODE === 'resume') {
+  S = store.get(SESSION_KEY); S.answers = S.answers || {}; S.played = S.played || []; S.everyone = S.everyone || {}; conns = {};
+  if (S.phase === 'vote' && S.deadline && S.deadline < Date.now()) { S.phase = 'closed'; S.deadline = null; save(); }
+  startPeer(); render(true);
+} else {
+  store.del(SESSION_KEY); newSession();
+}
+}
+})();
+</script>
+</body>
+</html>
