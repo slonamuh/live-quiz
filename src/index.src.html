@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f3ef">
+<title>Live Quiz</title>
+<style>
+:root{
+  --bg:#f4f3ef; --panel:#ffffff; --ink:#15171c; --muted:#5b616d; --line:#d9d6ce;
+  --accent:#2350b8; --accent-soft:#dbe4f8; --good:#16804a; --good-soft:#d7efe0; --bad:#b93a27; --bad-soft:#f6ddd8; --warn-soft:#fbe9c6;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14161a; --panel:#1d2026; --ink:#eceae5; --muted:#a3a8b3; --line:#343842;
+    --accent:#6f95f0; --accent-soft:#25335a; --good:#4cc283; --good-soft:#173826; --bad:#f07a66; --bad-soft:#40211c; --warn-soft:#3d3015; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:17px;line-height:1.45;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+.wrap{max-width:40rem;margin:0 auto;padding:0 16px calc(120px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+header .t{font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:10px;height:10px;border-radius:50%;background:#c58b1b;flex:none}
+.dot.ok{background:var(--good)} .dot.err{background:var(--bad)}
+.timer{font-variant-numeric:tabular-nums;font-weight:800}
+.timer.low{color:var(--bad)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.center{text-align:center;padding:40px 8px}
+.center .big{font-size:1.5rem;font-weight:800;margin:.3em 0}
+.muted{color:var(--muted)}
+.spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--accent);animation:sp 1s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.banner{border-radius:12px;padding:12px 14px;margin:14px 0;font-weight:600}
+.banner.r2{background:var(--warn-soft)}
+.banner.good{background:var(--good-soft);color:var(--good)}
+.banner.bad{background:var(--bad-soft);color:var(--bad)}
+.banner.info{background:var(--accent-soft)}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px}
+.qhead b{font-size:1.1rem}
+.stem p{margin:0 0 .6em}
+.stem ul{margin:.2em 0 .7em 1.1em;padding:0}
+.lead{font-weight:700;margin:.8em 0 0}
+.opts{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 14px;min-height:56px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.opt .l{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--line)}
+.opt .x{padding-top:4px}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt.sel .l{background:var(--accent);color:#fff}
+.opt:disabled{cursor:default}
+.opt.correct{border-color:var(--good);background:var(--good-soft)}
+.opt.correct .l{background:var(--good);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .l{background:var(--bad);color:#fff}
+.opt.fade{opacity:.6}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.dock .in{max-width:40rem;margin:0 auto;display:flex;gap:10px}
+.dock button{flex:1;min-height:54px;border-radius:12px;border:0;font-weight:700;font-size:1.05rem;background:var(--accent);color:#fff;cursor:pointer}
+.dock button.alt{background:var(--panel);color:var(--ink);border:2px solid var(--accent)}
+.dock button:disabled{opacity:.4;cursor:default}
+.dock .msg{flex:1;text-align:center;font-weight:600;padding:8px 0}
+.explain h3{margin:16px 0 6px;font-size:1rem}
+.why{list-style:none;margin:0;padding:0}
+.why li{padding:8px 10px;border-radius:10px;margin:4px 0}
+.why li.mine{background:var(--bad-soft)}
+.why b{display:inline-block;width:1.4em}
+.obj{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px}
+details summary{cursor:pointer;color:var(--accent);font-weight:600;padding:6px 0}
+figure.qimg{margin:10px 0 12px;text-align:center}
+figure.qimg img{max-width:100%;max-height:55vh;border-radius:8px;border:1px solid var(--line);background:#fff}
+figure.qimg figcaption{color:var(--muted);font-size:.85rem;margin-top:4px}
+.imgload{padding:28px 10px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
+.zoom{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.92);overflow:auto;display:flex;align-items:center;justify-content:center}
+.zoom img{max-width:none;width:auto;min-width:100%;height:auto;background:#fff}
+.zoom .x{position:fixed;top:10px;right:12px;background:#fff;color:#000;border:0;border-radius:50%;width:40px;height:40px;font-size:22px;font-weight:700}
+.score{font-size:3.2rem;font-weight:800;line-height:1}
+.res{display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center}
+.res .ok{color:var(--good);font-weight:800}
+.res .no{color:var(--bad);font-weight:800}
+.join input{width:100%;font-size:1.6rem;letter-spacing:.2em;text-transform:uppercase;text-align:center;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--panel)}
+.join button{width:100%;margin-top:12px;min-height:54px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-weight:700;font-size:1.1rem}
+</style>
+</head>
+<body>
+<header><span class="dot" id="dot"></span><span class="t" id="ht">Live quiz</span><span class="timer" id="tm"></span></header>
+<div class="wrap" id="app"></div>
+<div class="dock" id="dock" hidden></div>
+<script>/*__PEERJS__*/</script>
+<script>
+(function(){
+'use strict';
+var L = 'ABCDEFGH'.split('');
+var imgs = {};
+var IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+function lsSet(k,v){ try { localStorage.setItem(k, v); } catch(e){} }
+
+var params = new URLSearchParams(location.search);
+var CODE = (params.get('s') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+var peerOpts = { debug: 0 };
+if (params.get('ph')) peerOpts.host = params.get('ph');
+if (params.get('pp')) peerOpts.port = +params.get('pp');
+if (params.get('ps')) peerOpts.secure = params.get('ps') === '1';
+if (params.get('pt')) peerOpts.path = params.get('pt');
+var ID_PREFIX = 'acsom-livequiz-';
+
+var app = document.getElementById('app'), dock = document.getElementById('dock');
+var peer = null, conn = null, status = 'connecting', st = null, lastRx = 0;
+var sel = null, selKey = '', pending = null, deadline = null, retryTimer = null;
+
+if (!CODE) { renderJoin(); return; }
+
+var SID_KEY = 'livequiz-sid-' + CODE;
+var sid = lsGet(SID_KEY);
+if (!sid || !/^[A-Za-z0-9]{6,40}$/.test(sid)) { sid = ''; var a = 'abcdefghijkmnpqrstuvwxyz23456789'; for (var i=0;i<16;i++) sid += a[Math.floor(Math.random()*a.length)]; lsSet(SID_KEY, sid); }
+
+/* ---------- connection ---------- */
+function setStatus(s){ status = s; var d = document.getElementById('dot'); d.className = 'dot' + (s === 'connected' ? ' ok' : s === 'failed' ? ' err' : ''); if (!st || s !== 'connected') render(); }
+function startPeer(){
+  if (peer) { try { peer.destroy(); } catch(e){} }
+  var p = peer = new peerjs.Peer(peerOpts);
+  p.on('open', function(){ if (p === peer) openConn(); });
+  p.on('disconnected', function(){ if (p !== peer || p.destroyed) return; setTimeout(function(){ if (p === peer && !p.destroyed && p.disconnected) { try { p.reconnect(); } catch(e){ retry(2000, true); } } }, 1500); });
+  p.on('error', function(err){
+    if (p !== peer) return;
+    if (err && err.type === 'peer-unavailable') { setStatus('waiting'); retry(3000); return; }
+    setStatus('reconnecting'); retry(3000, true);
+  });
+}
+function openConn(){
+  if (conn) { try { conn.close(); } catch(e){} }
+  if (status !== 'waiting') setStatus(st ? 'reconnecting' : 'connecting');
+  var c = conn = peer.connect(ID_PREFIX + CODE.toLowerCase(), { reliable: true, serialization: 'json' });
+  var guard = setTimeout(function(){ if (c === conn && !c.open) retry(500); }, 9000);
+  c.on('open', function(){
+    if (c !== conn) return; clearTimeout(guard); lastRx = Date.now();
+    c.send({ t:'hello', sid: sid }); setStatus('connected');
+    if (pending) sendAnswer();
+  });
+  c.on('data', function(m){ if (c !== conn) return; lastRx = Date.now(); onMsg(m); });
+  c.on('close', function(){ if (c === conn) { setStatus('reconnecting'); retry(1500); } });
+  c.on('error', function(){ if (c === conn) retry(1500); });
+}
+function retry(ms, newPeer){
+  clearTimeout(retryTimer);
+  retryTimer = setTimeout(function(){
+    if (newPeer || !peer || peer.destroyed) { startPeer(); return; }
+    if (peer.disconnected) { try { peer.reconnect(); } catch(e){ startPeer(); return; } retry(2500); return; }
+    if (!peer.open) { retry(1500); return; }
+    openConn();
+  }, ms);
+}
+setInterval(function(){
+  if (conn && conn.open) {
+    try { conn.send({ t:'hb' }); } catch(e){}
+    if (Date.now() - lastRx > 17000) { setStatus('reconnecting'); retry(0); }
+  }
+}, 5000);
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible') { wake(); if (!conn || !conn.open) retry(0); }
+});
+
+/* keep the screen awake while the quiz runs (where supported) */
+var lock = null;
+function wake(){ try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !lock) navigator.wakeLock.request('screen').then(function(l){ lock = l; l.addEventListener('release', function(){ lock = null; }); }).catch(function(){}); } catch(e){} }
+document.addEventListener('click', wake, { once: true });
+
+/* ---------- messages ---------- */
+function onMsg(m){
+  if (!m || typeof m !== 'object') return;
+  if (m.t === 'img') {
+    if (typeof m.id !== 'string' || typeof m.d !== 'string' || !(m.n > 0) || !(m.i >= 0) || m.i >= m.n) return;
+    var e = imgs[m.id] || (imgs[m.id] = { n: m.n, parts: [], got: 0, url: null });
+    if (e.url || e.n !== m.n) return;
+    if (e.parts[m.i] == null) { e.parts[m.i] = m.d; e.got++; }
+    if (e.got === e.n) { var u = e.parts.join(''); e.parts = null; if (IMG_RE.test(u)) { e.url = u; if (st) render(); } else delete imgs[m.id]; }
+    return;
+  }
+  if (m.t !== 'state') return;
+  var key = m.qi + ':' + m.round;
+  if (key !== selKey) { selKey = key; sel = null; if (pending && (pending.qi !== m.qi || pending.round !== m.round)) pending = null; }
+  if (m.mine) pending = null;
+  if (m.phase !== 'vote') pending = null;
+  deadline = (m.phase === 'vote' && typeof m.remaining === 'number') ? Date.now() + m.remaining*1000 : null;
+  var changedScreen = !st || st.phase !== m.phase || st.qi !== m.qi || st.round !== m.round;
+  st = m; render(changedScreen);
+}
+function sendAnswer(){
+  if (!pending || !conn || !conn.open) return;
+  try { conn.send({ t:'answer', qi: pending.qi, round: pending.round, c: pending.c, sure: pending.sure }); } catch(e){}
+}
+function submit(sure){
+  if (!st || st.phase !== 'vote' || st.mine || !sel) return;
+  pending = { qi: st.qi, round: st.round, c: sel, sure: sure };
+  sendAnswer(); render();
+}
+
+/* ---------- rendering ---------- */
+function stemHtml(stem){
+  var html = '', list = [];
+  function flush(){ if (list.length) { html += '<ul>' + list.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('') + '</ul>'; list = []; } }
+  String(stem).split('\n').forEach(function(ln){ if (ln.indexOf('• ') === 0) list.push(ln.slice(2)); else { flush(); if (ln.trim()) html += '<p>'+esc(ln)+'</p>'; } });
+  flush(); return html;
+}
+function figHtml(im){
+  if (!im || !im.id) return '';
+  var e = imgs[im.id];
+  return '<figure class="qimg">' + (e && e.url ? '<img src="'+e.url+'" alt="'+esc(im.caption || 'Image')+'" data-zoom>' : '<div class="imgload">Loading image…</div>') +
+    (im.caption ? '<figcaption>'+esc(im.caption)+'</figcaption>' : '') + '</figure>';
+}
+function setDock(html){ if (html) { dock.innerHTML = '<div class="in">'+html+'</div>'; dock.hidden = false; } else { dock.hidden = true; dock.innerHTML = ''; } }
+function header(){
+  document.getElementById('ht').textContent = st && st.q ? ('Question ' + (st.qi+1) + ' of ' + st.total) : (st && st.title ? st.title : 'Live quiz');
+}
+function tick(){
+  var tm = document.getElementById('tm');
+  if (deadline && st && st.phase === 'vote') { var s = Math.max(0, Math.ceil((deadline - Date.now())/1000)); tm.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); tm.classList.toggle('low', s <= 10); }
+  else tm.textContent = '';
+}
+setInterval(tick, 500);
+
+function render(scrollTop){
+  header(); tick();
+  if (!st) {
+    setDock('');
+    var msg = { connecting:'Connecting to the quiz…', reconnecting:'Reconnecting…', waiting:'Waiting for the teacher’s screen…', failed:'Can’t connect.' }[status] || 'Connecting…';
+    app.innerHTML = '<div class="center"><div class="spin"></div><div class="big">'+msg+'</div><p class="muted">Session code <b>'+esc(CODE)+'</b>. Keep this page open.</p></div>';
+    return;
+  }
+  var offline = status !== 'connected' ? '<div class="banner info">'+(status === 'waiting' ? 'Waiting for the teacher’s screen…' : 'Connection lost — reconnecting…')+'</div>' : '';
+  if (st.phase === 'lobby') {
+    setDock('');
+    app.innerHTML = offline + '<div class="center"><div class="big">You’re in ✓</div><p class="muted">Wait for the teacher to start. Answers are anonymous.</p></div>';
+  } else if (st.phase === 'end') {
+    renderEnd(offline);
+  } else {
+    renderQuestion(offline);
+  }
+  if (scrollTop === true) window.scrollTo(0, 0);
+}
+
+function optsHtml(mode){
+  var q = st.q, ans = st.reveal ? st.reveal.answer : null;
+  var mine = st.mine ? st.mine.c : (pending ? pending.c : null);
+  var fin = st.final ? st.final.c : null;
+  return '<div class="opts">' + q.options.map(function(o, i){
+    var l = L[i], cls = 'opt', dis = mode !== 'pick';
+    if (mode === 'pick' && sel === l) cls += ' sel';
+    if (mode === 'locked' && mine === l) cls += ' sel';
+    if (mode === 'reveal') { if (l === ans) cls += ' correct'; else if (l === fin) cls += ' wrong'; else cls += ' fade'; }
+    return '<button class="'+cls+'" data-l="'+l+'"'+(dis?' disabled':'')+' aria-pressed="'+(cls.indexOf(' sel')>=0)+'"><span class="l">'+l+'</span><span class="x">'+esc(o)+'</span></button>';
+  }).join('') + '</div>';
+}
+
+function renderQuestion(offline){
+  var q = st.q, html = offline;
+  var r2 = st.round === 2;
+  if (st.phase === 'vote') {
+    var locked = !!(st.mine || pending);
+    if (r2) html += '<div class="banner r2">Round 2 · Discuss with your neighbour, then answer again.' + (st.first ? ' Your first answer: <b>'+st.first.c+'</b>' : '') + '</div>';
+    html += '<div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image)+'<p class="lead">'+esc(q.lead)+'</p>' + optsHtml(locked ? 'locked' : 'pick');
+    app.innerHTML = html;
+    if (st.mine) setDock('<div class="msg">✓ Answer sent: '+st.mine.c+(st.confidence && st.mine.sure !== null ? (st.mine.sure ? ' (sure)' : ' (guessing)') : '')+' — wait for the others</div>');
+    else if (pending) setDock('<div class="msg">Sending…</div>');
+    else if (st.confidence) setDock('<button class="alt" data-sure="0"'+(sel?'':' disabled')+'>I’m guessing</button><button data-sure="1"'+(sel?'':' disabled')+'>I’m sure</button>');
+    else setDock('<button data-sure="1"'+(sel?'':' disabled')+'>Submit answer</button>');
+  } else if (st.phase === 'closed') {
+    setDock('');
+    html += '<div class="banner info">Voting closed — look at the screen.' + (st.mine ? ' Your answer: <b>'+st.mine.c+'</b>' : ' You didn’t answer this round.') + '</div>';
+    html += '<details><summary>Show the question</summary><div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image)+'<p class="lead">'+esc(q.lead)+'</p>'+optsHtml('locked')+'</details>';
+    app.innerHTML = html;
+  } else if (st.phase === 'reveal') {
+    setDock('');
+    var R = st.reveal, fin = st.final;
+    if (!fin) html += '<div class="banner info">You didn’t answer. Correct answer: <b>'+R.answer+'</b></div>';
+    else if (fin.c === R.answer) html += '<div class="banner good">Correct ✓ — '+R.answer+'</div>';
+    else html += '<div class="banner bad">Not this time. You chose '+fin.c+', the correct answer is <b>'+R.answer+'</b></div>';
+    html += optsHtml('reveal');
+    var why = R.why || {}, wl = L.slice(0, q.options.length).filter(function(l){ return l !== R.answer && why[l]; });
+    html += '<div class="card explain">' + (R.explain ? '<p style="margin-top:0">'+esc(R.explain)+'</p>' : '') + figHtml(R.image) +
+      (wl.length ? '<h3>Why not the others</h3><ul class="why">' + wl.map(function(l){ return '<li'+(fin && fin.c === l ? ' class="mine"' : '')+'><b>'+l+'</b>'+esc(why[l])+'</li>'; }).join('') + '</ul>' : '') +
+      (R.objective ? '<p class="obj"><b>Take-home:</b> '+esc(R.objective)+'</p>' : '') + '</div>';
+    html += '<details><summary>Show the question</summary><div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image)+'<p class="lead">'+esc(q.lead)+'</p></details>';
+    app.innerHTML = html;
+  }
+}
+
+function renderEnd(offline){
+  setDock('');
+  var r = st.result || { score:0, total:0, items:[] };
+  var pc = r.total ? Math.round(r.score*100/r.total) : 0;
+  app.innerHTML = offline + '<div class="card center" style="padding:28px 16px"><div class="muted">Your score</div><div class="score">'+r.score+' / '+r.total+'</div><div class="big">'+pc+'%</div><p class="muted">Only you can see this.</p></div>' +
+    '<div class="card"><div class="res">' + r.items.map(function(it){
+      var ok = it.mine === it.correct;
+      return '<span>Q'+it.n+'</span><span class="muted">'+(it.mine ? 'You: '+it.mine+(ok ? '' : ' · correct: '+it.correct) : 'No answer · correct: '+it.correct)+'</span><span class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+'</span>';
+    }).join('') + '</div></div>';
+}
+
+app.addEventListener('click', function(e){
+  var z = e.target.closest('img[data-zoom]');
+  if (z) {
+    var o = document.createElement('div'); o.className = 'zoom';
+    o.innerHTML = '<img alt=""><button class="x" aria-label="Close">×</button>'; o.querySelector('img').src = z.src;
+    o.addEventListener('click', function(ev){ if (ev.target.closest('.x') || ev.target === o) o.remove(); });
+    document.body.appendChild(o); return;
+  }
+  var b = e.target.closest('.opt'); if (!b || b.disabled || !st || st.phase !== 'vote' || st.mine || pending) return;
+  sel = b.getAttribute('data-l'); render();
+});
+dock.addEventListener('click', function(e){ var b = e.target.closest('button[data-sure]'); if (!b || b.disabled) return; submit(b.getAttribute('data-sure') === '1'); });
+
+function renderJoin(){
+  document.getElementById('ht').textContent = 'Join the quiz';
+  app.innerHTML = '<form class="card join center" id="jf"><p>Enter the code shown on the screen</p><input id="jc" maxlength="8" autocomplete="off" autocapitalize="characters" inputmode="text" aria-label="Session code"><button type="submit">Join</button></form>';
+  document.getElementById('jf').addEventListener('submit', function(e){
+    e.preventDefault(); var v = document.getElementById('jc').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (!v) return;
+    var qs = new URLSearchParams(location.search); qs.set('s', v); location.search = qs.toString();
+  });
+}
+
+render(); startPeer();
+})();
+</script>
+</body>
+</html>
