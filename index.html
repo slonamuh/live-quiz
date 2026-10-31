@@ -43,7 +43,8 @@ header .t{font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;
 .opts{display:flex;flex-direction:column;gap:10px;margin:14px 0}
 .opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 14px;min-height:56px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .opt .l{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--line)}
-.opt .x{padding-top:4px}
+.opt .x{padding-top:4px;min-width:0}
+.stem,.lead,.opt .x,figcaption,.explain,.banner,.center{overflow-wrap:anywhere}
 .opt.sel{border-color:var(--accent);background:var(--accent-soft)}
 .opt.sel .l{background:var(--accent);color:#fff}
 .opt:disabled{cursor:default}
@@ -76,7 +77,11 @@ figure.qimg figcaption{color:var(--muted);font-size:.85rem;margin-top:4px}
 .res{display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center}
 .res .ok{color:var(--good);font-weight:800}
 .res .no{color:var(--bad);font-weight:800}
+.join label{display:block;text-align:left;font-weight:600;margin:12px 0 4px}
 .join input{width:100%;font-size:1.6rem;letter-spacing:.2em;text-transform:uppercase;text-align:center;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--panel)}
+.bad{color:var(--bad)}
+.big.bad{font-size:1.4rem}
+.small{font-size:.85rem}
 .join button{width:100%;margin-top:12px;min-height:54px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-weight:700;font-size:1.1rem}
 </style>
 </head>
@@ -104,27 +109,47 @@ function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(
 function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
 function lsSet(k,v){ try { localStorage.setItem(k, v); } catch(e){} }
 
+/* ---------- crypto helpers ---------- */
+var HAS_CRYPTO = !!(window.crypto && crypto.subtle && crypto.getRandomValues && window.TextEncoder);
+function enc(t){ return new TextEncoder().encode(t); }
+function b64u(buf){ var b = new Uint8Array(buf), s = ''; for (var i=0;i<b.length;i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64u(s){ s = String(s).replace(/-/g,'+').replace(/_/g,'/'); while (s.length % 4) s += '='; var bin = atob(s), u = new Uint8Array(bin.length); for (var i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i); return u; }
+function b32(bytes){ var A = '0123456789ABCDEFGHJKMNPQRSTVWXYZ', bits = 0, val = 0, out = ''; for (var i=0;i<bytes.length;i++){ val = (val << 8) | bytes[i]; bits += 8; while (bits >= 5) { out += A[(val >>> (bits - 5)) & 31]; bits -= 5; } } return out; }
+function normCheck(v){ return String(v || '').toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1').replace(/[^0-9A-Z]/g, '').slice(0, 8); }
+function randomId(n){ var b = new Uint8Array(n); crypto.getRandomValues(b); return b64u(b); }
+
+/* ---------- address ----------
+   ?s=CODE  plus  #k=<fingerprint of the teacher's key>  (QR code or shared link)
+            or    #c=<8-character check code>           (typed by hand)          */
 var params = new URLSearchParams(location.search);
-var CODE = (params.get('s') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+var frag = new URLSearchParams(location.hash.replace(/^#/, ''));
+var CODE = (params.get('s') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+var FP = (frag.get('k') || '').replace(/[^A-Za-z0-9_-]/g, '');
+if (FP.length !== 22) FP = '';
+var CHK = normCheck(frag.get('c'));
+if (CHK.length !== 8) CHK = '';
 var peerOpts = { debug: 0 };
-if (params.get('ph')) peerOpts.host = params.get('ph');
-if (params.get('pp')) peerOpts.port = +params.get('pp');
-if (params.get('ps')) peerOpts.secure = params.get('ps') === '1';
-if (params.get('pt')) peerOpts.path = params.get('pt');
+if (/^(127\.0\.0\.1|localhost)$/.test(params.get('ph') || '')) {          // another relay only for local testing
+  peerOpts.host = params.get('ph');
+  if (params.get('pp')) peerOpts.port = +params.get('pp');
+  if (params.get('ps')) peerOpts.secure = params.get('ps') === '1';
+  if (params.get('pt')) peerOpts.path = params.get('pt');
+}
 var ID_PREFIX = 'acsom-livequiz-';
 
 var app = document.getElementById('app'), dock = document.getElementById('dock');
 var peer = null, conn = null, status = 'connecting', st = null, lastRx = 0;
 var sel = null, selKey = '', pending = null, deadline = null, retryTimer = null;
 
-if (!CODE) { renderJoin(); return; }
+if (!HAS_CRYPTO) { app.innerHTML = '<div class="center"><div class="big">This browser can’t join safely</div><p class="muted">Please open the link in an up-to-date Chrome or Safari.</p></div>'; return; }
+if (!CODE || (!FP && !CHK)) { renderJoin(); return; }
 
 var SID_KEY = 'livequiz-sid-' + CODE;
 var sid = lsGet(SID_KEY);
-if (!sid || !/^[A-Za-z0-9]{6,40}$/.test(sid)) { sid = ''; var a = 'abcdefghijkmnpqrstuvwxyz23456789'; for (var i=0;i<16;i++) sid += a[Math.floor(Math.random()*a.length)]; lsSet(SID_KEY, sid); }
+if (!sid || !/^[A-Za-z0-9]{6,40}$/.test(sid)) { sid = randomId(18).replace(/[^A-Za-z0-9]/g, 'x'); lsSet(SID_KEY, sid); }
 
 /* ---------- connection ---------- */
-function setStatus(s){ status = s; var d = document.getElementById('dot'); d.className = 'dot' + (s === 'connected' ? ' ok' : s === 'failed' ? ' err' : ''); if (!st || s !== 'connected') render(); }
+function setStatus(s){ status = s; var d = document.getElementById('dot'); d.className = 'dot' + (s === 'connected' ? ' ok' : s === 'untrusted' ? ' err' : ''); if (!st || s !== 'connected') render(); }
 function startPeer(){
   if (peer) { try { peer.destroy(); } catch(e){} }
   var p = peer = new peerjs.Peer(peerOpts);
@@ -132,23 +157,26 @@ function startPeer(){
   p.on('disconnected', function(){ if (p !== peer || p.destroyed) return; setTimeout(function(){ if (p === peer && !p.destroyed && p.disconnected) { try { p.reconnect(); } catch(e){ retry(2000, true); } } }, 1500); });
   p.on('error', function(err){
     if (p !== peer) return;
-    if (err && err.type === 'peer-unavailable') { setStatus('waiting'); retry(3000); return; }
-    setStatus('reconnecting'); retry(3000, true);
+    if (err && err.type === 'peer-unavailable') { if (status !== 'untrusted') setStatus('waiting'); retry(3000); return; }
+    if (status !== 'untrusted') setStatus('reconnecting');
+    retry(3000, true);
   });
 }
 function openConn(){
   if (conn) { try { conn.close(); } catch(e){} }
-  if (status !== 'waiting') setStatus(st ? 'reconnecting' : 'connecting');
+  if (status !== 'waiting' && status !== 'untrusted') setStatus(st ? 'reconnecting' : 'connecting');
   var c = conn = peer.connect(ID_PREFIX + CODE.toLowerCase(), { reliable: true, serialization: 'json' });
+  c._chain = Promise.resolve(); c._ok = false; c._seq = 0; c._nonce = randomId(16);
   var guard = setTimeout(function(){ if (c === conn && !c.open) retry(500); }, 9000);
   c.on('open', function(){
     if (c !== conn) return; clearTimeout(guard); lastRx = Date.now();
-    c.send({ t:'hello', sid: sid }); setStatus('connected');
-    if (pending) sendAnswer();
+    c.send({ t:'hello', sid: sid, nonce: c._nonce });       // the screen must sign this random challenge
+    if (status !== 'untrusted') setStatus('verifying');
+    setTimeout(function(){ if (c === conn && c.open && !c._ok) untrusted(c); }, 10000);   // a screen that can't prove itself
   });
-  c.on('data', function(m){ if (c !== conn) return; lastRx = Date.now(); onMsg(m); });
-  c.on('close', function(){ if (c === conn) { setStatus('reconnecting'); retry(1500); } });
-  c.on('error', function(){ if (c === conn) retry(1500); });
+  c.on('data', function(m){ if (c !== conn) return; lastRx = Date.now(); c._chain = c._chain.then(function(){ return onMsg(c, m); }).catch(function(){}); });
+  c.on('close', function(){ if (c === conn && status !== 'untrusted') { setStatus('reconnecting'); retry(1500); } });
+  c.on('error', function(){ if (c === conn && status !== 'untrusted') retry(1500); });
 }
 function retry(ms, newPeer){
   clearTimeout(retryTimer);
@@ -160,7 +188,7 @@ function retry(ms, newPeer){
   }, ms);
 }
 setInterval(function(){
-  if (conn && conn.open) {
+  if (conn && conn.open && conn._ok) {
     try { conn.send({ t:'hb' }); } catch(e){}
     if (Date.now() - lastRx > 17000) { setStatus('reconnecting'); retry(0); }
   }
@@ -174,18 +202,97 @@ var lock = null;
 function wake(){ try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !lock) navigator.wakeLock.request('screen').then(function(l){ lock = l; l.addEventListener('release', function(){ lock = null; }); }).catch(function(){}); } catch(e){} }
 document.addEventListener('click', wake, { once: true });
 
-/* ---------- messages ---------- */
-function onMsg(m){
+/* ---------- messages: nothing is shown until the screen has proven it holds the teacher's key ---------- */
+function onMsg(c, m){
   if (!m || typeof m !== 'object') return;
-  if (m.t === 'img') {
-    if (typeof m.id !== 'string' || typeof m.d !== 'string' || !(m.n > 0) || !(m.i >= 0) || m.i >= m.n) return;
-    var e = imgs[m.id] || (imgs[m.id] = { n: m.n, parts: [], got: 0, url: null });
-    if (e.url || e.n !== m.n) return;
-    if (e.parts[m.i] == null) { e.parts[m.i] = m.d; e.got++; }
-    if (e.got === e.n) { var u = e.parts.join(''); e.parts = null; if (IMG_RE.test(u)) { e.url = u; if (st) render(); } else delete imgs[m.id]; }
-    return;
-  }
-  if (m.t !== 'state') return;
+  if (m.t === 'pong') return;
+  if (m.t === 'auth') return verifyScreen(c, m);
+  if (!c._ok) return;
+  if (m.t === 's') return onSigned(c, m);
+  if (m.t === 'img') return onImg(m);
+}
+function verifyScreen(c, m){
+  if (c._ok || typeof m.pub !== 'string' || typeof m.sig !== 'string' || m.pub.length > 200 || m.sig.length > 200) return untrusted(c);
+  var raw, fp;
+  try { raw = unb64u(m.pub); } catch(e){ return untrusted(c); }
+  return crypto.subtle.digest('SHA-256', raw).then(function(h){
+    fp = b64u(h.slice(0, 16));
+    var check = b32(new Uint8Array(h).slice(0, 5));
+    if (FP ? fp !== FP : check !== CHK) throw new Error('not the key from the QR code / check code');
+    return crypto.subtle.importKey('raw', raw, { name:'ECDSA', namedCurve:'P-256' }, false, ['verify']);
+  }).then(function(key){
+    return crypto.subtle.verify({ name:'ECDSA', hash:'SHA-256' }, key, unb64u(m.sig), enc('livequiz-auth|' + CODE + '|' + c._nonce)).then(function(ok){
+      if (!ok) throw new Error('bad signature');
+      c._key = key; c._ok = true;
+      if (!FP) { FP = fp; try { history.replaceState(null, '', location.pathname + location.search + '#k=' + fp); } catch(e){} }
+      setStatus('connected');
+      if (pending) sendAnswer();
+    });
+  }).catch(function(){ untrusted(c); });
+}
+function untrusted(c){
+  c._ok = false; try { c.close(); } catch(e){}
+  deadline = null;
+  setStatus('untrusted');
+  retry(10000);                     // keep checking: the real screen may come back
+}
+function onSigned(c, m){
+  if (!isInt(m.seq, 1, 1e12) || m.seq <= c._seq || typeof m.body !== 'string' || m.body.length > 300000 || typeof m.sig !== 'string' || m.sig.length > 200) return;
+  var seq = m.seq;
+  return crypto.subtle.verify({ name:'ECDSA', hash:'SHA-256' }, c._key, unb64u(m.sig), enc(CODE + '|' + c._nonce + '|' + seq + '|' + m.body)).then(function(ok){
+    if (!ok || seq <= c._seq) return;
+    c._seq = seq;
+    var obj; try { obj = JSON.parse(m.body); } catch(e){ return; }
+    var s = cleanState(obj); if (s) onState(s);
+  });
+}
+function onImg(m){
+  if (typeof m.id !== 'string' || m.id.length > 300 || typeof m.d !== 'string' || m.d.length > 20000 || !isInt(m.n, 1, 400) || !isInt(m.i, 0, m.n - 1)) return;
+  var e = imgs[m.id] || (imgs[m.id] = { n: m.n, parts: [], got: 0, data: null, hash: null });
+  if (e.data || e.n !== m.n) return;
+  if (e.parts[m.i] == null) { e.parts[m.i] = m.d; e.got++; }
+  if (e.got !== e.n) return;
+  var u = e.parts.join(''); e.parts = null;
+  if (!IMG_RE.test(u)) { delete imgs[m.id]; return; }
+  return crypto.subtle.digest('SHA-256', enc(u)).then(function(h){ e.data = u; e.hash = b64u(h); if (st) render(); });
+}
+
+/* ---------- strict checks on everything the screen sends ---------- */
+function isInt(x, lo, hi){ return typeof x === 'number' && isFinite(x) && Math.floor(x) === x && x >= lo && x <= hi; }
+function str(x, max){ if (typeof x !== 'string' || x.length > max) throw 0; return x; }
+function optStr(x, max){ return x == null ? '' : str(x, max); }
+function letter(x){ if (typeof x !== 'string' || !/^[A-H]$/.test(x)) throw 0; return x; }
+function answerOf(a){ if (a == null) return null; if (typeof a !== 'object') throw 0; if (!(a.sure === true || a.sure === false || a.sure == null)) throw 0; return { c: letter(a.c), sure: a.sure == null ? null : a.sure }; }
+function imageOf(im){ if (im == null) return null; if (typeof im !== 'object') throw 0; return { id: str(im.id, 300), caption: optStr(im.caption, 500), hash: str(im.hash, 64) }; }
+function cleanState(m){
+  try {
+    if (!m || m.t !== 'state' || ['lobby','vote','closed','reveal','end'].indexOf(m.phase) < 0) return null;
+    if (!isInt(m.qi, -1, 9999) || !isInt(m.total, 1, 10000)) return null;
+    var o = { t:'state', phase: m.phase, title: optStr(m.title, 300), qi: m.qi, total: m.total, round: m.round === 2 ? 2 : 1, confidence: m.confidence === true };
+    if (m.phase === 'vote' || m.phase === 'closed' || m.phase === 'reveal') {
+      var q = m.q;
+      if (!q || typeof q !== 'object' || !Array.isArray(q.options) || q.options.length < 2 || q.options.length > 8) return null;
+      o.q = { stem: str(q.stem, 20000), lead: str(q.lead, 2000), options: q.options.map(function(x){ return str(x, 1000); }), image: imageOf(q.image) };
+      o.mine = answerOf(m.mine); o.first = answerOf(m.first);
+      if (m.remaining != null) { if (!isInt(m.remaining, 0, 86400)) return null; o.remaining = m.remaining; }
+      if (m.phase === 'reveal') {
+        var R = m.reveal; if (!R || typeof R !== 'object') return null;
+        var why = {};
+        if (R.why != null) { if (typeof R.why !== 'object') return null; Object.keys(R.why).forEach(function(k){ if (/^[A-H]$/.test(k)) why[k] = str(R.why[k], 3000); }); }
+        o.reveal = { answer: letter(R.answer), explain: optStr(R.explain, 20000), why: why, objective: optStr(R.objective, 3000), image: imageOf(R.image) };
+        o.final = answerOf(m.final);
+      }
+    }
+    if (m.phase === 'end') {
+      var r = m.result;
+      if (!r || typeof r !== 'object' || !isInt(r.score, 0, 10000) || !isInt(r.total, 0, 10000) || !Array.isArray(r.items) || r.items.length > 10000) return null;
+      o.result = { score: r.score, total: r.total, items: r.items.map(function(it){ if (!it || !isInt(it.n, 1, 10000)) throw 0; return { n: it.n, mine: it.mine == null ? null : letter(it.mine), correct: letter(it.correct) }; }) };
+    }
+    return o;
+  } catch(e){ return null; }
+}
+
+function onState(m){
   var key = m.qi + ':' + m.round;
   if (key !== selKey) { selKey = key; sel = null; if (pending && (pending.qi !== m.qi || pending.round !== m.round)) pending = null; }
   if (m.mine) pending = null;
@@ -195,7 +302,7 @@ function onMsg(m){
   st = m; render(changedScreen);
 }
 function sendAnswer(){
-  if (!pending || !conn || !conn.open) return;
+  if (!pending || !conn || !conn.open || !conn._ok) return;
   try { conn.send({ t:'answer', qi: pending.qi, round: pending.round, c: pending.c, sure: pending.sure }); } catch(e){}
 }
 function submit(sure){
@@ -204,7 +311,7 @@ function submit(sure){
   sendAnswer(); render();
 }
 
-/* ---------- rendering ---------- */
+/* ---------- rendering (every value is escaped) ---------- */
 function stemHtml(stem){
   var html = '', list = [];
   function flush(){ if (list.length) { html += '<ul>' + list.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('') + '</ul>'; list = []; } }
@@ -213,9 +320,9 @@ function stemHtml(stem){
 }
 function figHtml(im){
   if (!im || !im.id) return '';
-  var e = imgs[im.id];
-  return '<figure class="qimg">' + (e && e.url ? '<img src="'+e.url+'" alt="'+esc(im.caption || 'Image')+'" data-zoom>' : '<div class="imgload">Loading image…</div>') +
-    (im.caption ? '<figcaption>'+esc(im.caption)+'</figcaption>' : '') + '</figure>';
+  var e = imgs[im.id], ok = e && e.data && im.hash && e.hash === im.hash;
+  var inner = ok ? '<img src="'+esc(e.data)+'" alt="'+esc(im.caption || 'Image')+'" data-zoom>' : '<div class="imgload">'+(e && e.data ? 'Picture could not be verified' : 'Loading image…')+'</div>';
+  return '<figure class="qimg">' + inner + (im.caption ? '<figcaption>'+esc(im.caption)+'</figcaption>' : '') + '</figure>';
 }
 function setDock(html){ if (html) { dock.innerHTML = '<div class="in">'+html+'</div>'; dock.hidden = false; } else { dock.hidden = true; dock.innerHTML = ''; } }
 function header(){
@@ -230,16 +337,25 @@ setInterval(tick, 500);
 
 function render(scrollTop){
   header(); tick();
+  if (status === 'untrusted') {
+    setDock(''); document.getElementById('ht').textContent = 'Live quiz';
+    app.innerHTML = '<div class="center"><div class="big bad">⚠ This isn’t your teacher’s screen</div>'+
+      '<p>The quiz this page reached could not prove it is the one on the projector, so nothing from it is shown.</p>'+
+      '<p class="muted">Scan the QR code on the projector again, or open the link your teacher shared.</p></div>';
+    return;
+  }
   if (!st) {
     setDock('');
-    var msg = { connecting:'Connecting to the quiz…', reconnecting:'Reconnecting…', waiting:'Waiting for the teacher’s screen…', failed:'Can’t connect.' }[status] || 'Connecting…';
+    var msg = { connecting:'Connecting to the quiz…', verifying:'Checking the teacher’s screen…', reconnecting:'Reconnecting…', waiting:'Waiting for the teacher’s screen…' }[status] || 'Connecting…';
     app.innerHTML = '<div class="center"><div class="spin"></div><div class="big">'+msg+'</div><p class="muted">Session code <b>'+esc(CODE)+'</b>. Keep this page open.</p></div>';
     return;
   }
   var offline = status !== 'connected' ? '<div class="banner info">'+(status === 'waiting' ? 'Waiting for the teacher’s screen…' : 'Connection lost — reconnecting…')+'</div>' : '';
   if (st.phase === 'lobby') {
     setDock('');
-    app.innerHTML = offline + '<div class="center"><div class="big">You’re in ✓</div><p class="muted">Wait for the teacher to start. Answers are anonymous.</p></div>';
+    app.innerHTML = offline + '<div class="center"><div class="big">You’re in ✓</div>'+
+      '<p><b>'+esc(st.title)+'</b><br><span class="muted">session '+esc(CODE)+' · teacher’s screen verified</span></p>'+
+      '<p class="muted">Check that this matches the screen. Wait for the teacher to start. Answers are anonymous.</p></div>';
   } else if (st.phase === 'end') {
     renderEnd(offline);
   } else {
@@ -266,24 +382,24 @@ function renderQuestion(offline){
   var r2 = st.round === 2;
   if (st.phase === 'vote') {
     var locked = !!(st.mine || pending);
-    if (r2) html += '<div class="banner r2">Round 2 · Discuss with your neighbour, then answer again.' + (st.first ? ' Your first answer: <b>'+st.first.c+'</b>' : '') + '</div>';
+    if (r2) html += '<div class="banner r2">Round 2 · Discuss with your neighbour, then answer again.' + (st.first ? ' Your first answer: <b>'+esc(st.first.c)+'</b>' : '') + '</div>';
     html += '<div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image)+'<p class="lead">'+esc(q.lead)+'</p>' + optsHtml(locked ? 'locked' : 'pick');
     app.innerHTML = html;
-    if (st.mine) setDock('<div class="msg">✓ Answer sent: '+st.mine.c+(st.confidence && st.mine.sure !== null ? (st.mine.sure ? ' (sure)' : ' (guessing)') : '')+' — wait for the others</div>');
+    if (st.mine) setDock('<div class="msg">✓ Answer sent: '+esc(st.mine.c)+(st.confidence && st.mine.sure !== null ? (st.mine.sure ? ' (sure)' : ' (guessing)') : '')+' — wait for the others</div>');
     else if (pending) setDock('<div class="msg">Sending…</div>');
     else if (st.confidence) setDock('<button class="alt" data-sure="0"'+(sel?'':' disabled')+'>I’m guessing</button><button data-sure="1"'+(sel?'':' disabled')+'>I’m sure</button>');
     else setDock('<button data-sure="1"'+(sel?'':' disabled')+'>Submit answer</button>');
   } else if (st.phase === 'closed') {
     setDock('');
-    html += '<div class="banner info">Voting closed — look at the screen.' + (st.mine ? ' Your answer: <b>'+st.mine.c+'</b>' : ' You didn’t answer this round.') + '</div>';
+    html += '<div class="banner info">Voting closed — look at the screen.' + (st.mine ? ' Your answer: <b>'+esc(st.mine.c)+'</b>' : ' You didn’t answer this round.') + '</div>';
     html += '<details><summary>Show the question</summary><div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image)+'<p class="lead">'+esc(q.lead)+'</p>'+optsHtml('locked')+'</details>';
     app.innerHTML = html;
   } else if (st.phase === 'reveal') {
     setDock('');
     var R = st.reveal, fin = st.final;
-    if (!fin) html += '<div class="banner info">You didn’t answer. Correct answer: <b>'+R.answer+'</b></div>';
-    else if (fin.c === R.answer) html += '<div class="banner good">Correct ✓ — '+R.answer+'</div>';
-    else html += '<div class="banner bad">Not this time. You chose '+fin.c+', the correct answer is <b>'+R.answer+'</b></div>';
+    if (!fin) html += '<div class="banner info">You didn’t answer. Correct answer: <b>'+esc(R.answer)+'</b></div>';
+    else if (fin.c === R.answer) html += '<div class="banner good">Correct ✓ — '+esc(R.answer)+'</div>';
+    else html += '<div class="banner bad">Not this time. You chose '+esc(fin.c)+', the correct answer is <b>'+esc(R.answer)+'</b></div>';
     html += optsHtml('reveal');
     var why = R.why || {}, wl = L.slice(0, q.options.length).filter(function(l){ return l !== R.answer && why[l]; });
     html += '<div class="card explain">' + (R.explain ? '<p style="margin-top:0">'+esc(R.explain)+'</p>' : '') + figHtml(R.image) +
@@ -298,10 +414,10 @@ function renderEnd(offline){
   setDock('');
   var r = st.result || { score:0, total:0, items:[] };
   var pc = r.total ? Math.round(r.score*100/r.total) : 0;
-  app.innerHTML = offline + '<div class="card center" style="padding:28px 16px"><div class="muted">Your score</div><div class="score">'+r.score+' / '+r.total+'</div><div class="big">'+pc+'%</div><p class="muted">Only you can see this.</p></div>' +
+  app.innerHTML = offline + '<div class="card center" style="padding:28px 16px"><div class="muted">Your score</div><div class="score">'+esc(r.score)+' / '+esc(r.total)+'</div><div class="big">'+esc(pc)+'%</div><p class="muted">Only you can see this.</p></div>' +
     '<div class="card"><div class="res">' + r.items.map(function(it){
       var ok = it.mine === it.correct;
-      return '<span>Q'+it.n+'</span><span class="muted">'+(it.mine ? 'You: '+it.mine+(ok ? '' : ' · correct: '+it.correct) : 'No answer · correct: '+it.correct)+'</span><span class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+'</span>';
+      return '<span>Q'+esc(it.n)+'</span><span class="muted">'+(it.mine ? 'You: '+esc(it.mine)+(ok ? '' : ' · correct: '+esc(it.correct)) : 'No answer · correct: '+esc(it.correct))+'</span><span class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+'</span>';
     }).join('') + '</div></div>';
 }
 
@@ -318,12 +434,24 @@ app.addEventListener('click', function(e){
 });
 dock.addEventListener('click', function(e){ var b = e.target.closest('button[data-sure]'); if (!b || b.disabled) return; submit(b.getAttribute('data-sure') === '1'); });
 
+/* Joining by typing: the session code AND the check code shown under the QR code on the teacher's screen. */
 function renderJoin(){
   document.getElementById('ht').textContent = 'Join the quiz';
-  app.innerHTML = '<form class="card join center" id="jf"><p>Enter the code shown on the screen</p><input id="jc" maxlength="8" autocomplete="off" autocapitalize="characters" inputmode="text" aria-label="Session code"><button type="submit">Join</button></form>';
+  app.innerHTML = '<form class="card join center" id="jf">'+
+    '<p>Enter the two codes shown on the teacher’s screen</p>'+
+    '<label for="jc">Session code</label><input id="jc" maxlength="8" autocomplete="off" autocapitalize="characters" value="'+esc(CODE)+'">'+
+    '<label for="jk">Check code</label><input id="jk" maxlength="9" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX">'+
+    '<p class="bad" id="jerr"></p><button type="submit">Join</button>'+
+    '<p class="muted small">Scanning the QR code or opening your teacher’s link needs no codes.</p></form>';
   document.getElementById('jf').addEventListener('submit', function(e){
-    e.preventDefault(); var v = document.getElementById('jc').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); if (!v) return;
-    var qs = new URLSearchParams(location.search); qs.set('s', v); location.search = qs.toString();
+    e.preventDefault();
+    var v = document.getElementById('jc').value.toUpperCase().replace(/[^A-Z0-9]/g, ''), k = normCheck(document.getElementById('jk').value);
+    if (!v) { document.getElementById('jerr').textContent = 'Enter the session code.'; return; }
+    if (k.length !== 8) { document.getElementById('jerr').textContent = 'The check code has 8 characters.'; return; }
+    var qs = new URLSearchParams(location.search); qs.set('s', v);
+    var target = location.pathname + '?' + qs.toString();
+    if (target === location.pathname + location.search) { location.hash = 'c=' + k; location.reload(); }
+    else location.href = target + '#c=' + k;
   });
 }
 

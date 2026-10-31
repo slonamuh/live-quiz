@@ -12,7 +12,10 @@ No accounts, no installation and no server to maintain. The two pages are plain 
 ## How a session works
 
 1. **Open the player** and load a quiz pack (a `.quiz.json` file, for example from your Google Drive).
-2. **Students scan the QR code** on the screen (or open the phone page and type the 5-letter code). They see the full case and the options on their phone.
+2. **Students join** in one of three ways, and see the full case and the options on their phone:
+   - **scan the QR code** on the screen;
+   - **open the link** you shared (press **Copy link** in the lobby and paste it into the class chat or LMS);
+   - **type the codes**: open the phone page and enter the 5-character session code *and* the 8-character check code shown under the QR code.
 3. **They answer anonymously**: tap an option, then *I'm sure* or *I'm guessing*. The screen shows "18 of 25 answered" and a timer; results stay hidden while voting is open.
 4. **Voting closes** when everyone has answered, when the time runs out, or when you press **Enter**. The A–E bars appear (solid = sure, striped = guessing).
 5. **Optional discussion round (D):** students argue with a neighbour for 1–2 minutes and vote again; round 1 stays visible as a thin grey line.
@@ -28,7 +31,7 @@ No accounts, no installation and no server to maintain. The two pages are plain 
 | Enter / Space / → | Next step: start · close voting · reveal · next question |
 | D | Discuss & revote (after round 1 closes) |
 | + | 30 more seconds |
-| Q | Show the QR code full screen (again: close) |
+| Q | Show the QR code full screen, with the link and both codes (again: close) |
 | Esc | Close an enlarged picture or the QR code |
 | Ctrl + / Ctrl − | Bigger / smaller text for the room |
 
@@ -76,6 +79,8 @@ A quiz pack is one file per topic, e.g. `immunology-01.quiz.json`. It contains t
 
 To add a picture, paste it under the case (shown with the question) or under the explanation (shown at reveal).
 
+**With any other AI assistant (ChatGPT, Gemini, …)**: give it [docs/llm-instructions.md](docs/llm-instructions.md), the complete instructions for writing cases to our standards and returning a ready-to-load pack. Fill in the REQUEST section at the end.
+
 **By hand or with your own tools**: see [docs/pack-format.md](docs/pack-format.md), and check a pack with
 `python3 tools/make_pack.py check my-quiz.quiz.json`.
 
@@ -89,13 +94,19 @@ To add a picture, paste it under the case (shown with the question) or under the
 - Questions travel from the teacher's browser to the phones only while the quiz runs. The phone page contains no questions, and neither does the player: both are empty until a pack is loaded.
 - Answer keys stay on the teacher's computer (and Google Drive).
 - The connection is set up through the free public PeerJS server (only to introduce the phones to the laptop); answers then go directly between the phone and the teacher's browser, encrypted by WebRTC.
+- **Phones check that they reached your screen.** Each session has its own digital key; the QR code and the link carry its fingerprint (the part after `#k=`), and the check code is a short version of it. A phone shows nothing from a screen that cannot prove it holds that key, so nobody can pose as your screen, even by taking over the session code while your laptop is asleep.
+- Share the link only with your class: anyone who has it can join and answer.
 
 ## Troubleshooting
 
 | What you see | What it means | What to do |
 | --- | --- | --- |
 | Player corner stays **Connecting…** or shows **Can't reach server** | The player cannot reach the PeerJS server. Hover over it for the exact error. | Open the player from its **https address** in **Chrome** (not as a local file, not in Safari). Check the internet connection. |
+| Player shows **This browser can't secure the session here** | The player was opened without https or in an old browser. | Open it from its https address in Chrome. |
 | Phone says **Waiting for the teacher's screen** | The phone reached the server but no player is open with that code. | Make sure the player tab is open and shows the same code; rescan the QR code shown now. |
+| Phone says **This isn't your teacher's screen** | The phone reached something that could not prove it is your player: an old QR code or link, a mistyped check code, or someone holding your session code. | Students scan the QR code on the projector again or reopen your current link. If the player shows **Another device is holding this session's code**, press **Move to a new code** and have everyone rescan. |
+| Player shows **Another device is holding this session's code** | The code is still registered elsewhere, e.g. the player is open in another tab or on another computer, or someone took it while your laptop was asleep. | Close the other tab if there is one; otherwise press **Move to a new code** (the quiz continues where it was) and have students rescan. |
+| Phone says **This browser can't join safely** | A very old browser without the security features the check needs. | Use an up-to-date Chrome or Safari. |
 | Phones join on mobile data but not on Wi-Fi | The Wi-Fi blocks direct connections. | Ask students to switch off Wi-Fi for the quiz, or ask IT to allow WebRTC. A server-based version (Firebase) is possible if this is permanent. |
 | A phone shows **Reconnecting…** | The phone slept or lost signal. | Nothing; it reconnects by itself and keeps its answers. |
 | The file is rejected | The pack has a problem. | The message names the question and the problem; ask Claude to fix the pack. |
@@ -112,7 +123,8 @@ To add a picture, paste it under the case (shown with the question) or under the
 | `src/` | Page sources |
 | `tools/build_pages.py` | Builds the two pages (inlines PeerJS and the QR library) |
 | `tools/make_pack.py` | Checks quiz packs and embeds pictures |
-| `tests/` | End-to-end test (presenter + simulated phones) and its placeholder fixtures |
+| `tests/` | End-to-end test (presenter + simulated phones), security test (replays known attacks) and placeholder fixtures |
+| `docs/llm-instructions.md` | Instructions to give any AI assistant so it writes cases and returns a quiz pack |
 | `docs/pack-format.md` | Quiz pack format |
 | `docs/developer.md` | How it works, building, testing, changing things |
 
