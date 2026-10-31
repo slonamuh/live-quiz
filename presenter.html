@@ -113,6 +113,8 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .join .code{font-size:2.6rem;font-weight:800;letter-spacing:.18em}
 .join .url{font-size:.95rem;color:var(--muted);word-break:break-all;max-width:36rem}
 .join .joined{font-size:1.5rem}
+.join .check,.qrover .check{color:var(--muted);font-size:1rem}
+.join .check b,.qrover .check b{color:var(--ink);font-size:1.25rem;letter-spacing:.12em;margin-left:.3rem}
 .join .warn{max-width:30rem}
 .settings h2{margin:0 0 .8rem;font-size:1.2rem}
 .settings .pack{display:flex;gap:.6rem;align-items:center;padding:.6rem .8rem;background:var(--accent-soft);border-radius:10px;margin-bottom:.4rem}
@@ -2484,27 +2486,40 @@ var idb = (function(){
   var dbp = null;
   function open(){
     if (!dbp) dbp = new Promise(function(res, rej){
-      try { var r = indexedDB.open('livequiz', 1);
-        r.onupgradeneeded = function(){ r.result.createObjectStore('packs', { keyPath: 'key' }); };
+      try { var r = indexedDB.open('livequiz', 2);
+        r.onupgradeneeded = function(){
+          var db = r.result;
+          if (!db.objectStoreNames.contains('packs')) db.createObjectStore('packs', { keyPath: 'key' });
+          if (!db.objectStoreNames.contains('keys')) db.createObjectStore('keys', { keyPath: 'key' });   // presenter signing key
+        };
         r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); };
       } catch(e){ rej(e); }
     });
     return dbp;
   }
-  function run(mode, fn){
+  function run(store, mode, fn){
     return open().then(function(db){ return new Promise(function(res, rej){
-      var t = db.transaction('packs', mode), out, req = fn(t.objectStore('packs'));
+      var t = db.transaction(store, mode), out, req = fn(t.objectStore(store));
       if (req) req.onsuccess = function(){ out = req.result; };
       t.oncomplete = function(){ res(out); }; t.onerror = function(){ rej(t.error); }; t.onabort = function(){ rej(t.error); };
     }); });
   }
   return {
-    put: function(rec){ return run('readwrite', function(s){ return s.put(rec); }); },
-    get: function(k){ return run('readonly', function(s){ return s.get(k); }); },
-    all: function(){ return run('readonly', function(s){ return s.getAll(); }); },
-    del: function(k){ return run('readwrite', function(s){ return s.delete(k); }); }
+    put: function(rec){ return run('packs', 'readwrite', function(s){ return s.put(rec); }); },
+    get: function(k){ return run('packs', 'readonly', function(s){ return s.get(k); }); },
+    all: function(){ return run('packs', 'readonly', function(s){ return s.getAll(); }); },
+    del: function(k){ return run('packs', 'readwrite', function(s){ return s.delete(k); }); },
+    putKey: function(rec){ return run('keys', 'readwrite', function(s){ return s.put(rec); }); },
+    getKey: function(k){ return run('keys', 'readonly', function(s){ return s.get(k); }); }
   };
 })();
+
+/* ---------- crypto helpers (the presenter proves to phones that it is the real screen) ---------- */
+var HAS_CRYPTO = !!(window.crypto && crypto.subtle && window.TextEncoder);
+function b64u(buf){ var b = new Uint8Array(buf), s = ''; for (var i=0;i<b.length;i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+/* Crockford base32 (the check code a student types) */
+function b32(bytes){ var A = '0123456789ABCDEFGHJKMNPQRSTVWXYZ', bits = 0, val = 0, out = ''; for (var i=0;i<bytes.length;i++){ val = (val << 8) | bytes[i]; bits += 8; while (bits >= 5) { out += A[(val >>> (bits - 5)) & 31]; bits -= 5; } } return out; }
+function sha256(str){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); }
 function hash(str){ var h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (var i=0, ch; i<str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
   h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909); h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
   return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(36); }
@@ -2584,7 +2599,13 @@ function readFile(file){
 
 /* ---------- boot ---------- */
 var started = false;
-function start(pack, key, mode, warns){ if (started) return; started = true; runApp(pack, key, mode, warns || checkPack(pack).warns); }
+function start(pack, key, mode, warns){
+  if (started) return;
+  if (!HAS_CRYPTO) { library('<p class="warn">This browser can’t secure the session here. Open the player from its https address (https://slonamuh.github.io/live-quiz/presenter.html) in Chrome.</p>'); return; }
+  var c = checkPack(pack);                      // re-check packs that come back from browser storage too
+  if (c.errs.length) { library(''); showLoadError(c.errs); return; }
+  started = true; runApp(pack, key, mode, warns || c.warns);
+}
 (function boot(){
   var saved = store.get(SESSION_KEY);
   if (saved && saved.packKey && saved.savedAt && Date.now() - saved.savedAt < 12*3600*1000 && (saved.played || []).length) {
@@ -2610,14 +2631,32 @@ function runApp(QUIZ, PACK_KEY, MODE, WARNS){
 var QUESTIONS = QUIZ.questions, TOTAL = QUESTIONS.length, IMAGES = QUIZ.images || {};
 function LQ(qi){ return letters(QUESTIONS[qi].options.length); }
 
-/* connection settings (optional own relay server via ?ph=&pp=&ps=&pt=) */
+/* connection settings: a different relay server (?ph=&pp=&ps=&pt=) is accepted only on this computer, for testing */
 var params = new URLSearchParams(location.search);
 var peerOpts = { debug: 0 }, passParams = new URLSearchParams();
-if (params.get('ph')) { peerOpts.host = params.get('ph'); passParams.set('ph', params.get('ph')); }
-if (params.get('pp')) { peerOpts.port = +params.get('pp'); passParams.set('pp', params.get('pp')); }
-if (params.get('ps')) { peerOpts.secure = params.get('ps') === '1'; passParams.set('ps', params.get('ps')); }
-if (params.get('pt')) { peerOpts.path = params.get('pt'); passParams.set('pt', params.get('pt')); }
+if (/^(127\.0\.0\.1|localhost)$/.test(params.get('ph') || '')) {
+  peerOpts.host = params.get('ph'); passParams.set('ph', params.get('ph'));
+  if (params.get('pp')) { peerOpts.port = +params.get('pp'); passParams.set('pp', params.get('pp')); }
+  if (params.get('ps')) { peerOpts.secure = params.get('ps') === '1'; passParams.set('ps', params.get('ps')); }
+  if (params.get('pt')) { peerOpts.path = params.get('pt'); passParams.set('pt', params.get('pt')); }
+}
 var ID_PREFIX = 'acsom-livequiz-';
+
+/* signing key: phones accept only messages signed with it; its fingerprint travels in the QR code / link */
+var KEYPAIR = null, PUB = '', FP = '', CHECK = '', IMG_HASH = {};
+function loadKeys(reuse){
+  function make(){ return crypto.subtle.generateKey({ name:'ECDSA', namedCurve:'P-256' }, false, ['sign', 'verify']).then(function(kp){ return { kp: kp, fresh: true }; }); }
+  var p = reuse ? idb.getKey('presenter').then(function(rec){ return (rec && rec.code === S.code && rec.priv && rec.pub) ? { kp: { privateKey: rec.priv, publicKey: rec.pub }, fresh: false } : make(); }, make) : make();
+  return p.then(function(r){
+    KEYPAIR = r.kp;
+    return crypto.subtle.exportKey('raw', KEYPAIR.publicKey).then(function(raw){ PUB = b64u(raw); return crypto.subtle.digest('SHA-256', raw); })
+      .then(function(h){ FP = b64u(h.slice(0, 16)); CHECK = b32(new Uint8Array(h).slice(0, 5)); if (r.fresh) saveKeys(); return r.fresh; });
+  });
+}
+function saveKeys(){ idb.putKey({ key:'presenter', code: S.code, priv: KEYPAIR.privateKey, pub: KEYPAIR.publicKey }).catch(function(){}); }
+function checkPretty(){ return CHECK.slice(0, 4) + '-' + CHECK.slice(4); }
+function hashImages(){ return Promise.all(Object.keys(IMAGES).map(function(id){ return sha256(IMAGES[id]).then(function(h){ IMG_HASH[id] = b64u(h); }); })); }
+function signText(text){ return crypto.subtle.sign({ name:'ECDSA', hash:'SHA-256' }, KEYPAIR.privateKey, new TextEncoder().encode(text)).then(b64u); }
 
 var settings = Object.assign({ studentUrl:'', t1:90, t2:60, autoClose:true, confidence:true, startAt:1 }, store.get(SETTINGS_KEY) || {});
 if (!settings.studentUrl && /^https?:$/.test(location.protocol)) settings.studentUrl = new URL('./', location.href).href;
@@ -2633,15 +2672,20 @@ function arm(k, rerender){ armed = { k:k, t:Date.now() }; rerender(); setTimeout
 
 function newSession(){
   S = { code: makeCode(), packKey: PACK_KEY, packTitle: QUIZ.title, phase:'lobby', qi:-1, round:1, answers:{}, played:[], deadline:null, everyone:{}, createdAt:Date.now() };
-  conns = {}; save(); startPeer(); render(true);
+  conns = {}; save();
+  loadKeys(false).then(function(){ startPeer(); render(true); }, keyFailure);
+}
+function keyFailure(){ app.innerHTML = '<div class="screen"><header class="top"><div class="title">Live quiz · presenter</div></header><main class="center"><div class="card"><h1>Can’t secure the session</h1><p>This browser refused to create the session key. Open the player from https://slonamuh.github.io/live-quiz/presenter.html in Chrome.</p></div></main><footer></footer></div>'; }
+function newCode(){                               // the old code is held by someone else: move the class to a fresh code
+  S.code = makeCode(); save(); saveKeys(); conns = {}; busySince = 0; qrOpen = true; startPeer(); render(true);
 }
 
 /* ---------- PeerJS: this page is the hub ---------- */
-var reconnectTimer = null, watchdog = null, lastErr = '';
+var reconnectTimer = null, watchdog = null, lastErr = '', busySince = 0;
 function startPeer(){
   clearTimeout(reconnectTimer); clearTimeout(watchdog);
   if (peer) { try { peer.destroy(); } catch(e){} }
-  if (peerStatus !== 'unreachable') peerStatus = 'connecting';
+  if (peerStatus !== 'unreachable' && peerStatus !== 'busy') peerStatus = 'connecting';
   renderNet();
   var p;
   try { p = peer = new peerjs.Peer(ID_PREFIX + S.code.toLowerCase(), peerOpts); }
@@ -2651,10 +2695,10 @@ function startPeer(){
     peerStatus = 'unreachable'; if (!lastErr) lastErr = 'no answer from the PeerJS server';
     renderNet(); refreshCounts(); reconnectTimer = setTimeout(startPeer, 4000);
   }, 12000);
-  p.on('open', function(){ if (p !== peer) return; clearTimeout(watchdog); lastErr = ''; peerStatus = 'online'; renderNet(); refreshCounts(); });
+  p.on('open', function(){ if (p !== peer) return; clearTimeout(watchdog); lastErr = ''; busySince = 0; peerStatus = 'online'; renderNet(); refreshCounts(); });
   p.on('connection', function(conn){ setupConn(conn); });
   p.on('disconnected', function(){
-    if (p !== peer || p.destroyed) return;
+    if (p !== peer || p.destroyed || peerStatus === 'busy') return;   // 'busy': PeerJS disconnects right after "ID taken"; startPeer retries
     peerStatus = 'reconnecting'; renderNet();
     reconnectTimer = setTimeout(function(){ if (p === peer && !p.destroyed && p.disconnected) { try { p.reconnect(); } catch(e){ startPeer(); } } }, 1500);
   });
@@ -2662,7 +2706,8 @@ function startPeer(){
     if (p !== peer) return;
     var type = err && err.type;
     if (type === 'unavailable-id') {
-      if (!S.played.length && !Object.keys(S.everyone).length && S.phase === 'lobby') { S.code = makeCode(); save(); render(true); startPeer(); return; }
+      if (!S.played.length && !Object.keys(S.everyone).length && S.phase === 'lobby') { S.code = makeCode(); save(); saveKeys(); render(true); startPeer(); return; }
+      if (!busySince) busySince = Date.now();
       peerStatus = 'busy'; renderNet(); reconnectTimer = setTimeout(startPeer, 3000); return;
     }
     if (type === 'peer-unavailable') return;
@@ -2678,11 +2723,16 @@ function setupConn(conn){
   conn.on('data', function(msg){
     if (!msg || typeof msg !== 'object') return;
     if (msg.t === 'hello') {
+      if (sid) return;                              // one student identity per connection
       if (typeof msg.sid !== 'string' || !/^[A-Za-z0-9]{6,40}$/.test(msg.sid)) return;
+      if (typeof msg.nonce !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(msg.nonce)) return;
       sid = msg.sid;
       var prev = conns[sid];
       if (prev && prev.conn !== conn) { try { prev.conn.close(); } catch(e){} }
-      conns[sid] = { conn: conn, last: Date.now(), sent: {} };
+      var rec = conns[sid] = { conn: conn, last: Date.now(), sent: {}, nonce: msg.nonce, seq: 0, queue: Promise.resolve() };
+      // Prove we are the real presenter: sign the phone's random challenge with the session key.
+      rec.queue = rec.queue.then(function(){ return signText('livequiz-auth|' + S.code + '|' + msg.nonce); })
+        .then(function(sig){ if (conn.open) conn.send({ t:'auth', pub: PUB, sig: sig }); }).catch(function(){});
       if (!S.everyone[sid]) { S.everyone[sid] = 1; save(); }
       send(sid); refreshCounts();
       return;
@@ -2718,7 +2768,7 @@ function maybeAutoClose(){
 }
 
 /* ---------- messages to phones ---------- */
-function imgRef(id, cap){ return id && IMAGES[id] ? { id: PACK_KEY + ':' + id, caption: cap || '' } : null; }
+function imgRef(id, cap){ return id && IMAGES[id] ? { id: PACK_KEY + ':' + id, caption: cap || '', hash: IMG_HASH[id] || '' } : null; }
 function stateFor(sid){
   var st = { t:'state', v: 2, title: QUIZ.title, phase: S.phase, qi: S.qi, total: TOTAL, round: S.round, confidence: !!settings.confidence };
   if (S.phase === 'vote' || S.phase === 'closed' || S.phase === 'reveal') {
@@ -2743,7 +2793,9 @@ function pushImages(sid){
     if (!data || c.sent[key]) return;
     c.sent[key] = 1;
     var n = Math.ceil(data.length / CHUNK);
-    for (var i=0;i<n;i++) { try { c.conn.send({ t:'img', id: key, i: i, n: n, d: data.slice(i*CHUNK, (i+1)*CHUNK) }); } catch(e){ c.sent[key] = 0; return; } }
+    c.queue = c.queue.then(function(){   // after the signed state that announces the picture and its hash
+      for (var i=0;i<n;i++) { try { c.conn.send({ t:'img', id: key, i: i, n: n, d: data.slice(i*CHUNK, (i+1)*CHUNK) }); } catch(e){ c.sent[key] = 0; return; } }
+    });
   });
 }
 function resultFor(sid){
@@ -2751,7 +2803,15 @@ function resultFor(sid){
   S.played.forEach(function(qi){ var a = finalBucket(qi)[sid] || null, corr = QUESTIONS[qi].answer; if (a && a.c === corr) score++; items.push({ n: qi+1, mine: a ? a.c : null, correct: corr }); });
   return { score: score, total: S.played.length, items: items };
 }
-function send(sid){ var c = conns[sid]; if (c && c.conn.open) { try { c.conn.send(stateFor(sid)); } catch(e){} pushImages(sid); } }
+// Every state message is signed and numbered for this connection, so nobody in between can alter or replay it.
+// Pictures go unsigned in pieces; the signed state carries each picture's SHA-256, which phones check.
+function send(sid){
+  var c = conns[sid]; if (!c || !c.conn.open) return;
+  var seq = ++c.seq, body = JSON.stringify(stateFor(sid));
+  c.queue = c.queue.then(function(){ return signText(S.code + '|' + c.nonce + '|' + seq + '|' + body); })
+    .then(function(sig){ if (c.conn.open) c.conn.send({ t:'s', seq: seq, body: body, sig: sig }); }).catch(function(){});
+  pushImages(sid);
+}
 function broadcast(){ for (var sid in conns) send(sid); }
 
 /* ---------- flow ---------- */
@@ -2783,8 +2843,16 @@ var actions = {
   end: function(){ if (isArmed('end')) { armed.k = ''; finish(); } else arm('end', updateControls); },
   csv: downloadCsv,
   newsession: function(){ if (isArmed('new')) { armed.k = ''; store.del(SESSION_KEY); conns = {}; try { peer && peer.destroy(); } catch(e){} peer = null; newSession(); } else arm('new', function(){ render(true); }); },
-  change: function(){ if (S.phase === 'lobby' || isArmed('change')) leaveToLibrary(); else arm('change', function(){ render(true); }); }
+  change: function(){ if (S.phase === 'lobby' || isArmed('change')) leaveToLibrary(); else arm('change', function(){ render(true); }); },
+  newcode: function(){ newCode(); },
+  copylink: function(){
+    var u = joinUrl(), b = document.getElementById('copyBtn'); if (!u) return;
+    var done = function(){ if (b) { b.textContent = 'Link copied ✓'; setTimeout(function(){ if (b.isConnected) b.textContent = 'Copy link'; }, 2500); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(done, function(){ selectUrl(); });
+    else selectUrl();
+  }
 };
+function selectUrl(){ var el = document.querySelector('#join .url'); if (!el) return; var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
 document.addEventListener('click', function(e){
   var z = e.target.closest('img[data-zoom]');
   if (z) { var o = document.querySelector('.zoomover'); if (!o) { o = document.createElement('div'); o.className = 'zoomover'; o.setAttribute('data-act', 'unzoom'); o.innerHTML = '<img alt="">'; document.body.appendChild(o); } o.querySelector('img').src = z.src; o.classList.add('open'); return; }
@@ -2813,7 +2881,7 @@ document.addEventListener('input', function(e){ if (e.target.getAttribute('data-
 function joinUrl(){
   var u = (settings.studentUrl || '').trim(); if (!/^https?:\/\//i.test(u)) return '';
   var qs = new URLSearchParams(passParams); qs.set('s', S.code);
-  return u + (u.indexOf('?') >= 0 ? '&' : '?') + qs.toString();
+  return u.split('#')[0] + (u.indexOf('?') >= 0 ? '&' : '?') + qs.toString() + '#k=' + FP;   // #k = fingerprint of the session key
 }
 function qrSvg(text){
   var qr = qrcode(0, 'M'); qr.addData(text); qr.make();
@@ -2824,13 +2892,14 @@ function qrSvg(text){
 function qrOverlay(){
   var u = joinUrl();
   return '<div class="qrover'+(qrOpen?' open':'')+'" data-act="qr"><div class="box">'+(u ? '<div class="qr">'+qrSvg(u)+'</div>' : '<p class="warn">Add the phone page address in the lobby settings to show a QR code.</p>')+
-    '<div>Scan to join · code</div><div class="code">'+esc(S.code)+'</div><div class="url">'+esc(u)+'</div><div class="hint">Click anywhere or press Q to close</div></div></div>';
+    '<div>Scan to join · or enter code</div><div class="code">'+esc(S.code)+'</div><div class="check">check code <b>'+esc(checkPretty())+'</b></div><div class="url">'+esc(u)+'</div><div class="hint">Click anywhere or press Q to close</div></div></div>';
 }
 
 /* ---------- rendering ---------- */
 function netHtml(){
   var m = { online:['ok','Live'], connecting:['','Connecting…'], reconnecting:['','Reconnecting…'], busy:['','Re-opening session…'], unreachable:['err','Can’t reach server · retrying'], offline:['err','Offline'] }[peerStatus] || ['err', peerStatus];
-  return '<span class="net '+m[0]+'" id="net" title="'+esc(lastErr || '')+'"><i></i>'+m[1]+'</span>';
+  var stuck = peerStatus === 'busy' && busySince && Date.now() - busySince > 15000;
+  return '<span class="net '+m[0]+'" id="net" title="'+esc(lastErr || '')+'"><i></i>'+(stuck ? 'Another device is holding this session’s code <button class="btn small primary" data-act="newcode" id="newCodeBtn">Move to a new code</button>' : m[1])+'</span>';
 }
 function renderNet(){ var el = document.getElementById('net'); if (el) el.outerHTML = netHtml(); }
 function render(full){
@@ -2874,7 +2943,8 @@ function updateLobby(){
   else if (peerStatus !== 'online') warn = '<p class="hint">Connecting to the PeerJS server… phones can join once the corner shows “Live”.</p>';
   el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + warn +
     '<div>Scan to join · or enter code</div><div class="code" id="code">'+esc(S.code)+'</div>'+
-    (u ? '<div class="url">'+esc(u)+'</div>' : '') +
+    '<div class="check">check code <b id="check">'+esc(checkPretty())+'</b></div>'+
+    (u ? '<div class="url">'+esc(u)+'</div><button class="btn small" data-act="copylink" id="copyBtn">Copy link</button>' : '') +
     '<div class="joined" id="joined"><b>'+n+'</b> student'+(n===1?'':'s')+' connected</div>';
 }
 
@@ -3011,13 +3081,20 @@ function downloadCsv(){
 }
 
 /* ---------- start ---------- */
-if (MODE === 'resume') {
-  S = store.get(SESSION_KEY); S.answers = S.answers || {}; S.played = S.played || []; S.everyone = S.everyone || {}; conns = {};
-  if (S.phase === 'vote' && S.deadline && S.deadline < Date.now()) { S.phase = 'closed'; S.deadline = null; save(); }
-  startPeer(); render(true);
-} else {
-  store.del(SESSION_KEY); newSession();
-}
+hashImages().then(function(){
+  if (MODE === 'resume') {
+    S = store.get(SESSION_KEY); S.answers = S.answers || {}; S.played = S.played || []; S.everyone = S.everyone || {}; conns = {};
+    if (S.phase === 'vote' && S.deadline && S.deadline < Date.now()) { S.phase = 'closed'; S.deadline = null; save(); }
+    loadKeys(true).then(function(fresh){
+      // The session key is kept in this browser. If it is gone, phones would (rightly) refuse this screen,
+      // so move to a new code and show the QR for everyone to scan again.
+      if (fresh) { S.code = makeCode(); save(); saveKeys(); qrOpen = true; }
+      startPeer(); render(true);
+    }, keyFailure);
+  } else {
+    store.del(SESSION_KEY); newSession();
+  }
+}, keyFailure);
 }
 })();
 </script>

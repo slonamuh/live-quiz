@@ -5,7 +5,7 @@
   "description": "Live classroom quiz: phones join by QR code, anonymous voting, reveal with explanations. Static pages + PeerJS, no backend.",
   "scripts": {
     "build": "python3 tools/build_pages.py",
-    "test": "node tests/e2e.js"
+    "test": "node tests/e2e.js && node tests/security.js"
   },
   "dependencies": {
     "peerjs": "1.5.4",
