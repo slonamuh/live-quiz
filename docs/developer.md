@@ -15,6 +15,15 @@
 - The **player** registers on the PeerJS server under the id `acsom-livequiz-<code>` (5-character session code) and accepts a data connection from each phone. It is the single source of truth: it holds the pack, the session state and all answers.
 - The **phone page** reads the code from `?s=CODE`, connects to that id, and shows only what a verified player sends (see *Verifying the teacher's screen*). It never contains questions or answers, so it can be public.
 - The **player** contains no quiz content either; packs are loaded from the teacher's computer. Both pages are therefore safe on public GitHub Pages.
+- The **editor** (`editor.html`) runs only on the teacher's computer and never talks to the network. It opens a pack (file, pasted AI reply, or a "Recent quizzes" entry), edits it, and saves a `.quiz.json` file.
+
+### Editor and player
+
+- They share the player's IndexedDB `livequiz` (version 2, stores `packs` and `keys`); the editor opens it with the same version and upgrade code, so neither page can lock the other out. Its own draft lives in a separate database, `livequiz-editor` → `drafts` (key `current`), saved 0.6 s after each change, with the Chrome file handle when the browser allows it.
+- **Edit** in the player links to `editor.html?pack=<key>`; the editor opens that "Recent quizzes" entry (or offers the unsaved draft first). **Play now** in the editor stores the pack under the player's own key formula (`packKey`, copied from the player), removes the entry it was opened from unless a saved session still uses it, and opens `presenter.html?open=<key>`. The player removes `open` from the address at once, so a reload offers *Continue session* as usual.
+- The editor keeps every field it does not edit (pictures, captions, unknown keys) and writes `format`, `version`, `id`, `title`, `created` first. Inside the editor, options carry their own "why not" line, so moving or removing an option keeps the explanations with it; the answer letter and the `why` keys are worked out on saving.
+- Pasted replies: the first code block containing `"questions"` (or the whole text) is cut from the first `{` to the last `}`, and parsed; if that fails, once more with trailing commas removed.
+- Saving: the File System Access API (`showOpenFilePicker` / `showSaveFilePicker`, Chrome) writes back to the opened file; elsewhere the file is downloaded.
 
 ### Verifying the teacher's screen
 
@@ -47,12 +56,13 @@ Phases: `lobby → vote (round 1) → closed → [vote (round 2) → closed] →
 
 - **Player:** the session (code, phase, answers) in `localStorage['livequiz-session-v2']`, so a reload offers *Continue session*. Loaded packs are stored in IndexedDB (`livequiz` → `packs`) for the "Recent quizzes" list, and the session key in `livequiz` → `keys`. Packs from storage are checked again every time they are opened. Settings are in `localStorage['livequiz-settings-v1']`.
 - **Phone:** only its random id per session code; the key fingerprint lives in the page address.
+- **Editor:** the unsaved draft in IndexedDB `livequiz-editor`; quizzes handed to the player in `livequiz` → `packs`.
 
 ## Building
 
 ```bash
 npm install                    # PeerJS, qrcode-generator (+ the local relay and Playwright for tests)
-python3 tools/build_pages.py   # src/*.src.html → index.html, presenter.html
+python3 tools/build_pages.py   # src/*.src.html → index.html, presenter.html, editor.html
 ```
 
 The build inlines both libraries (no CDN needed in class), syntax-checks every script with `node --check`, and refuses to write a page that looks like it contains quiz data.
@@ -61,12 +71,14 @@ The build inlines both libraries (no CDN needed in class), syntax-checks every s
 
 ```bash
 npx playwright install chromium   # once
-npm test                          # tests/e2e.js, then tests/security.js; screenshots in tests/output/
+npm test                          # tests/e2e.js, tests/security.js, then tests/editor.js; screenshots in tests/output/
 ```
 
 The test starts its own PeerJS relay on 127.0.0.1:9000 and a static server on 127.0.0.1:8080, then drives one presenter and up to four phones (light and dark mode) through two packs from `tests/fixtures/`. It covers: rejecting bad files; auto-close; hidden results while voting; revote; reveal; phone reload; presenter reload and resume; private scores; CSV export; pictures, including a late joiner; 4 and 6 options; missing explanations; recent quizzes; and the timer. Regenerate the placeholder fixtures with `python3 tests/make_fixtures.py`.
 
 `tests/security.js` replays the attacks from the security review and checks that they fail: one connection posing as 50 students; a fake screen that claims the session code after the player closes (sending nothing, then its own key); the player recovering with *Move to a new code*; typed joins with a right, wrong and missing check code; a screen with a valid key sending markup, a bad answer letter, a picture with the wrong hash, a replayed and a wrongly signed message; and a relay address planted in the link.
+
+`tests/editor.js` drives the editor: a new quiz written from scratch; the giveaway checks; adding, duplicating, moving and deleting cases; removing and moving options (the answer and the "why not" lines follow); saving by download and checking the file with `tools/make_pack.py`; pasting a whole AI reply with a trailing comma and markup in it; a file with pictures and unknown fields saved unchanged; the draft surviving a closed tab; Edit from the lobby and from Recent quizzes; Play now (and its refusal when a case is incomplete); and saving back to the opened file with a stubbed File System Access API.
 
 ### Using your own PeerJS server
 
