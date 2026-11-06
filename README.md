@@ -66,29 +66,28 @@ If the player tab is reloaded or closed by accident, open it again: it offers **
 
 A quiz pack is one file per topic, e.g. `immunology-01.quiz.json`. It contains the questions, answers, explanations and pictures.
 
+**The quiz file is the master copy.** Make every change in that file (in the editor below) and keep it in the Quiz packs folder on Google Drive. Docs, AI chats and printouts are only ways to draft or share a quiz; once a quiz file exists, don't edit the doc it came from and rebuild the file, or changes made in the editor are lost.
+
 **In the editor.** Open https://slonamuh.github.io/live-quiz/editor.html (or press **Edit** next to a quiz in the player). You can:
 
 - start a **new quiz**, **open a file**, **paste an AI assistant's reply** (the whole reply: the editor finds the quiz in it), or pick one of the **Recent quizzes**;
-- write or fix each case: case text, question line, options (tick the correct one), a "why not" line under each wrong option, the explanation and the take-home point; add, duplicate, move or delete cases and options;
+- write or fix each case: case text, question line, options (tick the correct one), a "why not" line under each wrong option, the explanation and the take-home point; add, duplicate, move or delete cases and options; drag cases in the list to reorder them;
+- add **pictures**: paste, drop or choose a file in a case's two picture boxes (shown with the case, or at the reveal). Pictures are resized to at most 1400 px and kept under about 400 KB: PNG for diagrams, JPEG for photos;
+- **balance the answer letters**: the editor shows how often each letter is correct and can even them out by swapping each moved answer with another option (with a preview and Undo); one case's answer can also be moved to a chosen letter;
 - see **checks** as you type: what stops the player from loading the quiz (red) and common giveaways (amber: the correct answer is the longest option, a word from the case repeated only in the correct answer, an option named by its letter, letters left at the start of options, unbalanced answer letters);
 - **Save** (Ctrl+S). In Chrome this writes back to the file you opened, including one in your Google Drive for desktop folder; **Save as…** makes a copy. In other browsers the file is downloaded;
+- **Print…**: questions only (for students), questions with the answer key, or everything with the explanations; choose "Save as PDF" to make a PDF;
 - **Play now**: open the quiz in the player straight away, without saving a file first.
 
-Unsaved changes are kept in the browser, so closing the tab by accident loses nothing. Pictures already in a quiz are kept; adding or replacing pictures comes in the next version.
+Unsaved changes are kept in the browser, so closing the tab by accident loses nothing.
 
-**With Claude (recommended).** The `live-quiz-packs` skill holds the whole procedure: the question-writing rules (NBME style, second-order reasoning, plausible distractors, balanced answer key, no length or lab-value giveaways), the master doc layout and the pack format. Examples:
+**With Claude.** The `live-quiz-packs` skill holds the whole procedure: the question-writing rules (NBME style, at least two reasoning steps, a clue in the case that rules out each wrong option, balanced answer key, no length or lab-value giveaways) and the pack format. Examples:
 
 - "Write 20 cases on hypersensitivity reactions and make a quiz pack."
-- "I edited the Explanations tab of my Immunology doc — rebuild the pack."
-- "Add the picture I pasted under question 7 and rebuild the pack."
+- "Here is my immunology-02.quiz.json: make cases 4 and 9 harder."
+- "Add this picture to case 7 of my quiz file."
 
-**The master doc.** Each pack has a Claude doc with three tabs:
-
-- **Questions**: cases, question lines and options only, which can be printed or shared with students.
-- **Answer key**: one row per question.
-- **Explanations**: answer, explanation, why each other option is wrong, take-home point.
-
-To add a picture, paste it under the case (shown with the question) or under the explanation (shown at reveal).
+Claude can also lay the cases out in a doc with three tabs (Questions, Answer key, Explanations) for reading or printing. That doc is a copy: change the quiz file, not the doc.
 
 **With any other AI assistant (ChatGPT, Gemini, …)**: give it [docs/llm-instructions.md](docs/llm-instructions.md), the complete instructions for writing cases to our standards and returning a ready-to-load pack. Fill in the REQUEST section at the end.
 
