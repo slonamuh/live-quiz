@@ -1,0 +1,509 @@
+{
+ "format": "acsom-live-quiz",
+ "version": 1,
+ "id": "sample-25",
+ "title": "Sample quiz (25 questions)",
+ "created": "2026-10-30",
+ "questions": [
+  {
+   "stem": "Placeholder case 1. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 1?",
+   "options": [
+    "Option A for question 1",
+    "Option B for question 1",
+    "Option C for question 1",
+    "Option D for question 1",
+    "Option E for question 1"
+   ],
+   "answer": "B",
+   "explain": "Option B is correct for placeholder question 1.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 2. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 2?",
+   "options": [
+    "Option A for question 2",
+    "Option B for question 2",
+    "Option C for question 2",
+    "Option D for question 2",
+    "Option E for question 2"
+   ],
+   "answer": "D",
+   "explain": "Option D is correct for placeholder question 2.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 3. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 3?",
+   "options": [
+    "Option A for question 3",
+    "Option B for question 3",
+    "Option C for question 3",
+    "Option D for question 3",
+    "Option E for question 3"
+   ],
+   "answer": "A",
+   "explain": "Option A is correct for placeholder question 3.",
+   "why": {
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 4. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 4?",
+   "options": [
+    "Option A for question 4",
+    "Option B for question 4",
+    "Option C for question 4",
+    "Option D for question 4",
+    "Option E for question 4"
+   ],
+   "answer": "E",
+   "explain": "Option E is correct for placeholder question 4.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 5. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 5?",
+   "options": [
+    "Option A for question 5",
+    "Option B for question 5",
+    "Option C for question 5",
+    "Option D for question 5",
+    "Option E for question 5"
+   ],
+   "answer": "C",
+   "explain": "Option C is correct for placeholder question 5.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 6. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 6?",
+   "options": [
+    "Option A for question 6",
+    "Option B for question 6",
+    "Option C for question 6",
+    "Option D for question 6",
+    "Option E for question 6"
+   ],
+   "answer": "D",
+   "explain": "Option D is correct for placeholder question 6.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 7. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 7?",
+   "options": [
+    "Option A for question 7",
+    "Option B for question 7",
+    "Option C for question 7",
+    "Option D for question 7",
+    "Option E for question 7"
+   ],
+   "answer": "B",
+   "explain": "Option B is correct for placeholder question 7.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 8. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 8?",
+   "options": [
+    "Option A for question 8",
+    "Option B for question 8",
+    "Option C for question 8",
+    "Option D for question 8",
+    "Option E for question 8"
+   ],
+   "answer": "E",
+   "explain": "Option E is correct for placeholder question 8.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 9. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 9?",
+   "options": [
+    "Option A for question 9",
+    "Option B for question 9",
+    "Option C for question 9",
+    "Option D for question 9",
+    "Option E for question 9"
+   ],
+   "answer": "A",
+   "explain": "Option A is correct for placeholder question 9.",
+   "why": {
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 10. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 10?",
+   "options": [
+    "Option A for question 10",
+    "Option B for question 10",
+    "Option C for question 10",
+    "Option D for question 10",
+    "Option E for question 10"
+   ],
+   "answer": "C",
+   "explain": "Option C is correct for placeholder question 10.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 11. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 11?",
+   "options": [
+    "Option A for question 11",
+    "Option B for question 11",
+    "Option C for question 11",
+    "Option D for question 11",
+    "Option E for question 11"
+   ],
+   "answer": "E",
+   "explain": "Option E is correct for placeholder question 11.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 12. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 12?",
+   "options": [
+    "Option A for question 12",
+    "Option B for question 12",
+    "Option C for question 12",
+    "Option D for question 12",
+    "Option E for question 12"
+   ],
+   "answer": "A",
+   "explain": "Option A is correct for placeholder question 12.",
+   "why": {
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 13. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 13?",
+   "options": [
+    "Option A for question 13",
+    "Option B for question 13",
+    "Option C for question 13",
+    "Option D for question 13",
+    "Option E for question 13"
+   ],
+   "answer": "C",
+   "explain": "Option C is correct for placeholder question 13.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 14. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 14?",
+   "options": [
+    "Option A for question 14",
+    "Option B for question 14",
+    "Option C for question 14",
+    "Option D for question 14",
+    "Option E for question 14"
+   ],
+   "answer": "B",
+   "explain": "Option B is correct for placeholder question 14.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 15. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 15?",
+   "options": [
+    "Option A for question 15",
+    "Option B for question 15",
+    "Option C for question 15",
+    "Option D for question 15",
+    "Option E for question 15"
+   ],
+   "answer": "D",
+   "explain": "Option D is correct for placeholder question 15.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 16. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 16?",
+   "options": [
+    "Option A for question 16",
+    "Option B for question 16",
+    "Option C for question 16",
+    "Option D for question 16",
+    "Option E for question 16"
+   ],
+   "answer": "A",
+   "explain": "Option A is correct for placeholder question 16.",
+   "why": {
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 17. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 17?",
+   "options": [
+    "Option A for question 17",
+    "Option B for question 17",
+    "Option C for question 17",
+    "Option D for question 17",
+    "Option E for question 17"
+   ],
+   "answer": "D",
+   "explain": "Option D is correct for placeholder question 17.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 18. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 18?",
+   "options": [
+    "Option A for question 18",
+    "Option B for question 18",
+    "Option C for question 18",
+    "Option D for question 18",
+    "Option E for question 18"
+   ],
+   "answer": "E",
+   "explain": "Option E is correct for placeholder question 18.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 19. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 19?",
+   "options": [
+    "Option A for question 19",
+    "Option B for question 19",
+    "Option C for question 19",
+    "Option D for question 19",
+    "Option E for question 19"
+   ],
+   "answer": "C",
+   "explain": "Option C is correct for placeholder question 19.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 20. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 20?",
+   "options": [
+    "Option A for question 20",
+    "Option B for question 20",
+    "Option C for question 20",
+    "Option D for question 20",
+    "Option E for question 20"
+   ],
+   "answer": "B",
+   "explain": "Option B is correct for placeholder question 20.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 21. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 21?",
+   "options": [
+    "Option A for question 21",
+    "Option B for question 21",
+    "Option C for question 21",
+    "Option D for question 21",
+    "Option E for question 21"
+   ],
+   "answer": "E",
+   "explain": "Option E is correct for placeholder question 21.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 22. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 22?",
+   "options": [
+    "Option A for question 22",
+    "Option B for question 22",
+    "Option C for question 22",
+    "Option D for question 22",
+    "Option E for question 22"
+   ],
+   "answer": "C",
+   "explain": "Option C is correct for placeholder question 22.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 23. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 23?",
+   "options": [
+    "Option A for question 23",
+    "Option B for question 23",
+    "Option C for question 23",
+    "Option D for question 23",
+    "Option E for question 23"
+   ],
+   "answer": "A",
+   "explain": "Option A is correct for placeholder question 23.",
+   "why": {
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 24. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 24?",
+   "options": [
+    "Option A for question 24",
+    "Option B for question 24",
+    "Option C for question 24",
+    "Option D for question 24",
+    "Option E for question 24"
+   ],
+   "answer": "D",
+   "explain": "Option D is correct for placeholder question 24.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "B": "Option B is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  },
+  {
+   "stem": "Placeholder case 25. A patient presents with findings used only to test the quiz player.\n• Test value one: normal\n• Test value two: abnormal",
+   "lead": "Which option is correct for placeholder question 25?",
+   "options": [
+    "Option A for question 25",
+    "Option B for question 25",
+    "Option C for question 25",
+    "Option D for question 25",
+    "Option E for question 25"
+   ],
+   "answer": "B",
+   "explain": "Option B is correct for placeholder question 25.",
+   "why": {
+    "A": "Option A is a placeholder distractor.",
+    "C": "Option C is a placeholder distractor.",
+    "D": "Option D is a placeholder distractor.",
+    "E": "Option E is a placeholder distractor."
+   },
+   "objective": "Placeholder take-home point."
+  }
+ ]
+}
