@@ -23,6 +23,27 @@ async function waitUp(url) { for (let i = 0; i < 50; i++) { if (await up(url)) r
 function stopAll() { for (const c of children) { try { c.kill(); } catch (e) {} } }
 
 // Run the repository's own checker (tools/make_pack.py) on a saved file: errors, warnings.
+// Picture facts from the repository's Python (Pillow): format and size of a data URI.
+function imageInfo(dataUri) {
+  const out = execFileSync('python3', ['-I', '-c', `import sys, base64, io, json
+from PIL import Image
+u = sys.stdin.read(); head, b64 = u.split(',', 1); im = Image.open(io.BytesIO(base64.b64decode(b64)))
+print(json.dumps({'format': im.format, 'w': im.size[0], 'h': im.size[1], 'chars': len(u)}))`], { input: dataUri });
+  return JSON.parse(out.toString());
+}
+// Test pictures: a large photo-like JPEG and a line drawing (PNG).
+function makeImages() {
+  execFileSync('python3', ['-I', '-c', `import sys
+from PIL import Image, ImageDraw, ImageFilter
+w, h = 2600, 1800
+noise = Image.effect_noise((w, h), 60).filter(ImageFilter.GaussianBlur(1.2))
+grad = Image.linear_gradient('L').resize((w, h))
+photo = Image.merge('RGB', (noise, grad, Image.blend(noise, grad, 0.5)))
+photo.save(sys.argv[1], quality=95)
+d = Image.new('RGB', (1200, 800), 'white'); g = ImageDraw.Draw(d)
+for i in range(0, 1200, 100): g.line([(i, 0), (i, 800)], fill='black', width=3)
+g.rectangle([300, 300, 900, 600], outline='navy', width=8, fill='lightblue'); d.save(sys.argv[2])`, path.join(TMP, 'photo.jpg'), path.join(TMP, 'diagram.png')]);
+}
 function checkWithTool(file) {
   const out = execFileSync('python3', ['-I', '-c', `import sys, json; sys.path.insert(0, ${JSON.stringify(path.join(ROOT, 'tools'))}); from make_pack import validate
 e, w, d = validate(json.load(open(sys.argv[1], encoding='utf-8'))); print(json.dumps({'errors': e, 'warnings': w}))`, file]);
@@ -52,7 +73,7 @@ const WHY = {
 
   // Context A: no file-access API (Safari, Firefox): opening uses the file input, saving downloads a file.
   const A = await browser.newContext({ viewport: { width: 1366, height: 860 }, acceptDownloads: true });
-  await A.addInitScript(() => { window.showOpenFilePicker = undefined; window.showSaveFilePicker = undefined; });
+  await A.addInitScript(() => { window.showOpenFilePicker = undefined; window.showSaveFilePicker = undefined; window.__printed = 0; window.print = () => { window.__printed++; }; });
   const E = await A.newPage(); watch(E, 'editor');
 
   log('A new quiz, written from scratch');
@@ -159,6 +180,95 @@ const WHY = {
   await E.waitForSelector('#resumeBtn');
   await E.click('#resumeBtn');
   assert((await E.inputValue('#titleIn')) === 'Pictures (draft)', 'the start screen offers the unsaved changes, and they come back');
+
+
+  log('Pictures: choose, drop, paste, caption, remove');
+  makeImages();
+  await E.click('.item[data-i="2"]');
+  const [chooser] = await Promise.all([E.waitForEvent('filechooser'), E.click('[data-slot="image"] [data-pic-add="image"]')]);
+  await chooser.setFiles(path.join(TMP, 'photo.jpg'));
+  await E.waitForFunction(() => /JPEG/.test((document.querySelector('[data-slot="image"] .meta2') || {}).textContent || ''));
+  const meta = await E.textContent('[data-slot="image"] .meta2');
+  assert(/^1400 × 969 · JPEG · \d+ KB$/.test(meta.trim()), 'a large photo is resized to 1400 px and stored as JPEG (' + meta.trim() + ')');
+  await E.fill('[data-slot="image"] input.cap', 'Peripheral smear, Wright stain');
+  const pngB64 = fs.readFileSync(path.join(TMP, 'diagram.png')).toString('base64');
+  const fileIn = async (sel, ev) => E.evaluate(({ b64, sel, ev }) => {
+    const bin = atob(b64), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const dt = new DataTransfer(); dt.items.add(new File([u8], 'diagram.png', { type: 'image/png' }));
+    const el = document.querySelector(sel);
+    el.dispatchEvent(ev === 'paste' ? new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }) : new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  }, { b64: pngB64, sel, ev });
+  await fileIn('[data-slot="explainImage"]', 'drop');
+  await E.waitForFunction(() => /PNG/.test((document.querySelector('[data-slot="explainImage"] .meta2') || {}).textContent || ''));
+  assert(/^1200 × 800 · PNG/.test((await E.textContent('[data-slot="explainImage"] .meta2')).trim()), 'a flat diagram dropped on the reveal box stays PNG at its own size');
+  await E.$eval('.pics', el => el.scrollIntoView()); await E.screenshot({ path: `${OUT}/27-editor-pictures.png` });
+  await E.click('.item[data-i="1"]');
+  await E.focus('#stemIn');
+  await fileIn('#stemIn', 'paste');
+  await E.waitForSelector('[data-slot="image"] img');
+  assert(true, 'a picture pasted while typing the case goes into “Shown with the case”');
+  await E.click('[data-pic-del="explainImage"]');
+  assert(!!(await E.$('.pic.empty[data-slot="explainImage"]')), 'Remove empties the picture box');
+  saved = await saveDownload(E, 'pics-v2.quiz.json');
+  const qs = saved.json.questions, im = saved.json.images;
+  const photoInfo = imageInfo(im[qs[2].image]), diagInfo = imageInfo(im[qs[2].explainImage]);
+  assert(photoInfo.format === 'JPEG' && Math.max(photoInfo.w, photoInfo.h) === 1400 && photoInfo.chars <= 400 * 1024, `saved photo: JPEG ${photoInfo.w}×${photoInfo.h}, ${Math.round(photoInfo.chars / 1024)} KB embedded (limit 400)`);
+  assert(diagInfo.format === 'PNG' && qs[2].imageCaption === 'Peripheral smear, Wright stain', 'saved diagram is PNG; the caption is saved');
+  assert(qs[1].image && !qs[1].explainImage && !('chart' in im) && 'histo' in im, 'removed pictures leave the file; pictures still in use stay');
+  assert(checkWithTool(saved.file).errors.length === 0, 'the checker accepts the file with the new pictures');
+
+  log('Balancing the answer letters');
+  const ten = Object.assign({}, sample, { id: 'skewed-01', title: 'Skewed', questions: sample.questions.slice(0, 10).map((q, i) => {
+    if (i >= 8) return q;                                   // cases 1–8 get answer A; case 9 already has it: 9 of 10
+    const L = 'ABCDE', a = L.indexOf(q.answer), o = q.options.slice(), why = {};
+    [o[0], o[a]] = [o[a], o[0]];
+    q.options.forEach((t, j) => { if (j !== a) why[L[o.indexOf(t)]] = q.why[L[j]]; });
+    return Object.assign({}, q, { options: o, answer: 'A', why });
+  }) });
+  await E.click('#homeBtn');
+  await E.click('#pasteBtn'); await E.fill('#pasteBox', JSON.stringify(ten)); await E.click('.modal >> text=Open in editor');
+  await E.waitForSelector('.item');
+  assert((await E.textContent('#summary')).includes('answers A 9'), 'a pasted quiz with 9 of 10 answers on A shows the imbalance');
+  await E.click('#balanceBtn');
+  await E.waitForSelector('.modal .plan li');
+  const planN = (await E.$$('.modal .plan li')).length;
+  await E.screenshot({ path: `${OUT}/25-editor-balance.png` });
+  await E.click('.modal .acts button >> text=Balance');
+  assert((await E.textContent('#summary')).includes('answers A 2 · B 2 · C 2 · D 2 · E 2'), `Balance moves the answer in ${planN} cases: 2 of each letter`);
+  saved = await saveDownload(E, 'balanced.quiz.json');
+  const kept = saved.json.questions.every((q, i) => {
+    const orig = ten.questions[i], L = 'ABCDE';
+    if (q.options[L.indexOf(q.answer)] !== orig.options[L.indexOf(orig.answer)]) return false;
+    return q.options.every((t, j) => j === L.indexOf(q.answer) || q.why[L[j]] === orig.why[L[orig.options.indexOf(t)]]);
+  });
+  assert(kept, 'every case keeps its correct option and each “why not” line stays with its option');
+  await E.click('.toast >> text=Undo');
+  assert((await E.textContent('#summary')).includes('answers A 9'), 'Undo puts the letters back');
+  await E.selectOption('select[data-act="moveans"]', '3');
+  assert(await E.isChecked('input[data-c="3"]') && (await E.textContent('.toast')).includes('moved to D'), '“Move the correct answer to” D swaps it into place');
+
+  log('Drag a case to a new place');
+  const labels = async () => E.$$eval('.item .s', els => els.map(e => e.textContent));
+  const before = await labels(), box = await (await E.$('.item[data-i="2"]')).boundingBox();
+  await E.dragAndDrop('.item[data-i="0"]', '.item[data-i="2"]', { targetPosition: { x: 20, y: box.height - 3 } });
+  const after = await labels();
+  assert(after[2] === before[0] && after[0] === before[1] && after[1] === before[2], 'dragging case 1 below case 3 moves it to position 3');
+
+  log('Print sheets');
+  await E.click('#printBtn'); await E.click('.modal input[value="q"]'); await E.click('.modal .acts button >> text=Print');
+  await E.waitForFunction(() => window.__printed === 1);
+  const pq = await E.evaluate(() => ({ n: document.querySelectorAll('#printView .q').length, text: document.getElementById('printView').textContent }));
+  assert(pq.n === 10 && !/Answer key|Answer:|Take-home|Why not/.test(pq.text), 'Questions only: 10 cases and no answers anywhere');
+  await E.click('#printBtn'); await E.click('.modal input[value="x"]'); await E.click('.modal .acts button >> text=Print');
+  await E.waitForFunction(() => window.__printed === 2);
+  const px = await E.evaluate(() => ({ rows: document.querySelectorAll('#printView table tr').length, text: document.getElementById('printView').textContent }));
+  assert(px.rows === 11 && /Explanations/.test(px.text) && /Why not the others/.test(px.text) && /Take-home/.test(px.text), 'Everything: answer key table and every explanation');
+  await E.emulateMedia({ media: 'print' });
+  await E.screenshot({ path: `${OUT}/26-editor-print.png`, fullPage: true });
+  assert(!(await E.isVisible('#app')) && (await E.isVisible('#printView')), 'on paper only the print sheet appears');
+  await E.emulateMedia({ media: 'screen' });
+  await E.click('#homeBtn'); await E.click('.modal >> text=Discard changes');
+  await E.click('#newBtn'); await E.fill('#titleIn', 'Unsaved draft'); await E.waitForTimeout(900);   // leave a draft for the next part
 
   log('Editor and player together');
   const P = await A.newPage(); watch(P, 'player');
