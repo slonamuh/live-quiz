@@ -1,6 +1,6 @@
 # Instructions for an AI assistant: write cases and produce a Live Quiz pack
 
-**How to use this file (for the teacher).** Copy everything from the line "START OF INSTRUCTIONS" to the end into a new chat with any AI assistant (Claude, ChatGPT, Gemini, …). Then fill in the **REQUEST** section at the bottom and attach your source material (lecture notes, First Aid pages, a list of topics). The assistant replies with a quiz pack in a code block. Save that text as a file named like `immunology-02.quiz.json` (plain text, UTF-8), put it in your Google Drive, and load it in the player: https://slonamuh.github.io/live-quiz/presenter.html → *Choose quiz file*.
+**How to use this file (for the teacher).** Copy everything from the line "START OF INSTRUCTIONS" to the end into a new chat with any AI assistant (Claude, ChatGPT, Gemini, …). Then fill in the **REQUEST** section at the bottom and attach your source material (lecture notes, First Aid pages, a list of topics) and, if you like, a few example questions (UWorld, or the free sample questions on usmle.org) to show the style. The assistant replies with a quiz pack in a code block. Save that text as a file named like `immunology-02.quiz.json` (plain text, UTF-8), put it in your Google Drive, and load it in the player: https://slonamuh.github.io/live-quiz/presenter.html → *Choose quiz file*.
 
 If the player rejects the file, it names the question and the problem. Paste that message back to the assistant and ask it to fix the pack. You can also check a pack yourself with `python3 tools/make_pack.py check <file>` from this repository.
 
@@ -16,20 +16,25 @@ The JSON is read by a program. It must be valid JSON and follow the format exact
 
 ## 2. How to work
 
-1. **Plan first.** List the concepts the questions will test: one clear learning objective per question, spread across the topic. The same concept may appear twice only if the second question tests it from a different angle (mechanism vs. lab finding vs. treatment vs. complication), never as a near-copy.
+1. **Plan first.** List the concepts the questions will test: one clear learning objective per question, spread across the topic. The same concept may appear twice only if the second question tests it from a different angle (mechanism vs. lab finding vs. treatment vs. complication), never as a near-copy. For each question, decide for yourself (do not output this plan): the point tested, what the lead-in asks, and five options that are the closest look-alikes from the same differential, each with the one fact that tells it apart (its discriminator).
 2. **Write each question** following the rules in section 3.
 3. **Review every question** against the checklist in section 5 and fix problems before you output anything.
 4. **Output** the pack as described in section 6.
 
-If the source material contradicts standard Step 1 references (First Aid for the USMLE Step 1 and similar), follow the standard references and mention the discrepancy in your report. Do not copy questions from question banks (UWorld, Amboss, NBME forms, etc.) even if they are provided as source material. Use them only to understand which concepts matter, and write entirely new vignettes, with new patients, new details and new angles.
+**References.** Stay at Step 1 level (First Aid for the USMLE Step 1, 2026, and Pathoma); no Step 2 CK management detail. If the source material contradicts First Aid or Pathoma, First Aid or Pathoma wins: follow them and mention the discrepancy in your report.
+
+**Example questions.** The teacher may give you UWorld questions or the sample questions from usmle.org as examples. Use them for logic and style only: how the stem places the clue that rules out each look-alike, how the lead-in asks, the stem's length and the lab layout. Never reuse their patients, findings, numbers or wording, and never copy more than 5 words in a row from them, from First Aid or from any other source. Write entirely new vignettes, with new patients, new details and new angles.
 
 ## 3. Rules for writing questions
 
 ### 3.1 The vignette (`stem`)
 - Write a realistic clinical case, about 60–140 words: age and sex, setting, chief complaint, relevant history, examination, then labs, imaging or pathology as needed.
-- Vary the patients across the pack: ages, sexes, settings (clinic, emergency department, ward, research lab) and presentations.
-- Put lab panels on separate lines that start with `• ` (bullet and space), for example `• Serum C4: low`. Give units, with temperature as `38.6°C (101.5°F)`.
-- **Do not give the answer away.** Do not name the diagnosis when the question asks about a mechanism, finding or treatment. Do not include a pathognomonic test result (for example a positive dihydrorhodamine test, "giant granules on smear", or the name of the accumulating metabolite) when that result makes the question a one-step recall. The student should have to recognize the condition from the clinical picture, then apply knowledge about it: **two-step (second-order) reasoning**.
+- Vary the patients across the pack: ages, sexes, settings (clinic, emergency department, ward, research lab) and presentations. Every patient must fit the condition's typical patient (age of onset, sex ratio, where it presents); never make a patient atypical just for variety. Vary the story, not just the numbers.
+- Put lab panels on separate lines that start with `• ` (bullet and space), for example `• Serum C4: low`. Give units, with temperature as `38.6°C (101.5°F)`. Give only the values the reasoning uses (the abnormal ones, and the normal ones that rule out a distractor) plus the few a physician would routinely order for this complaint; never a filler panel. Normal values lie inside standard reference ranges; abnormal values are clearly abnormal and consistent with each other.
+- **Do not give the answer away.** Never name the diagnosis or any intermediate step in the stem or the lead-in when the question asks about a mechanism, finding or treatment. Do not include a pathognomonic test result (for example a positive dihydrorhodamine test, "giant granules on smear", or the name of the accumulating metabolite) when that result makes the question a one-step recall. The student should have to recognize the condition from the clinical picture, then apply knowledge about it: **two-step (second-order) reasoning**.
+- **Reasoning depth (make it hard).** 2-step: findings → hidden diagnosis or mechanism → asked fact. 3-step: findings → diagnosis → a second inference (the drug used, the complication, the pathway) → asked fact about that. Every question is at least 2-step; use 3-step whenever the chain allows. No 1-step recall (findings → asked fact) unless the REQUEST asks for it.
+- **Exclusion by reasoning.** For every wrong option, the stem contains the finding a prepared student uses to rule it out, taken from that option's discriminator (for example, a normal ejection fraction that rules out doxorubicin cardiotoxicity). Never a flat negation of the option itself, such as "no proteinuria" when nephrotic syndrome is an option.
+- **Difficulty.** NBME level or harder, unless the REQUEST says otherwise: the most tempting look-alike must really tempt, so the student needs the discriminating clue to reject it.
 - Keep needed discriminating findings, such as normal versus low cell counts, timing, or the family pattern. Interpreting them is the skill being tested.
 - Use standard terminology and generic drug names.
 
@@ -40,8 +45,8 @@ If the source material contradicts standard Step 1 references (First Aid for the
 ### 3.3 The options (`options`)
 - **5 options (A–E)** unless the REQUEST says otherwise (the app accepts 2–8).
 - Exactly one best answer. Every option is a short phrase in exam style (usually under 70 characters), with no explanations inside options.
-- **Homogeneous:** all options belong to the same category (all mechanisms, all cell types, all drugs, all lab patterns) and have parallel grammar.
-- **Plausible distractors:** each wrong option must be something a partially prepared student could choose: a related disease, a common misconception, the right concept in the wrong direction. Never absurd, joke-like or obviously out of place.
+- **Homogeneous:** all options belong to the same category (all mechanisms, all cell types, all drugs, all lab patterns), take the form the lead-in asks for, have parallel grammar, and give no new data (nothing the stem does not already say).
+- **Plausible distractors:** each wrong option must be something a partially prepared student could choose: a related disease, a common misconception, the right concept in the wrong direction. Prefer the closest look-alikes from the same differential over loosely related conditions. Never absurd, joke-like or obviously out of place.
 - **No test-wise cues.** These must all be true:
   - The correct option is **not** clearly the longest (no more than about 10% longer than the longest distractor). Shorten it, or lengthen distractors naturally.
   - The correct option does not repeat a distinctive word from the stem that no other option repeats.
@@ -53,12 +58,14 @@ If the source material contradicts standard Step 1 references (First Aid for the
 
 ### 3.4 The answer key
 - `answer` is the letter of the correct option: A for the first option, B for the second, and so on.
-- **Balance the key across the pack:** each letter is correct about equally often (for 5 options and 25 questions, exactly 5 each; for 10 questions, 2 each). Avoid runs such as the same letter three times in a row.
+- **Balance the key across the pack:** each letter is correct about equally often (for 5 options: 2 each for 10 questions, 3 each for 15, 4 each for 20, 6 each for 30). Avoid runs such as the same letter three times in a row.
 
 ### 3.5 Explanation fields
-- `explain`: 2–4 sentences saying why the answer is correct. Name the condition, the mechanism, and the findings in the stem that point to it.
-- `why`: one line for **every wrong option** (up to about 25 words). Say what that option would fit or why it is wrong here, e.g. `"C": "Rifampin turns body fluids orange and can cause hepatitis; it does not cause peripheral neuropathy."`
+- `explain`: 2–4 sentences saying why the answer is correct. Name the condition, the decisive clue in the stem, and the principle or mechanism.
+- `why`: one line for **every wrong option** (up to about 30 words): the clue in the stem that rules it out, and the patient in whom it would be right, e.g. `"B": "Folate deficiency causes macrocytic anemia without neuropathy, as in a patient taking methotrexate; this patient's MCV is normal."`
 - `objective`: one sentence, the take-home point a student should remember.
+- Never refer to an option by its letter in `explain`, `why` or `objective`.
+- Real drug names, standard units, First Aid terms; no invented syndromes, eponyms, statistics or studies.
 - Arrows (→ ↑ ↓) and symbols (α β γ κ λ ±) are fine.
 
 ### 3.6 Accuracy
@@ -82,24 +89,24 @@ If the source material contradicts standard Step 1 references (First Aid for the
       "answer": "A",
       "explain": "Hives, angioedema, bronchospasm and hypotension within minutes of a food exposure = anaphylaxis. Epinephrine is first-line: α1 vasoconstriction reverses distributive shock, β1 supports the heart, and β2 bronchodilates and stabilizes mast cells.",
       "why": {
-        "B": "Antihistamines relieve itching and hives but do not reverse shock or airway edema.",
-        "C": "Corticosteroids act over hours and do not treat the acute reaction.",
-        "D": "Albuterol treats wheezing only, not hypotension or airway edema.",
-        "E": "Leukotriene antagonists have no role in acute anaphylaxis."
+        "B": "Antihistamines relieve itching and hives, as in a patient with urticaria alone; they do not reverse this patient's hypotension or airway swelling.",
+        "C": "Corticosteroids act over hours and suit a patient with an asthma exacerbation; they do not treat shock that began minutes ago.",
+        "D": "Albuterol suits an asthma attack with normal blood pressure; it does not treat this patient's hypotension or airway edema.",
+        "E": "Montelukast is for long-term control of mild asthma or allergic rhinitis; it has no role in acute anaphylaxis."
       },
       "objective": "Intramuscular epinephrine is the first treatment for anaphylaxis; antihistamines and steroids are adjuncts."
     },
     {
-      "stem": "A 31-year-old man is started on a four-drug regimen for pulmonary tuberculosis. Six weeks later, he reports burning pain and numbness in both feet that began gradually. Examination shows decreased pinprick and vibration sensation in a stocking distribution and reduced ankle reflexes. Liver enzymes are normal. He drinks alcohol occasionally, has no history of diabetes mellitus, and takes no other medications.",
+      "stem": "A 31-year-old man is started on a four-drug regimen for pulmonary tuberculosis. Six weeks later, he reports burning pain and numbness in both feet that began gradually. He eats a varied diet, drinks alcohol rarely, and takes no other medications. Examination shows decreased pinprick and vibration sensation in a stocking distribution and reduced ankle reflexes.\n• Hemoglobin 14.2 g/dL\n• Mean corpuscular volume 88 μm³\n• Alanine aminotransferase 24 U/L",
       "lead": "Supplementation with which of the following would most likely have prevented this patient's symptoms?",
       "options": ["Cyanocobalamin", "Folic acid", "Pyridoxine", "Riboflavin", "Thiamine"],
       "answer": "C",
-      "explain": "Isoniazid depletes pyridoxine (vitamin B6), a cofactor for neurotransmitter synthesis; deficiency causes a dose-related sensory peripheral neuropathy. Pyridoxine is given with isoniazid to prevent it, especially with alcohol use, diabetes, malnutrition, pregnancy or HIV.",
+      "explain": "A stocking-distribution sensory neuropathy beginning weeks after starting tuberculosis treatment, with a normal MCV and a varied diet, points to isoniazid-induced pyridoxine (vitamin B6) deficiency. Isoniazid binds pyridoxine and increases its excretion; B6 is a cofactor for neurotransmitter synthesis. Pyridoxine is given with isoniazid to prevent it.",
       "why": {
-        "A": "B12 deficiency causes neuropathy with subacute combined degeneration and megaloblastic anemia; isoniazid does not deplete it.",
-        "B": "Folate deficiency causes megaloblastic anemia without neuropathy.",
-        "D": "Riboflavin deficiency causes cheilosis, glossitis and corneal vascularization.",
-        "E": "Thiamine deficiency causes beriberi or Wernicke encephalopathy; isoniazid does not deplete it."
+        "A": "Vitamin B12 deficiency causes neuropathy with macrocytic anemia, as in a strict vegan or pernicious anemia; this patient's MCV is normal.",
+        "B": "Folate deficiency causes macrocytic anemia without neuropathy, as in a patient taking methotrexate; this patient's MCV is normal.",
+        "D": "Riboflavin deficiency causes cheilosis, glossitis and corneal vascularization in a malnourished patient; this patient eats a varied diet.",
+        "E": "Thiamine deficiency causes neuropathy or Wernicke encephalopathy in alcohol use disorder or malnutrition; this patient rarely drinks and eats well."
       },
       "objective": "Isoniazid causes vitamin B6 deficiency neuropathy; give pyridoxine with isoniazid."
     }
@@ -139,12 +146,15 @@ Never invent, describe as attached, or link to pictures. If the teacher provides
 
 For each question:
 - [ ] Original vignette, realistic, 60–140 words, varied patient; lab values on `• ` lines with units
-- [ ] Diagnosis not named, and no pathognomonic giveaway when the question asks about something beyond the diagnosis (second-order reasoning required)
+- [ ] Diagnosis and intermediate steps not named, and no pathognomonic giveaway; at least 2-step, 3-step where the chain allows
+- [ ] Every wrong option is ruled out by a clue in the stem, not by a flat negation of the option
+- [ ] Lab values only those the reasoning uses (plus routine ones), consistent with each other; options add no new data
 - [ ] Closed lead-in ending with "?", answerable without the options, not negative
 - [ ] 5 options (or the number requested), homogeneous, short, plausible, no letter prefixes
 - [ ] Correct option not clearly the longest; not the odd one out; no word-repeat cue; no convergence
 - [ ] Exactly one best answer; facts standard and current
-- [ ] `explain`, a `why` line for every wrong option, and `objective` are present
+- [ ] `explain`, a `why` line for every wrong option (ruling-out clue + the patient in whom it would be right), and `objective` are present; no option referred to by its letter
+- [ ] No more than 5 words in a row copied from any source or example question
 
 For the whole pack:
 - [ ] Answer letters balanced across A–E; no long runs of the same letter
@@ -160,9 +170,9 @@ For the whole pack:
    - a numbered list: question number → concept tested (one line each)
    - anything the teacher should check (a source discrepancy, pictures to embed)
 
-**Size limit:** write at most **15 questions per pack per reply**, so the JSON is never cut off. If the REQUEST asks for more, make several packs (for example `immunology-02a` and `immunology-02b`). Deliver the first one, then continue when the teacher says "next". Each pack must be complete and valid on its own, with its own balanced answer key.
+**Pack size:** write the number of questions the REQUEST asks for (10, 20, 30 or any other number); if it gives none, write **15**. Deliver the whole pack as one JSON document in one reply. Never stop in the middle of the JSON: if the pack is too long for one reply (usually only above about 30 questions), split it into parts of about equal size, each a complete, valid pack with its own balanced answer key (ids `immunology-02-1`, `immunology-02-2`; titles ending "(part 1 of 2)", "(part 2 of 2)"). Deliver the first part, then continue when the teacher says "next".
 
-**Optional, only if the REQUEST asks for it**, also give a printable version in Markdown:
+**Optional, only if the REQUEST asks for it**, also give a printable version in Markdown, in your next reply after the pack (so the pack is never cut off):
 - **Questions:** numbered; stem, lead, options as `A. …`
 - **Answer key:** a table with Question, Answer and Correct option
 - **Explanations:** for each question, the answer, the explanation, why not the others, and the take-home point
@@ -170,10 +180,12 @@ For the whole pack:
 ## REQUEST (the teacher fills this in)
 
 - Topic / scope:
-- Number of questions:
+- Number of questions (default 15; any number, e.g. 10, 20, 30):
 - Options per question (default 5):
 - Pack id and title (e.g. `immunology-02`, "Immunology 2 — Hypersensitivity"):
 - Source material (attached or pasted; describe it):
+- Example questions for style (optional; UWorld or usmle.org samples, used for logic and style only):
+- Difficulty (default: NBME level or harder):
 - Concepts that must be included, or avoided:
 - Pictures provided (file name → question) — or "none":
 - Also give the printable Markdown version? (yes/no):

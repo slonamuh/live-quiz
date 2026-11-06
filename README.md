@@ -4,8 +4,9 @@ A live classroom quiz for board-style (USMLE Step 1) cases. Students join on the
 
 - **Player (teacher's screen):** https://slonamuh.github.io/live-quiz/presenter.html
 - **Phone page (opened by the QR code):** https://slonamuh.github.io/live-quiz/
+- **Editor (write and fix quizzes):** https://slonamuh.github.io/live-quiz/editor.html
 
-No accounts, no installation and no server to maintain. The two pages are plain HTML on GitHub Pages; phones connect directly to the teacher's browser.
+No accounts, no installation and no server to maintain. The pages are plain HTML on GitHub Pages; phones connect directly to the teacher's browser.
 
 ---
 
@@ -65,6 +66,16 @@ If the player tab is reloaded or closed by accident, open it again: it offers **
 
 A quiz pack is one file per topic, e.g. `immunology-01.quiz.json`. It contains the questions, answers, explanations and pictures.
 
+**In the editor.** Open https://slonamuh.github.io/live-quiz/editor.html (or press **Edit** next to a quiz in the player). You can:
+
+- start a **new quiz**, **open a file**, **paste an AI assistant's reply** (the whole reply: the editor finds the quiz in it), or pick one of the **Recent quizzes**;
+- write or fix each case: case text, question line, options (tick the correct one), a "why not" line under each wrong option, the explanation and the take-home point; add, duplicate, move or delete cases and options;
+- see **checks** as you type: what stops the player from loading the quiz (red) and common giveaways (amber: the correct answer is the longest option, a word from the case repeated only in the correct answer, an option named by its letter, letters left at the start of options, unbalanced answer letters);
+- **Save** (Ctrl+S). In Chrome this writes back to the file you opened, including one in your Google Drive for desktop folder; **Save as…** makes a copy. In other browsers the file is downloaded;
+- **Play now**: open the quiz in the player straight away, without saving a file first.
+
+Unsaved changes are kept in the browser, so closing the tab by accident loses nothing. Pictures already in a quiz are kept; adding or replacing pictures comes in the next version.
+
 **With Claude (recommended).** The `live-quiz-packs` skill holds the whole procedure: the question-writing rules (NBME style, second-order reasoning, plausible distractors, balanced answer key, no length or lab-value giveaways), the master doc layout and the pack format. Examples:
 
 - "Write 20 cases on hypersensitivity reactions and make a quiz pack."
@@ -120,10 +131,11 @@ To add a picture, paste it under the case (shown with the question) or under the
 | --- | --- |
 | `index.html` | Phone page (built from `src/index.src.html`) |
 | `presenter.html` | Player for the teacher's screen (built from `src/presenter.src.html`) |
+| `editor.html` | Quiz editor (built from `src/editor.src.html`) |
 | `src/` | Page sources |
-| `tools/build_pages.py` | Builds the two pages (inlines PeerJS and the QR library) |
+| `tools/build_pages.py` | Builds the three pages (inlines PeerJS and the QR library) |
 | `tools/make_pack.py` | Checks quiz packs and embeds pictures |
-| `tests/` | End-to-end test (presenter + simulated phones), security test (replays known attacks) and placeholder fixtures |
+| `tests/` | End-to-end test (presenter + simulated phones), security test (replays known attacks), editor test, and placeholder fixtures |
 | `docs/llm-instructions.md` | Instructions to give any AI assistant so it writes cases and returns a quiz pack |
 | `docs/pack-format.md` | Quiz pack format |
 | `docs/developer.md` | How it works, building, testing, changing things |

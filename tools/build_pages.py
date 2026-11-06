@@ -3,9 +3,10 @@
     npm install              # once: fetches PeerJS and the QR library into node_modules/
     python3 tools/build_pages.py
 
-Writes index.html (phone page) and presenter.html (player). Both are fully
-self-contained: the libraries are inlined, so the pages work without any CDN.
-Neither page may contain quiz content; the build fails if it finds pack data.
+Writes index.html (phone page), presenter.html (player) and editor.html (quiz
+editor). All are fully self-contained: the libraries are inlined, so the pages
+work without any CDN. No page may contain quiz content; the build fails if it
+finds pack data.
 """
 import os
 import re
@@ -36,7 +37,8 @@ def main():
     pres = read(ROOT, 'src', 'presenter.src.html')
     pres = pres.replace('/*__PEERJS__*/', peerjs, 1).replace('/*__QRCODE__*/', qrlib, 1)
     phone = read(ROOT, 'src', 'index.src.html').replace('/*__PEERJS__*/', peerjs, 1)
-    for name, html in (('presenter.html', pres), ('index.html', phone)):
+    editor = read(ROOT, 'src', 'editor.src.html')
+    for name, html in (('presenter.html', pres), ('index.html', phone), ('editor.html', editor)):
         if '/*__' in html:
             sys.exit(f'{name}: a placeholder was not replaced')
         # The pages are public: refuse to publish anything that looks like pack data.
@@ -53,7 +55,7 @@ def main():
                 sys.exit(f'{name}: script {k} has a syntax error:\n{r.stderr}')
         with open(os.path.join(ROOT, name), 'w', encoding='utf-8') as f:
             f.write(html)
-    print('Built', {n: os.path.getsize(os.path.join(ROOT, n)) for n in ('presenter.html', 'index.html')})
+    print('Built', {n: os.path.getsize(os.path.join(ROOT, n)) for n in ('presenter.html', 'index.html', 'editor.html')})
 
 
 if __name__ == '__main__':

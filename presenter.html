@@ -87,6 +87,7 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .link{background:none;border:0;color:var(--accent);text-decoration:underline;padding:0;margin-top:.8rem;font-size:.9rem}
 .controls{display:flex;align-items:center;gap:.7rem;padding:.7rem 1.4rem;border-top:1px solid var(--line);background:var(--panel)}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:.6rem 1.1rem;font-weight:600}
+a.btn{display:inline-block;text-decoration:none;color:inherit}
 .btn:hover{border-color:var(--accent)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.primary:hover{filter:brightness(1.08)}
@@ -104,7 +105,7 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .loaderr{max-width:34rem;text-align:left}
 .loaderr ul{margin:.3rem 0 0 1rem;padding:0}
 .recent{display:flex;flex-direction:column;gap:.5rem}
-.rrow{display:grid;grid-template-columns:1fr auto auto;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
+.rrow{display:grid;grid-template-columns:1fr auto auto auto;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
 .rrow .rt{font-weight:600}
 .rrow .rm{color:var(--muted);font-size:.8rem}
 .join{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.6rem}
@@ -2547,6 +2548,14 @@ function checkPack(p){
 }
 function packKey(p){ var base = String(p.id || p.title || 'quiz').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'quiz'; return base + '-' + hash(JSON.stringify(p.questions) + JSON.stringify(Object.keys(p.images || {}))); }
 
+/* ---------- the editor page (same folder): write, fix and open quiz packs ---------- */
+function editorUrl(key){
+  var q = new URLSearchParams(), here = new URLSearchParams(location.search);
+  if (/^(127\.0\.0\.1|localhost)$/.test(here.get('ph') || '')) ['ph', 'pp', 'ps', 'pt'].forEach(function(k){ if (here.get(k)) q.set(k, here.get(k)); });
+  if (key) q.set('pack', key);
+  var qs = q.toString(); return 'editor.html' + (qs ? '?' + qs : '');
+}
+
 /* ---------- library: choose a quiz pack ---------- */
 function library(msgHtml){
   app.innerHTML =
@@ -2557,7 +2566,8 @@ function library(msgHtml){
         '<label class="btn primary big filebtn">Choose quiz file…<input type="file" id="file" accept=".json,application/json" hidden></label>'+
         '<div class="loaderr" id="loaderr">'+(msgHtml || '')+'</div></section>'+
       '<section class="card"><h2 style="margin-top:0">Recent quizzes</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>'+
-        '<p class="hint">Quizzes you load are remembered in this browser on this computer.</p></section>'+
+        '<p class="hint">Quizzes you load are remembered in this browser on this computer.</p>'+
+        '<p><a class="btn" id="editorLink" href="'+esc(editorUrl())+'">Write or edit a quiz in the editor</a></p></section>'+
     '</main><footer></footer></div>';
   var drop = document.getElementById('drop'), inp = document.getElementById('file');
   inp.addEventListener('change', function(){ if (inp.files && inp.files[0]) readFile(inp.files[0]); inp.value = ''; });
@@ -2572,7 +2582,7 @@ function renderRecent(){
     list = (list || []).sort(function(a,b){ return b.loadedAt - a.loadedAt; });
     if (!list.length) { el.innerHTML = '<p class="hint">None yet.</p>'; return; }
     el.innerHTML = list.map(function(r){ return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div><div class="rm">'+r.n+' questions · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
-      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
+      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><a class="btn small" href="'+esc(editorUrl(r.key))+'" title="Open this quiz in the editor">Edit</a><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
     el.onclick = function(e){
       var u = e.target.closest('[data-use]'), f = e.target.closest('[data-forget]');
       if (u) idb.get(u.getAttribute('data-use')).then(function(r){ if (r) { r.loadedAt = Date.now(); idb.put(r).catch(function(){}); start(r.pack, r.key, 'new'); } });
@@ -2607,6 +2617,16 @@ function start(pack, key, mode, warns){
   started = true; runApp(pack, key, mode, warns || c.warns);
 }
 (function boot(){
+  var openKey = new URLSearchParams(location.search).get('open');
+  if (openKey) {
+    try { var u = new URL(location.href); u.searchParams.delete('open'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch(e){}
+    idb.get(openKey).then(function(rec){
+      if (!rec || !rec.pack) { library('<p class="warn">That quiz is no longer in this browser. Choose the file instead.</p>'); return; }
+      rec.loadedAt = Date.now(); idb.put(rec).catch(function(){});
+      store.del(SESSION_KEY); start(rec.pack, rec.key, 'new');
+    }, function(){ library(); });
+    return;
+  }
   var saved = store.get(SESSION_KEY);
   if (saved && saved.packKey && saved.savedAt && Date.now() - saved.savedAt < 12*3600*1000 && (saved.played || []).length) {
     idb.get(saved.packKey).then(function(rec){
@@ -2844,6 +2864,7 @@ var actions = {
   csv: downloadCsv,
   newsession: function(){ if (isArmed('new')) { armed.k = ''; store.del(SESSION_KEY); conns = {}; try { peer && peer.destroy(); } catch(e){} peer = null; newSession(); } else arm('new', function(){ render(true); }); },
   change: function(){ if (S.phase === 'lobby' || isArmed('change')) leaveToLibrary(); else arm('change', function(){ render(true); }); },
+  edit: function(){ if (S.phase !== 'lobby') return; store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.href = editorUrl(PACK_KEY); },
   newcode: function(){ newCode(); },
   copylink: function(){
     var u = joinUrl(), b = document.getElementById('copyBtn'); if (!u) return;
@@ -2919,7 +2940,7 @@ function buildLobby(){
       '<main class="lobbygrid">'+
         '<section class="card join" id="join"></section>'+
         '<section class="card settings">'+
-          '<div class="pack"><b>'+esc(QUIZ.title)+'</b><span>'+TOTAL+' questions</span><button class="btn small" data-act="change" id="changeBtn">Change quiz</button></div>'+
+          '<div class="pack"><b>'+esc(QUIZ.title)+'</b><span>'+TOTAL+' questions</span><button class="btn small" data-act="edit" id="editBtn">Edit</button><button class="btn small" data-act="change" id="changeBtn">Change quiz</button></div>'+
           (WARNS && WARNS.length ? '<small class="warn">'+esc(WARNS.slice(0,3).join(' '))+(WARNS.length>3?' …':'')+'</small>' : '')+
           '<label for="su">Phone page address</label><input id="su" type="url" data-set="studentUrl" placeholder="https://your-name.github.io/live-quiz/" value="'+esc(settings.studentUrl)+'">'+
           '<small>Where the phone page (index.html) is online. The QR code opens it.</small>'+
