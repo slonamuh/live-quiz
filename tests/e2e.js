@@ -40,13 +40,23 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
 (async () => {
   start(process.execPath, [path.join(ROOT, 'node_modules/peer/dist/bin/peerjs.js'), '--port', '9000', '--host', '127.0.0.1', '--path', '/']);
   start('python3', ['-m', 'http.server', '8080', '--bind', '127.0.0.1', '--directory', ROOT]);
-  await waitUp('http://127.0.0.1:9000/'); await waitUp(BASE + '/index.html');
+  await waitUp('http://127.0.0.1:9000/'); await waitUp(BASE + '/join/');
 
   // Local WebRTC between browser contexts needs real host candidates, not mDNS names.
   const browser = await chromium.launch({ args: ['--disable-features=WebRtcHideLocalIpsWithMdns'] });
   const P = await (await browser.newContext({ viewport: { width: 1366, height: 768 }, acceptDownloads: true })).newPage();
   P.on('pageerror', e => { errors++; log('[presenter pageerror]', e.message); });
-  await P.goto(`${BASE}/presenter.html?${PQ}`);
+  log('Addresses');
+  await P.goto(`${BASE}/presenter.html?${PQ}#x`);
+  await P.waitForSelector('#file', { state: 'attached' });
+  assert(P.url() === `${BASE}/?${PQ}#x`, 'the old presenter.html address forwards to the player, keeping its parameters');
+  assert((await P.textContent('.studentnote')).includes('127.0.0.1:8080/join/'), 'the player tells a student who lands on it where to go');
+  const old = await phone(browser, `${BASE}/?s=ABCDE&${PQ}#k=${'A'.repeat(22)}`, 'old-link');
+  await old.waitForURL(/\/join\/\?s=ABCDE/);
+  assert(new URL(old.url()).hash === '#k=' + 'A'.repeat(22) && (await old.$$('#file')).length === 0, 'an old student link to the site’s main address goes on to the phone page, key kept');
+  await old.context().close();
+  await P.evaluate(b => localStorage.setItem('livequiz-settings-v1', JSON.stringify({ studentUrl: b + '/', t1: 90 })), BASE);
+  await P.goto(`${BASE}/?${PQ}`);
 
   log('Library');
   await P.waitForSelector('#file', { state: 'attached' });
@@ -59,7 +69,8 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   await P.setInputFiles('#file', path.join(FIX, 'sample-25.quiz.json'));
   let url = await lobbyUrl(P);
   assert((await P.textContent('.settings .pack')).includes('25 questions'), 'lobby shows the loaded pack');
-  assert(url.startsWith(BASE + '/?') && url.includes('ph=127.0.0.1'), 'phone address defaults to this site’s folder');
+  assert(url.startsWith(BASE + '/join/?') && url.includes('ph=127.0.0.1'), 'the QR code opens the phone page (join/); an old remembered address is moved there');
+  assert(!(await P.$eval('#adv', d => d.open)) && !!(await P.$('#adv #su')), 'the phone page address sits under a closed “Advanced”');
   await P.screenshot({ path: `${OUT}/01-lobby.png` });
 
   log('Session with three phones');

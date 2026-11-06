@@ -272,7 +272,7 @@ const WHY = {
 
   log('Editor and player together');
   const P = await A.newPage(); watch(P, 'player');
-  await P.goto(`${BASE}/presenter.html?${PQ}`);
+  await P.goto(`${BASE}/?${PQ}`);
   await P.setInputFiles('#file', path.join(FIX, 'sample-25.quiz.json'));
   await P.waitForSelector('.net.ok', { timeout: 20000 });
   await P.screenshot({ path: `${OUT}/23-lobby-edit.png` });
@@ -287,6 +287,7 @@ const WHY = {
   await P.click('#playBtn');
   await P.waitForSelector('.net.ok', { timeout: 20000 });
   assert((await P.textContent('.settings .pack b')) === 'Sample 25 (edited)', 'Play now opens the edited quiz in the player, ready for students');
+  assert(new URL(P.url()).pathname === '/', 'Play now opens the player at the site’s main address');
   await P.click('#changeBtn');
   await P.waitForSelector('#recent .rrow');
   const rows = await P.$$eval('#recent .rrow .rt', els => els.map(e => e.textContent));
