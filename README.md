@@ -2,9 +2,11 @@
 
 A live classroom quiz for board-style (USMLE Step 1) cases. Students join on their phones by scanning a QR code. Everyone answers anonymously, the class sees the spread of answers on the big screen, then the teacher reveals the correct answer and the explanation.
 
-- **Player (teacher's screen):** https://slonamuh.github.io/live-quiz/presenter.html
-- **Phone page (opened by the QR code):** https://slonamuh.github.io/live-quiz/
+- **Player (teacher's screen):** https://slonamuh.github.io/live-quiz/
+- **Phone page (opened by the QR code and the link):** https://slonamuh.github.io/live-quiz/join/
 - **Editor (write and fix quizzes):** https://slonamuh.github.io/live-quiz/editor.html
+
+The old player address, `…/live-quiz/presenter.html`, still works and forwards to the new one, and so do older student links.
 
 No accounts, no installation and no server to maintain. The pages are plain HTML on GitHub Pages; phones connect directly to the teacher's browser.
 
@@ -16,7 +18,7 @@ No accounts, no installation and no server to maintain. The pages are plain HTML
 2. **Students join** in one of three ways, and see the full case and the options on their phone:
    - **scan the QR code** on the screen;
    - **open the link** you shared (press **Copy link** in the lobby and paste it into the class chat or LMS);
-   - **type the codes**: open the phone page and enter the 5-character session code *and* the 8-character check code shown under the QR code.
+   - **type the codes**: open **slonamuh.github.io/live-quiz/join/** and enter the 5-character session code *and* the 8-character check code shown under the QR code.
 3. **They answer anonymously**: tap an option, then *I'm sure* or *I'm guessing*. The screen shows "18 of 25 answered" and a timer; results stay hidden while voting is open.
 4. **Voting closes** when everyone has answered, when the time runs out, or when you press **Enter**. The A–E bars appear (solid = sure, striped = guessing).
 5. **Optional discussion round (D):** students argue with a neighbour for 1–2 minutes and vote again; round 1 stays visible as a thin grey line.
@@ -25,20 +27,30 @@ No accounts, no installation and no server to maintain. The pages are plain HTML
 
 **Teaching tip (peer instruction):** after round 1, if fewer than ~30% are correct, reveal and teach; if more than ~70%, reveal and move on; in between, use the discussion round. The second vote usually improves a lot.
 
+### Two screens: presenter view on the laptop, questions on the projector
+
+Like PowerPoint's presenter view. In the lobby press **🖥 Open projector window** (or the **🖥 Projector window** chip during a question).
+
+- **The projector window** shows only what students should see: the big join screen with the QR code, the case and options, the results after voting closes, the explanation after the reveal, and the class results at the end. It has no buttons. Move it to the projector and press **Full screen** (or **F**). Chrome may ask once to "manage windows on all your displays"; if you allow it, the window moves to the projector by itself.
+- **The laptop** shows the presenter view: the correct answer marked (**✓ answer**), **live results while students vote** (the projector keeps them hidden), the explanation, the "why not" lines and the take-home, the next case, and all the controls. **Projector: show the question again** switches the projector between the explanation and the case after the reveal. The join-code chip shows or hides the QR code on the projector, and a picture you click is enlarged on the projector too (the explanation picture only after the reveal).
+- **Set the display to Extend, not mirror** (Windows: Win + P → Extend; Mac: System Settings → Displays, turn mirroring off). If the laptop sees only one screen it says so in red and keeps the answer hidden until you press **Show answer**.
+- Keys and a presentation clicker work in either window. Reloading either window is safe: the projector window shows a waiting screen and both find each other again. Closing the projector window brings back the normal one-screen view.
+
 ### Keys on the teacher's screen
 
 | Key | Action |
 | --- | --- |
-| Enter / Space / → | Next step: start · close voting · reveal · next question |
+| Enter / Space / → / Page Down (clicker) | Next step: start · close voting · reveal · next question |
 | D | Discuss & revote (after round 1 closes) |
 | + | 30 more seconds |
 | Q | Show the QR code full screen, with the link and both codes (again: close) |
 | Esc | Close an enlarged picture or the QR code |
+| F (projector window) | Full screen on / off |
 | Ctrl + / Ctrl − | Bigger / smaller text for the room |
 
 ### Settings (in the lobby, remembered on that computer)
 
-- **Phone page address**: fills itself in as `https://slonamuh.github.io/live-quiz/` when the player is opened from GitHub Pages.
+- **Advanced → Phone page address**: fills itself in as `https://slonamuh.github.io/live-quiz/join/`; there is normally nothing to change. (A player that remembered the old address, the site's main address, moves it to `join/` by itself.)
 - **Time per question** (default 90 s) and **revote time** (default 60 s), or no limit.
 - **Close voting automatically** when every connected student has answered.
 - **Ask "sure or guessing?"**: shows "sure but wrong", the most dangerous misconception.
@@ -118,6 +130,8 @@ Claude can also lay the cases out in a doc with three tabs (Questions, Answer ke
 | Player shows **Another device is holding this session's code** | The code is still registered elsewhere, e.g. the player is open in another tab or on another computer, or someone took it while your laptop was asleep. | Close the other tab if there is one; otherwise press **Move to a new code** (the quiz continues where it was) and have students rescan. |
 | Phone says **This browser can't join safely** | A very old browser without the security features the check needs. | Use an up-to-date Chrome or Safari. |
 | Phones join on mobile data but not on Wi-Fi | The Wi-Fi blocks direct connections. | Ask students to switch off Wi-Fi for the quiz, or ask IT to allow WebRTC. A server-based version (Firebase) is possible if this is permanent. |
+| **Open projector window** does nothing, or a pop-up message appears | Chrome blocked the new window. | Click the blocked pop-up icon at the right end of the address bar → *Always allow pop-ups* for this site, then press the button again. |
+| The projector shows the laptop's presenter view | The display is mirrored. | Win + P → **Extend** (Mac: Displays → turn mirroring off), then drag the projector window to the projector and press **F**. |
 | A phone shows **Reconnecting…** | The phone slept or lost signal. | Nothing; it reconnects by itself and keeps its answers. |
 | The file is rejected | The pack has a problem. | The message names the question and the problem; ask Claude to fix the pack. |
 | Text is small on the projector | | Ctrl + (zoom in). |
@@ -128,13 +142,14 @@ Claude can also lay the cases out in a doc with three tabs (Questions, Answer ke
 
 | Path | What it is |
 | --- | --- |
-| `index.html` | Phone page (built from `src/index.src.html`) |
-| `presenter.html` | Player for the teacher's screen (built from `src/presenter.src.html`) |
+| `index.html` | Player for the teacher's screen, and its projector window (`?audience=…`) (built from `src/player.src.html`) |
+| `join/index.html` | Phone page (built from `src/join.src.html`) |
+| `presenter.html` | The player's old address: forwards to `./` |
 | `editor.html` | Quiz editor (built from `src/editor.src.html`) |
 | `src/` | Page sources |
-| `tools/build_pages.py` | Builds the three pages (inlines PeerJS and the QR library) |
+| `tools/build_pages.py` | Builds the pages (inlines PeerJS and the QR library) |
 | `tools/make_pack.py` | Checks quiz packs and embeds pictures |
-| `tests/` | End-to-end test (presenter + simulated phones), security test (replays known attacks), editor test, and placeholder fixtures |
+| `tests/` | End-to-end test (presenter + simulated phones), security test (replays known attacks), editor test, two-screen test, and placeholder fixtures |
 | `docs/llm-instructions.md` | Instructions to give any AI assistant so it writes cases and returns a quiz pack |
 | `docs/pack-format.md` | Quiz pack format |
 | `docs/developer.md` | How it works, building, testing, changing things |

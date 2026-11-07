@@ -780,7 +780,7 @@ window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); 
 
 /* ---------- play: hand the quiz to the player through "Recent quizzes" ---------- */
 function relayParams(q){ if (/^(127\.0\.0\.1|localhost)$/.test(params.get('ph') || '')) ['ph', 'pp', 'ps', 'pt'].forEach(k => { if (params.get(k)) q.set(k, params.get(k)); }); return q; }
-function playerUrl(open){ const q = relayParams(new URLSearchParams()); if (open) q.set('open', open); const s = q.toString(); return 'presenter.html' + (s ? '?' + s : ''); }
+function playerUrl(open){ const q = relayParams(new URLSearchParams()); if (open) q.set('open', open); const s = q.toString(); return './' + (s ? '?' + s : ''); }
 async function playNow(){
   const chk = checkQuiz(), bad = chk.per.map((r, i) => r.e.length ? i : -1).filter(i => i >= 0);
   if (bad.length) {

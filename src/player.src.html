@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live Quiz — Player</title>
+<script>
+/* Student links and QR codes used to open this folder itself (…/live-quiz/?s=CODE#k=…).
+   The folder now opens the player, so send phones on to the phone page, keeping the code and the key. */
+(function(){ try { var q = new URLSearchParams(location.search);
+  if (q.has('s') && !q.has('audience') && !q.has('open')) { window.LQ_FORWARD = true; location.replace('join/' + location.search + location.hash); }
+} catch(e){} })();
+</script>
+<style>
+:root{
+  --bg:#f4f3ef; --panel:#ffffff; --ink:#15171c; --muted:#5b616d; --line:#d9d6ce;
+  --accent:#2350b8; --accent-ink:#ffffff; --accent-soft:#dbe4f8;
+  --sure:#2350b8; --guess:#9db1e6; --ghost:#c9c6bd;
+  --good:#16804a; --good-soft:#d7efe0; --bad:#b93a27; --bad-soft:#f6ddd8; --warn:#a86a10;
+  font-size:clamp(16px,1.3vw,28px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.4}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.screen{height:100vh;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
+.top{display:flex;align-items:center;gap:.8rem;padding:.7rem 1.4rem;border-bottom:1px solid var(--line);background:var(--panel)}
+.top .title{font-weight:700;font-size:1.15rem}
+.spacer{flex:1}
+.qnum{font-weight:800;font-size:1.35rem;letter-spacing:-.01em}
+.qnum span{font-weight:500;color:var(--muted);margin-left:.3rem;font-size:1rem}
+.badge{padding:.25rem .7rem;border-radius:999px;font-weight:700;font-size:.85rem}
+.badge.r2{background:#fbe9c6;color:#7a4a00}
+.chip{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .8rem;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:.95rem}
+button.chip:hover{border-color:var(--accent)}
+.net{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--muted)}
+.net i{width:.7rem;height:.7rem;border-radius:50%;background:var(--warn);display:inline-block}
+.net.ok i{background:var(--good)} .net.err i{background:var(--bad)}
+.warn{color:var(--bad);font-weight:600}
+.hint{color:var(--muted);font-size:.85rem}
+
+/* question screen */
+.grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:1.2rem;padding:1rem 1.4rem;min-height:0}
+.left,.right{min-height:0;overflow:auto}
+.left{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.2rem 1.4rem}
+.stem p{margin:0 0 .7rem}
+.stem ul{margin:.2rem 0 .8rem 1.2rem;padding:0}
+.stem li{margin:.15rem 0}
+.lead{font-weight:700;margin:.9rem 0 0;font-size:1.05rem}
+figure.qimg{margin:.6rem 0 .8rem;text-align:center}
+figure.qimg img{max-width:100%;max-height:40vh;border-radius:8px;border:1px solid var(--line);cursor:zoom-in;background:#fff}
+figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
+.right{display:flex;flex-direction:column;gap:.6rem}
+.status{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.55rem 1rem;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem}
+.status .count{font-size:1.25rem}
+.status .count b{font-size:1.7rem}
+.status .timer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:800;font-size:1.7rem}
+.status .timer.low{color:var(--bad)}
+.tbar{flex-basis:100%;height:.4rem;background:#ebe9e3;border-radius:99px;overflow:hidden}
+.tbar span{display:block;height:100%;background:var(--accent);transition:width .25s linear}
+.status .note{flex-basis:100%;color:var(--muted);font-size:.85rem}
+.legend{display:inline-flex;gap:.9rem;font-size:.85rem;color:var(--muted);margin-left:auto}
+.legend span::before{content:"";display:inline-block;width:.9rem;height:.6rem;margin-right:.3rem;vertical-align:middle;border-radius:2px;background:var(--sure)}
+.legend span.g::before{background:repeating-linear-gradient(45deg,var(--guess) 0 4px,#c3d0f1 4px 7px)}
+.opts{display:flex;flex-direction:column;gap:.45rem}
+.opt{display:grid;grid-template-columns:2.1rem 1fr auto;gap:.7rem;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:.45rem .8rem}
+.opt .letter{width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;background:#eceae4}
+.opt .otext{min-width:0}
+.opt .bar{position:relative;height:.75rem;margin-top:.3rem;background:#efede8;border-radius:99px;overflow:hidden;display:flex}
+.opt .bar span{height:100%}
+.opt .bar .s{background:var(--sure)}
+.opt .bar .g{background:repeating-linear-gradient(45deg,var(--guess) 0 4px,#c3d0f1 4px 7px)}
+.opt .ghost{height:.3rem;margin-top:.25rem;background:#f1efea;border-radius:99px;overflow:hidden}
+.opt .ghost span{display:block;height:100%;background:var(--ghost)}
+.opt .ocount{text-align:right;font-variant-numeric:tabular-nums;min-width:3.6rem}
+.opt .ocount b{font-size:1.25rem;display:block;line-height:1.05}
+.opt .ocount small{color:var(--muted);font-size:.75rem}
+.opt .r1{font-size:.75rem;color:var(--muted)}
+.opt.correct{border-color:var(--good);background:var(--good-soft)}
+.opt.correct .letter{background:var(--good);color:#fff}
+.opt.correct .bar .s{background:var(--good)}
+.opt.correct .bar .g{background:repeating-linear-gradient(45deg,#7cc39b 0 4px,#b5dfc6 4px 7px)}
+.opt.dim{opacity:.62}
+.explain .ans{display:flex;gap:.7rem;align-items:baseline;padding:.6rem .9rem;border-radius:10px;background:var(--good-soft);border:1px solid #a9d8bb;margin-bottom:.8rem}
+.explain .ans b{font-size:1.5rem;color:var(--good)}
+.explain h3{margin:1rem 0 .4rem;font-size:1rem}
+.explain ul.why{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.explain ul.why li{padding:.35rem .6rem;border-radius:8px}
+.explain ul.why li.top{background:var(--bad-soft)}
+.explain ul.why b{display:inline-block;width:1.4rem}
+.tag{font-style:normal;font-size:.78rem;font-weight:700;color:var(--bad);margin-left:.3rem;white-space:nowrap}
+.obj{margin-top:1rem;padding-top:.7rem;border-top:1px dashed var(--line)}
+.link{background:none;border:0;color:var(--accent);text-decoration:underline;padding:0;margin-top:.8rem;font-size:.9rem}
+.controls{display:flex;align-items:center;gap:.7rem;padding:.7rem 1.4rem;border-top:1px solid var(--line);background:var(--panel)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:.6rem 1.1rem;font-weight:600}
+a.btn{display:inline-block;text-decoration:none;color:inherit}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--bad)}
+.btn.small{padding:.3rem .7rem;font-size:.85rem}
+.btn kbd{font:inherit;font-size:.72rem;opacity:.75;margin-left:.45rem;border:1px solid currentColor;border-radius:4px;padding:0 .3rem}
+
+/* library + lobby */
+.libgrid,.lobbygrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1.4rem;padding:1.2rem 1.4rem;min-height:0;overflow:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.2rem 1.4rem}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.6rem;border:2px dashed var(--line)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop h1{margin:0}
+.filebtn{display:inline-block;cursor:pointer}
+.loaderr{max-width:34rem;text-align:left}
+.loaderr ul{margin:.3rem 0 0 1rem;padding:0}
+.recent{display:flex;flex-direction:column;gap:.5rem}
+.rrow{display:grid;grid-template-columns:1fr auto auto auto;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
+.rrow .rt{font-weight:600}
+.rrow .rm{color:var(--muted);font-size:.8rem}
+.join{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.6rem}
+.join .qr{width:min(48vh,28rem);aspect-ratio:1;background:#fff;border-radius:12px;padding:.2rem}
+.join .qr svg{width:100%;height:100%;display:block}
+.join .code{font-size:2.6rem;font-weight:800;letter-spacing:.18em}
+.join .url{font-size:.95rem;color:var(--muted);word-break:break-all;max-width:36rem}
+.join .joined{font-size:1.5rem}
+.join .check,.qrover .check{color:var(--muted);font-size:1rem}
+.join .check b,.qrover .check b{color:var(--ink);font-size:1.25rem;letter-spacing:.12em;margin-left:.3rem}
+.join .warn{max-width:30rem}
+.settings h2{margin:0 0 .8rem;font-size:1.2rem}
+.settings .pack{display:flex;gap:.6rem;align-items:center;padding:.6rem .8rem;background:var(--accent-soft);border-radius:10px;margin-bottom:.4rem}
+.settings .pack b{flex:1}
+.settings label{display:block;margin:.75rem 0 .2rem;font-weight:600;font-size:.95rem}
+.settings input[type=url],.settings input[type=number],.settings select{width:100%;padding:.5rem .6rem;border:1px solid var(--line);border-radius:8px;background:#fff;font-weight:400}
+.settings input[type=number]{width:6rem}
+.settings .check{display:flex;gap:.5rem;align-items:flex-start;font-weight:400}
+.settings .check input{margin-top:.3rem}
+.settings small{color:var(--muted);display:block;font-size:.8rem}
+.settings .row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.btn.big{font-size:1.2rem;padding:.8rem 1.6rem;margin-top:1.2rem;width:100%}
+
+/* overlays */
+.qrover,.zoomover{position:fixed;inset:0;background:rgba(244,243,239,.97);display:none;align-items:center;justify-content:center;z-index:10}
+.qrover.open,.zoomover.open{display:flex}
+.qrover .box{display:flex;flex-direction:column;align-items:center;gap:.6rem;text-align:center}
+.qrover .qr{width:min(70vh,40rem);aspect-ratio:1}
+.qrover .qr svg{width:100%;height:100%}
+.qrover .code{font-size:3rem;font-weight:800;letter-spacing:.18em}
+.zoomover{cursor:zoom-out;padding:2vh 2vw}
+.zoomover img{max-width:96vw;max-height:94vh;background:#fff;border-radius:8px;box-shadow:0 6px 30px rgba(0,0,0,.2)}
+
+/* end */
+.endgrid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:1.4rem;padding:1.2rem 1.4rem;min-height:0}
+.endgrid .card{overflow:auto}
+.avg{font-size:5rem;font-weight:800;line-height:1}
+.hard{display:grid;grid-template-columns:3.2rem 1fr 6.5rem;gap:.4rem .8rem;align-items:center}
+.hard .lbl{font-weight:700}
+.hard .hb{height:.9rem;background:#efede8;border-radius:99px;overflow:hidden}
+.hard .hb span{display:block;height:100%;background:var(--good)}
+.hard .hb span.low{background:var(--bad)}
+.hard .hb span.mid{background:var(--warn)}
+.hard .pc{text-align:right;font-variant-numeric:tabular-nums}
+
+.center{display:flex;align-items:center;justify-content:center;padding:2rem}
+.center .card{max-width:38rem}
+.center h1{margin-top:0}
+.studentnote a{color:var(--accent)}
+.settings details.adv{margin-top:1rem;border-top:1px solid var(--line);padding-top:.6rem}
+.settings details.adv summary{cursor:pointer;color:var(--muted);font-size:.9rem;font-weight:600}
+@media (max-width:760px){ .libgrid,.lobbygrid{grid-template-columns:1fr} .top{flex-wrap:wrap} }
+
+/* projector window: lobby setting + header chip on the laptop */
+.settings .proj{margin:.8rem 0 .2rem;padding:.7rem .8rem;border:1px dashed var(--line);border-radius:10px}
+.settings .proj .btn{margin:0 .4rem .3rem 0}
+.settings .proj .on{font-weight:700;color:var(--good);margin-right:.5rem}
+.chip.on{border-color:var(--accent);background:var(--accent-soft)}
+.chip.proj{background:var(--good-soft);border-color:#a9d8bb}
+.mirror{margin:.6rem 1.2rem 0;padding:.5rem .8rem;border-radius:10px;background:var(--bad-soft);color:#6b1d11;font-size:.85rem}
+.mirror:empty{margin:0;padding:0}
+
+/* presenter console (laptop) while the projector window is open */
+.screen.console{grid-template-rows:auto auto 1fr auto}
+.cgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:1rem;padding:.8rem 1.2rem;min-height:0}
+.cleft,.cright{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:.6rem}
+.cleft .opt{padding:.35rem .7rem}
+.ccase{font-size:.9rem;padding:.9rem 1.1rem}
+.ccase .nh{font-weight:700;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4rem}
+.ccase figure.qimg img{max-height:26vh}
+.ccase .lead{margin-top:.6rem;font-size:.95rem}
+.opt.key{border-color:var(--good)}
+.opt.key .letter{background:var(--good);color:#fff}
+.opt .keytag{font-size:.72rem;font-weight:700;color:var(--good);margin-left:.4rem;white-space:nowrap}
+.cright{display:flex;flex-direction:column;gap:.6rem}
+.notes{font-size:.88rem;padding:.9rem 1.1rem}
+.notes .nh{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.notes .nh h2{margin:0;font-size:1rem;flex:1}
+.notes p{margin:.3rem 0}
+.notes h3{margin:.8rem 0 .3rem;font-size:.92rem}
+.notes .explain ul.why li{padding:.25rem .5rem}
+.notes .explain .ans{margin-bottom:.5rem;padding:.4rem .7rem}
+.notes .explain .ans b{font-size:1.2rem}
+.notes .obj{margin-top:.6rem;padding-top:.5rem}
+.nextq{font-size:.85rem;padding:.7rem 1.1rem;color:var(--muted)}
+.nextq b{color:var(--ink)}
+.status .live{flex-basis:100%;font-size:.8rem;color:var(--good);font-weight:600}
+
+/* projector window (audience view) */
+.audjoin{display:flex;gap:3.5vw;align-items:center;justify-content:center;padding:2vh 3vw;min-height:0}
+.audjoin .qr{width:min(72vh,46vw);aspect-ratio:1;background:#fff;border-radius:14px;padding:.3rem;flex:none}
+.audjoin .qr svg{width:100%;height:100%;display:block}
+.audjoin .info{display:flex;flex-direction:column;gap:.8rem;min-width:0;max-width:36rem}
+.audjoin .big{font-size:1.5rem}
+.audjoin .code{font-size:4.6rem;font-weight:800;letter-spacing:.18em;line-height:1}
+.audjoin .check{color:var(--muted);font-size:1.1rem}
+.audjoin .check b{color:var(--ink);font-size:1.4rem;letter-spacing:.12em;margin-left:.3rem}
+.audjoin .url{color:var(--muted);word-break:break-all;font-size:.95rem}
+.audjoin .joined{font-size:2rem}
+.fsbtn{position:fixed;right:1rem;bottom:1rem;z-index:20;transition:opacity .4s}
+body.idle .fsbtn,body.fs .fsbtn{opacity:0;pointer-events:none}
+body.aud.idle{cursor:none}
+.awnote{position:fixed;left:50%;top:.8rem;transform:translateX(-50%);z-index:30;background:var(--bad-soft);color:#6b1d11;border-radius:10px;padding:.4rem .9rem;font-size:.9rem;display:none}
+.awnote.open{display:block}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>/*__PEERJS__*/</script>
+<script>/*__QRCODE__*/</script>
+<script>
+(function(){
+'use strict';
+var APP_VERSION = '4';
+var LET = 'ABCDEFGH'.split('');
+function letters(n){ return LET.slice(0, n); }
+var app = document.getElementById('app');
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+var store = {
+  get: function(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set: function(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del: function(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+var SESSION_KEY = 'livequiz-session-v2', SETTINGS_KEY = 'livequiz-settings-v1';
+
+/* ---------- projector window: a second window of this page (?audience=ID) that shows only what students should see.
+   The presenter window runs the quiz and sends it the quiz and the screen state over a BroadcastChannel
+   (same browser, same site only); the projector window sends back key presses and clicks. ---------- */
+var VIEW_CH = null; try { if (window.BroadcastChannel) VIEW_CH = new BroadcastChannel('livequiz-view'); } catch(e){}
+var AUD_ID = (function(){ var a = new URLSearchParams(location.search).get('audience') || ''; return /^[A-Za-z0-9]{6,24}$/.test(a) ? a : ''; })();
+var AUD_NAME = 'livequiz-audience';
+function toggleFs(){ try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function(){}); } catch(e){} }
+function audienceBoot(){
+  document.title = 'Live Quiz — Projector';
+  document.body.classList.add('aud');
+  var cur = null, lastView = 0, idleT = null;
+  var fsb = document.createElement('button'); fsb.className = 'btn fsbtn'; fsb.setAttribute('data-fs', ''); fsb.textContent = '⛶ Full screen (F)'; document.body.appendChild(fsb);
+  var note = document.createElement('div'); note.className = 'awnote'; note.textContent = 'Lost contact with the presenter window…'; document.body.appendChild(note);
+  function post(m){ m.id = AUD_ID; try { VIEW_CH.postMessage(m); } catch(e){} }
+  function wait(msg){
+    if (cur) { cur.dispose(); cur = null; }
+    note.classList.remove('open');
+    app.innerHTML = '<div class="screen"><header class="top"><div class="title">Live quiz · projector window</div></header><main class="center"><div class="card" id="awaiting"><h1>Projector window</h1>'+
+      (msg ? '<p class="warn">'+esc(msg)+'</p>' : '')+
+      '<p>Waiting for the presenter window… Start or continue a quiz there.</p>'+
+      '<p class="hint">Move this window to the projector screen, then click Full screen. The laptop window runs the quiz and keeps the answers; this window shows only what students should see.</p>'+
+      '<p><button class="btn primary big" data-fs>Full screen</button></p></div></main><footer></footer></div>';
+  }
+  if (!VIEW_CH) { wait('This browser can’t link two windows. Open the player in Chrome or Edge.'); return; }
+  wait('');
+  VIEW_CH.onmessage = function(e){
+    var m = e.data; if (!m || typeof m !== 'object' || m.id !== AUD_ID) return;
+    if (m.t === 'pack') {
+      if (typeof m.key !== 'string' || (cur && cur.key === m.key)) return;
+      if (checkPack(m.quiz).errs.length) return;
+      if (cur) cur.dispose();
+      cur = runApp(m.quiz, m.key, 'view'); cur.key = m.key; lastView = Date.now();
+    } else if (m.t === 'view') {
+      if (cur && m.key === cur.key && m.S && typeof m.S === 'object') { lastView = Date.now(); note.classList.remove('open'); cur.apply(m); }
+    } else if (m.t === 'bye') wait('The presenter window was closed or reloaded.');
+    else if (m.t === 'close') window.close();
+  };
+  function beat(){ post({ t:'beat', has: cur ? cur.key : '' }); }
+  setInterval(beat, 1000); beat();
+  setInterval(function(){ if (!cur) return; var gap = Date.now() - lastView; note.classList.toggle('open', gap > 5000); if (gap > 20000) wait('Lost contact with the presenter window.'); }, 1000);
+  window.addEventListener('pagehide', function(){ post({ t:'gone' }); });
+  document.addEventListener('click', function(e){ if (e.target.closest('[data-fs]')) toggleFs(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFs(); } });
+  document.addEventListener('fullscreenchange', function(){ document.body.classList.toggle('fs', !!document.fullscreenElement); });
+  function awake(){ document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(function(){ document.body.classList.add('idle'); }, 3000); }
+  document.addEventListener('mousemove', awake); awake();
+}
+
+/* ---------- remembered quiz packs (IndexedDB; optional — everything works without it) ---------- */
+var idb = (function(){
+  var dbp = null;
+  function open(){
+    if (!dbp) dbp = new Promise(function(res, rej){
+      try { var r = indexedDB.open('livequiz', 2);
+        r.onupgradeneeded = function(){
+          var db = r.result;
+          if (!db.objectStoreNames.contains('packs')) db.createObjectStore('packs', { keyPath: 'key' });
+          if (!db.objectStoreNames.contains('keys')) db.createObjectStore('keys', { keyPath: 'key' });   // presenter signing key
+        };
+        r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); };
+      } catch(e){ rej(e); }
+    });
+    return dbp;
+  }
+  function run(store, mode, fn){
+    return open().then(function(db){ return new Promise(function(res, rej){
+      var t = db.transaction(store, mode), out, req = fn(t.objectStore(store));
+      if (req) req.onsuccess = function(){ out = req.result; };
+      t.oncomplete = function(){ res(out); }; t.onerror = function(){ rej(t.error); }; t.onabort = function(){ rej(t.error); };
+    }); });
+  }
+  return {
+    put: function(rec){ return run('packs', 'readwrite', function(s){ return s.put(rec); }); },
+    get: function(k){ return run('packs', 'readonly', function(s){ return s.get(k); }); },
+    all: function(){ return run('packs', 'readonly', function(s){ return s.getAll(); }); },
+    del: function(k){ return run('packs', 'readwrite', function(s){ return s.delete(k); }); },
+    putKey: function(rec){ return run('keys', 'readwrite', function(s){ return s.put(rec); }); },
+    getKey: function(k){ return run('keys', 'readonly', function(s){ return s.get(k); }); }
+  };
+})();
+
+/* ---------- crypto helpers (the presenter proves to phones that it is the real screen) ---------- */
+var HAS_CRYPTO = !!(window.crypto && crypto.subtle && window.TextEncoder);
+function b64u(buf){ var b = new Uint8Array(buf), s = ''; for (var i=0;i<b.length;i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+/* Crockford base32 (the check code a student types) */
+function b32(bytes){ var A = '0123456789ABCDEFGHJKMNPQRSTVWXYZ', bits = 0, val = 0, out = ''; for (var i=0;i<bytes.length;i++){ val = (val << 8) | bytes[i]; bits += 8; while (bits >= 5) { out += A[(val >>> (bits - 5)) & 31]; bits -= 5; } } return out; }
+function sha256(str){ return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)); }
+function hash(str){ var h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (var i=0, ch; i<str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909); h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(36); }
+
+/* ---------- pack checking ---------- */
+var IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
+function checkPack(p){
+  var errs = [], warns = [];
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return { errs: ['This file is not a quiz pack.'], warns: [] };
+  if (!Array.isArray(p.questions) || !p.questions.length) return { errs: ['The file has no questions.'], warns: [] };
+  var images = (p.images && typeof p.images === 'object') ? p.images : {};
+  Object.keys(images).forEach(function(k){ if (typeof images[k] !== 'string' || !IMG_RE.test(images[k])) errs.push('Image “' + k + '” is not a valid embedded picture.'); });
+  p.questions.forEach(function(q, i){
+    var n = 'Question ' + (i+1) + ': ';
+    if (!q || typeof q !== 'object') { errs.push(n + 'is empty.'); return; }
+    if (typeof q.stem !== 'string' || !q.stem.trim()) errs.push(n + 'the case text is missing.');
+    if (typeof q.lead !== 'string' || !q.lead.trim()) errs.push(n + 'the question line is missing.');
+    if (!Array.isArray(q.options) || q.options.length < 2 || q.options.length > 8 || q.options.some(function(o){ return typeof o !== 'string' || !o.trim(); })) { errs.push(n + 'needs 2 to 8 answer options, none empty.'); return; }
+    var ls = letters(q.options.length);
+    if (ls.indexOf(q.answer) < 0) errs.push(n + 'the correct answer must be one of ' + ls.join(', ') + '.');
+    ['image', 'explainImage'].forEach(function(k){ if (q[k] && !images[q[k]]) errs.push(n + 'picture “' + q[k] + '” is missing from the pack.'); });
+    if (!q.explain) warns.push('Question ' + (i+1) + ' has no explanation.');
+  });
+  return { errs: errs, warns: warns };
+}
+function packKey(p){ var base = String(p.id || p.title || 'quiz').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'quiz'; return base + '-' + hash(JSON.stringify(p.questions) + JSON.stringify(Object.keys(p.images || {}))); }
+
+/* ---------- the editor page (same folder): write, fix and open quiz packs ---------- */
+function editorUrl(key){
+  var q = new URLSearchParams(), here = new URLSearchParams(location.search);
+  if (/^(127\.0\.0\.1|localhost)$/.test(here.get('ph') || '')) ['ph', 'pp', 'ps', 'pt'].forEach(function(k){ if (here.get(k)) q.set(k, here.get(k)); });
+  if (key) q.set('pack', key);
+  var qs = q.toString(); return 'editor.html' + (qs ? '?' + qs : '');
+}
+
+/* ---------- library: choose a quiz pack ---------- */
+function joinHome(){ try { return new URL('join/', location.href).href.replace(/^https?:\/\//, ''); } catch(e){ return 'join/'; } }
+function library(msgHtml){
+  app.innerHTML =
+    '<div class="screen"><header class="top"><div class="title">Live quiz · player</div><div class="spacer"></div>'+
+      '<span class="hint studentnote">Student? Scan the QR code on the classroom screen, or open <a href="join/">'+esc(joinHome())+'</a></span><span class="hint">v'+APP_VERSION+'</span></header>'+
+    '<main class="libgrid">'+
+      '<section class="card drop" id="drop"><h1>Load a quiz</h1>'+
+        '<p>Choose a quiz pack file (<b>.quiz.json</b>), for example from your Google Drive folder, or drag it onto this box.</p>'+
+        '<label class="btn primary big filebtn">Choose quiz file…<input type="file" id="file" accept=".json,application/json" hidden></label>'+
+        '<div class="loaderr" id="loaderr">'+(msgHtml || '')+'</div></section>'+
+      '<section class="card"><h2 style="margin-top:0">Recent quizzes</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>'+
+        '<p class="hint">Quizzes you load are remembered in this browser on this computer.</p>'+
+        '<p><a class="btn" id="editorLink" href="'+esc(editorUrl())+'">Write or edit a quiz in the editor</a></p></section>'+
+    '</main><footer></footer></div>';
+  var drop = document.getElementById('drop'), inp = document.getElementById('file');
+  inp.addEventListener('change', function(){ if (inp.files && inp.files[0]) readFile(inp.files[0]); inp.value = ''; });
+  ['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function(e){ var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) readFile(f); });
+  renderRecent();
+}
+function renderRecent(){
+  var el = document.getElementById('recent'); if (!el) return;
+  idb.all().then(function(list){
+    list = (list || []).sort(function(a,b){ return b.loadedAt - a.loadedAt; });
+    if (!list.length) { el.innerHTML = '<p class="hint">None yet.</p>'; return; }
+    el.innerHTML = list.map(function(r){ return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div><div class="rm">'+r.n+' questions · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
+      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><a class="btn small" href="'+esc(editorUrl(r.key))+'" title="Open this quiz in the editor">Edit</a><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
+    el.onclick = function(e){
+      var u = e.target.closest('[data-use]'), f = e.target.closest('[data-forget]');
+      if (u) idb.get(u.getAttribute('data-use')).then(function(r){ if (r) { r.loadedAt = Date.now(); idb.put(r).catch(function(){}); start(r.pack, r.key, 'new'); } });
+      if (f) idb.del(f.getAttribute('data-forget')).then(renderRecent, renderRecent);
+    };
+  }, function(){ el.innerHTML = '<p class="hint">This browser can’t remember quizzes here — just choose the file each time.</p>'; });
+}
+function showLoadError(lines){
+  var el = document.getElementById('loaderr'); if (!el) return;
+  el.innerHTML = '<p class="warn">This file can’t be used:</p><ul class="warn">' + lines.slice(0, 8).map(function(l){ return '<li>'+esc(l)+'</li>'; }).join('') + (lines.length > 8 ? '<li>…and '+(lines.length-8)+' more</li>' : '') + '</ul>';
+}
+function readFile(file){
+  var fr = new FileReader();
+  fr.onload = function(){
+    var p; try { p = JSON.parse(fr.result); } catch(e){ showLoadError(['It is not a quiz pack (the file could not be read as JSON).']); return; }
+    var c = checkPack(p); if (c.errs.length) { showLoadError(c.errs); return; }
+    var key = packKey(p), rec = { key: key, title: p.title || file.name.replace(/\.quiz\.json$|\.json$/i, ''), n: p.questions.length, loadedAt: Date.now(), pack: p };
+    p.title = rec.title;
+    idb.put(rec).catch(function(){}).then(function(){ start(p, key, 'new', c.warns); });
+  };
+  fr.onerror = function(){ showLoadError(['The file could not be opened.']); };
+  fr.readAsText(file);
+}
+
+/* ---------- boot ---------- */
+var started = false;
+function start(pack, key, mode, warns){
+  if (started) return;
+  if (!HAS_CRYPTO) { library('<p class="warn">This browser can’t secure the session here. Open the player from its https address (https://slonamuh.github.io/live-quiz/) in Chrome.</p>'); return; }
+  var c = checkPack(pack);                      // re-check packs that come back from browser storage too
+  if (c.errs.length) { library(''); showLoadError(c.errs); return; }
+  started = true; runApp(pack, key, mode, warns || c.warns);
+}
+(function boot(){
+  if (window.LQ_FORWARD) return;
+  if (AUD_ID) { audienceBoot(); return; }
+  var openKey = new URLSearchParams(location.search).get('open');
+  if (openKey) {
+    try { var u = new URL(location.href); u.searchParams.delete('open'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch(e){}
+    idb.get(openKey).then(function(rec){
+      if (!rec || !rec.pack) { library('<p class="warn">That quiz is no longer in this browser. Choose the file instead.</p>'); return; }
+      rec.loadedAt = Date.now(); idb.put(rec).catch(function(){});
+      store.del(SESSION_KEY); start(rec.pack, rec.key, 'new');
+    }, function(){ library(); });
+    return;
+  }
+  var saved = store.get(SESSION_KEY);
+  if (saved && saved.packKey && saved.savedAt && Date.now() - saved.savedAt < 12*3600*1000 && (saved.played || []).length) {
+    idb.get(saved.packKey).then(function(rec){
+      if (!rec || !rec.pack) { library('<p class="hint">Your last session used “'+esc(saved.packTitle || 'a quiz')+'”. Load that file again to continue it, or choose another quiz.</p>'); return; }
+      var where = saved.phase === 'end' ? 'finished' : 'at question ' + (saved.qi+1) + ' of ' + rec.n;
+      app.innerHTML = '<div class="screen"><header class="top"><div class="title">Live quiz · player</div></header><main class="center"><div class="card">'+
+        '<h1>Continue the last session?</h1><p><b>'+esc(rec.title)+'</b> — session <b>'+esc(saved.code)+'</b> was '+where+', with '+Object.keys(saved.everyone||{}).length+' students. Phones reconnect by themselves if you continue.</p>'+
+        '<p><button class="btn primary big" id="resumeBtn">Continue session '+esc(saved.code)+'</button></p>'+
+        '<p><button class="btn" id="freshBtn">Choose a quiz instead</button></p></div></main><footer></footer></div>';
+      document.getElementById('resumeBtn').onclick = function(){ start(rec.pack, rec.key, 'resume'); };
+      document.getElementById('freshBtn').onclick = function(){ store.del(SESSION_KEY); library(); };
+    }, function(){ library(); });
+    return;
+  }
+  library();
+})();
+
+/* =====================================================================================
+   The live session, for one quiz pack
+   ===================================================================================== */
+function runApp(QUIZ, PACK_KEY, MODE, WARNS){
+var QUESTIONS = QUIZ.questions, TOTAL = QUESTIONS.length, IMAGES = QUIZ.images || {};
+function LQ(qi){ return letters(QUESTIONS[qi].options.length); }
+function hasImg(id){ return typeof id === 'string' && Object.prototype.hasOwnProperty.call(IMAGES, id); }
+
+// VIEW: this is the projector window. It never talks to phones or saves anything; it draws the state
+// the presenter window sends (V) and forwards key presses and clicks back to it.
+var VIEW = MODE === 'view', V = null, offs = [];
+function on(type, fn){ document.addEventListener(type, fn); offs.push(function(){ document.removeEventListener(type, fn); }); }
+function every(fn, ms){ var t = setInterval(fn, ms); offs.push(function(){ clearInterval(t); }); }
+function vsend(m){ m.id = VIEW ? AUD_ID : VIEW_ID; if (VIEW_CH) try { VIEW_CH.postMessage(m); } catch(e){} }
+
+/* connection settings: a different relay server (?ph=&pp=&ps=&pt=) is accepted only on this computer, for testing */
+var params = new URLSearchParams(location.search);
+var peerOpts = { debug: 0 }, passParams = new URLSearchParams();
+if (/^(127\.0\.0\.1|localhost)$/.test(params.get('ph') || '')) {
+  peerOpts.host = params.get('ph'); passParams.set('ph', params.get('ph'));
+  if (params.get('pp')) { peerOpts.port = +params.get('pp'); passParams.set('pp', params.get('pp')); }
+  if (params.get('ps')) { peerOpts.secure = params.get('ps') === '1'; passParams.set('ps', params.get('ps')); }
+  if (params.get('pt')) { peerOpts.path = params.get('pt'); passParams.set('pt', params.get('pt')); }
+}
+var ID_PREFIX = 'acsom-livequiz-';
+
+/* signing key: phones accept only messages signed with it; its fingerprint travels in the QR code / link */
+var KEYPAIR = null, PUB = '', FP = '', CHECK = '', IMG_HASH = {};
+function loadKeys(reuse){
+  function make(){ return crypto.subtle.generateKey({ name:'ECDSA', namedCurve:'P-256' }, false, ['sign', 'verify']).then(function(kp){ return { kp: kp, fresh: true }; }); }
+  var p = reuse ? idb.getKey('presenter').then(function(rec){ return (rec && rec.code === S.code && rec.priv && rec.pub) ? { kp: { privateKey: rec.priv, publicKey: rec.pub }, fresh: false } : make(); }, make) : make();
+  return p.then(function(r){
+    KEYPAIR = r.kp;
+    return crypto.subtle.exportKey('raw', KEYPAIR.publicKey).then(function(raw){ PUB = b64u(raw); return crypto.subtle.digest('SHA-256', raw); })
+      .then(function(h){ FP = b64u(h.slice(0, 16)); CHECK = b32(new Uint8Array(h).slice(0, 5)); if (r.fresh) saveKeys(); return r.fresh; });
+  });
+}
+function saveKeys(){ idb.putKey({ key:'presenter', code: S.code, priv: KEYPAIR.privateKey, pub: KEYPAIR.publicKey }).catch(function(){}); }
+function checkPretty(){ if (VIEW) return V ? String(V.check || '') : ''; return CHECK.slice(0, 4) + '-' + CHECK.slice(4); }
+function hashImages(){ return Promise.all(Object.keys(IMAGES).map(function(id){ return sha256(IMAGES[id]).then(function(h){ IMG_HASH[id] = b64u(h); }); })); }
+function signText(text){ return crypto.subtle.sign({ name:'ECDSA', hash:'SHA-256' }, KEYPAIR.privateKey, new TextEncoder().encode(text)).then(b64u); }
+
+var settings = Object.assign({ studentUrl:'', t1:90, t2:60, autoClose:true, confidence:true, startAt:1 }, store.get(SETTINGS_KEY) || {});
+if (/^https?:$/.test(location.protocol)) {
+  // The phone page used to be this folder itself; the folder now opens the player and the phone page is join/.
+  var SITE = new URL('./', location.href).href;
+  if (!settings.studentUrl || settings.studentUrl === SITE || settings.studentUrl === SITE + 'index.html') settings.studentUrl = SITE + 'join/';
+}
+
+var S = null, conns = {}, peer = null, peerStatus = 'offline';
+var screenKey = '', qrOpen = false, showStem = false, armed = { k:'', t:0 };
+
+function makeCode(){ var a='ABCDEFGHJKMNPQRSTUVWXYZ23456789', s=''; for (var i=0;i<5;i++) s += a[Math.floor(Math.random()*a.length)]; return s; }
+function save(){ if (S && !VIEW) { S.savedAt = Date.now(); store.set(SESSION_KEY, S); } }
+function saveSettings(){ store.set(SETTINGS_KEY, settings); }
+function isArmed(k){ return armed.k === k && Date.now() - armed.t < 4000; }
+function arm(k, rerender){ armed = { k:k, t:Date.now() }; rerender(); setTimeout(function(){ if (armed.k === k) { armed = { k:'', t:0 }; rerender(); } }, 4100); }
+
+function newSession(){
+  S = { code: makeCode(), packKey: PACK_KEY, packTitle: QUIZ.title, phase:'lobby', qi:-1, round:1, answers:{}, played:[], deadline:null, everyone:{}, createdAt:Date.now() };
+  conns = {}; save();
+  loadKeys(false).then(function(){ startPeer(); render(true); }, keyFailure);
+}
+function keyFailure(){ app.innerHTML = '<div class="screen"><header class="top"><div class="title">Live quiz · player</div></header><main class="center"><div class="card"><h1>Can’t secure the session</h1><p>This browser refused to create the session key. Open the player from https://slonamuh.github.io/live-quiz/ in Chrome.</p></div></main><footer></footer></div>'; }
+function newCode(){                               // the old code is held by someone else: move the class to a fresh code
+  S.code = makeCode(); save(); saveKeys(); conns = {}; busySince = 0; qrOpen = true; startPeer(); render(true);
+}
+
+/* ---------- PeerJS: this page is the hub ---------- */
+var reconnectTimer = null, watchdog = null, lastErr = '', busySince = 0;
+function startPeer(){
+  clearTimeout(reconnectTimer); clearTimeout(watchdog);
+  if (peer) { try { peer.destroy(); } catch(e){} }
+  if (peerStatus !== 'unreachable' && peerStatus !== 'busy') peerStatus = 'connecting';
+  renderNet();
+  var p;
+  try { p = peer = new peerjs.Peer(ID_PREFIX + S.code.toLowerCase(), peerOpts); }
+  catch (e) { peer = null; lastErr = (e && e.message) || String(e); peerStatus = 'unreachable'; renderNet(); refreshCounts(); reconnectTimer = setTimeout(startPeer, 5000); return; }
+  watchdog = setTimeout(function(){
+    if (p !== peer || peerStatus === 'online') return;
+    peerStatus = 'unreachable'; if (!lastErr) lastErr = 'no answer from the PeerJS server';
+    renderNet(); refreshCounts(); reconnectTimer = setTimeout(startPeer, 4000);
+  }, 12000);
+  p.on('open', function(){ if (p !== peer) return; clearTimeout(watchdog); lastErr = ''; busySince = 0; peerStatus = 'online'; renderNet(); refreshCounts(); });
+  p.on('connection', function(conn){ setupConn(conn); });
+  p.on('disconnected', function(){
+    if (p !== peer || p.destroyed || peerStatus === 'busy') return;   // 'busy': PeerJS disconnects right after "ID taken"; startPeer retries
+    peerStatus = 'reconnecting'; renderNet();
+    reconnectTimer = setTimeout(function(){ if (p === peer && !p.destroyed && p.disconnected) { try { p.reconnect(); } catch(e){ startPeer(); } } }, 1500);
+  });
+  p.on('error', function(err){
+    if (p !== peer) return;
+    var type = err && err.type;
+    if (type === 'unavailable-id') {
+      if (!S.played.length && !Object.keys(S.everyone).length && S.phase === 'lobby') { S.code = makeCode(); save(); saveKeys(); render(true); startPeer(); return; }
+      if (!busySince) busySince = Date.now();
+      peerStatus = 'busy'; renderNet(); reconnectTimer = setTimeout(startPeer, 3000); return;
+    }
+    if (type === 'peer-unavailable') return;
+    lastErr = (type || 'error') + (err && err.message ? ' — ' + err.message : '');
+    if (peerStatus !== 'unreachable') peerStatus = 'reconnecting';
+    renderNet();
+    reconnectTimer = setTimeout(function(){ if (p !== peer) return; if (p.destroyed) startPeer(); else if (p.disconnected) { try { p.reconnect(); } catch(e){ startPeer(); } } }, 3000);
+  });
+}
+
+function setupConn(conn){
+  var sid = null;
+  conn.on('data', function(msg){
+    if (!msg || typeof msg !== 'object') return;
+    if (msg.t === 'hello') {
+      if (sid) return;                              // one student identity per connection
+      if (typeof msg.sid !== 'string' || !/^[A-Za-z0-9]{6,40}$/.test(msg.sid)) return;
+      if (typeof msg.nonce !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(msg.nonce)) return;
+      sid = msg.sid;
+      var prev = conns[sid];
+      if (prev && prev.conn !== conn) { try { prev.conn.close(); } catch(e){} }
+      var rec = conns[sid] = { conn: conn, last: Date.now(), sent: {}, nonce: msg.nonce, seq: 0, queue: Promise.resolve() };
+      // Prove we are the real presenter: sign the phone's random challenge with the session key.
+      rec.queue = rec.queue.then(function(){ return signText('livequiz-auth|' + S.code + '|' + msg.nonce); })
+        .then(function(sig){ if (conn.open) conn.send({ t:'auth', pub: PUB, sig: sig }); }).catch(function(){});
+      if (!S.everyone[sid]) { S.everyone[sid] = 1; save(); }
+      send(sid); refreshCounts();
+      return;
+    }
+    if (!sid || !conns[sid] || conns[sid].conn !== conn) return;
+    conns[sid].last = Date.now();
+    if (msg.t === 'hb') { try { conn.send({ t:'pong' }); } catch(e){} return; }
+    if (msg.t === 'answer') onAnswer(sid, msg);
+  });
+  conn.on('close', function(){ if (sid && conns[sid] && conns[sid].conn === conn) { delete conns[sid]; refreshCounts(); } });
+  conn.on('error', function(){});
+}
+function onlineSids(){ var now = Date.now(), out = []; for (var sid in conns) { var c = conns[sid]; if (c.conn.open && now - c.last < 16000) out.push(sid); } return out; }
+function onlineN(){ return VIEW ? (V ? +V.online || 0 : 0) : onlineSids().length; }
+function everyoneN(){ return VIEW ? (+S.n || 0) : Object.keys(S.everyone).length; }
+
+/* ---------- answers & tallies ---------- */
+function bucket(qi, round){ var a = S.answers[qi] || (S.answers[qi] = {}); return a[round] || (a[round] = {}); }
+function peekBucket(qi, round){ return (S.answers[qi] && S.answers[qi][round]) || {}; }
+function finalBucket(qi){ var b1 = peekBucket(qi,1), b2 = peekBucket(qi,2), out = {}, k; for (k in b1) out[k] = b1[k]; for (k in b2) out[k] = b2[k]; return out; }
+function tallyOf(b, qi){ var ls = LQ(qi), t = { n:0, opts: ls.map(function(){ return { s:0, g:0, all:0 }; }) }; for (var sid in b) { var i = ls.indexOf(b[sid].c); if (i < 0) continue; t.n++; t.opts[i].all++; if (b[sid].sure === false) t.opts[i].g++; else t.opts[i].s++; } return t; }
+
+function onAnswer(sid, m){
+  if (!S || S.phase !== 'vote' || m.qi !== S.qi || m.round !== S.round || LQ(S.qi).indexOf(m.c) < 0) { send(sid); return; }
+  var b = bucket(S.qi, S.round);
+  if (!b[sid]) { b[sid] = { c: m.c, sure: settings.confidence ? m.sure !== false : null }; save(); }
+  send(sid); refreshCounts(); maybeAutoClose();
+}
+function maybeAutoClose(){
+  if (VIEW || !S || S.phase !== 'vote' || !settings.autoClose) return;
+  var on = onlineSids(); if (!on.length) return;
+  var b = peekBucket(S.qi, S.round);
+  for (var i=0;i<on.length;i++) if (!b[on[i]]) return;
+  setTimeout(function(){ if (S.phase === 'vote') { var b2 = peekBucket(S.qi, S.round), on2 = onlineSids(); if (on2.length && on2.every(function(s){ return b2[s]; })) closeVoting(); } }, 700);
+}
+
+/* ---------- messages to phones ---------- */
+function imgRef(id, cap){ return id && IMAGES[id] ? { id: PACK_KEY + ':' + id, caption: cap || '', hash: IMG_HASH[id] || '' } : null; }
+function stateFor(sid){
+  var st = { t:'state', v: 2, title: QUIZ.title, phase: S.phase, qi: S.qi, total: TOTAL, round: S.round, confidence: !!settings.confidence };
+  if (S.phase === 'vote' || S.phase === 'closed' || S.phase === 'reveal') {
+    var q = QUESTIONS[S.qi];
+    st.q = { stem: q.stem, lead: q.lead, options: q.options, image: imgRef(q.image, q.imageCaption) };
+    st.mine = peekBucket(S.qi, S.round)[sid] || null;
+    st.first = S.round === 2 ? (peekBucket(S.qi, 1)[sid] || null) : null;
+    if (S.phase === 'vote' && S.deadline) st.remaining = Math.max(0, Math.round((S.deadline - Date.now())/1000));
+    if (S.phase === 'reveal') { st.reveal = { answer: q.answer, explain: q.explain || '', why: q.why || {}, objective: q.objective || '', image: imgRef(q.explainImage, q.explainCaption) }; st.final = finalBucket(S.qi)[sid] || null; }
+  }
+  if (S.phase === 'end') st.result = resultFor(sid);
+  return st;
+}
+var CHUNK = 15000;
+function pushImages(sid){
+  var c = conns[sid]; if (!c || !c.conn.open || ['vote','closed','reveal'].indexOf(S.phase) < 0) return;
+  var q = QUESTIONS[S.qi], ids = [];
+  if (q.image) ids.push(q.image);
+  if (S.phase === 'reveal' && q.explainImage) ids.push(q.explainImage);
+  ids.forEach(function(id){
+    var key = PACK_KEY + ':' + id, data = IMAGES[id];
+    if (!data || c.sent[key]) return;
+    c.sent[key] = 1;
+    var n = Math.ceil(data.length / CHUNK);
+    c.queue = c.queue.then(function(){   // after the signed state that announces the picture and its hash
+      for (var i=0;i<n;i++) { try { c.conn.send({ t:'img', id: key, i: i, n: n, d: data.slice(i*CHUNK, (i+1)*CHUNK) }); } catch(e){ c.sent[key] = 0; return; } }
+    });
+  });
+}
+function resultFor(sid){
+  var items = [], score = 0;
+  S.played.forEach(function(qi){ var a = finalBucket(qi)[sid] || null, corr = QUESTIONS[qi].answer; if (a && a.c === corr) score++; items.push({ n: qi+1, mine: a ? a.c : null, correct: corr }); });
+  return { score: score, total: S.played.length, items: items };
+}
+// Every state message is signed and numbered for this connection, so nobody in between can alter or replay it.
+// Pictures go unsigned in pieces; the signed state carries each picture's SHA-256, which phones check.
+function send(sid){
+  var c = conns[sid]; if (!c || !c.conn.open) return;
+  var seq = ++c.seq, body = JSON.stringify(stateFor(sid));
+  c.queue = c.queue.then(function(){ return signText(S.code + '|' + c.nonce + '|' + seq + '|' + body); })
+    .then(function(sig){ if (c.conn.open) c.conn.send({ t:'s', seq: seq, body: body, sig: sig }); }).catch(function(){});
+  pushImages(sid);
+}
+function broadcast(){ for (var sid in conns) send(sid); }
+
+/* ---------- flow ---------- */
+function startQuiz(){ var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)); S.qi = s-1; startVote(1); }
+function startVote(round){
+  S.phase = 'vote'; S.round = round; showStem = false;
+  if (S.played.indexOf(S.qi) < 0) S.played.push(S.qi);
+  var secs = +(round === 1 ? settings.t1 : settings.t2);
+  S.deadline = secs > 0 ? Date.now() + secs*1000 : null;
+  S.dur = secs; save(); broadcast(); render(true);
+}
+function closeVoting(){ if (S.phase !== 'vote') return; S.phase = 'closed'; S.deadline = null; save(); broadcast(); render(true); }
+function reveal(){ S.phase = 'reveal'; showStem = false; save(); broadcast(); render(true); }
+function next(){ if (S.qi < TOTAL-1) { S.qi++; startVote(1); } else finish(); }
+function finish(){ S.phase = 'end'; S.deadline = null; save(); broadcast(); render(true); }
+function addTime(){ if (S.phase !== 'vote') return; S.deadline = Math.max(S.deadline || Date.now(), Date.now()) + 30000; S.dur = (S.dur || 0) + 30; save(); broadcast(); updateScreen(); }
+function leaveToLibrary(){ store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.reload(); }
+
+var actions = {
+  start: startQuiz,
+  close: closeVoting,
+  revote: function(){ if (S.phase === 'closed' && S.round === 1) startVote(2); },
+  reveal: function(){ if (S.phase === 'closed') reveal(); },
+  next: function(){ if (S.phase === 'reveal') next(); },
+  more: addTime,
+  qr: function(){ qrOpen = !qrOpen; var o = document.querySelector('.qrover'); if (o) o.classList.toggle('open', qrOpen); renderProjChip(); pushView(); },
+  unzoom: function(){ setZoom(null); },
+  togglestem: function(){ showStem = !showStem; if (consoleOn()) { updateControls(); renderProjChip(); } else renderLeft(); pushView(); },
+  peek: function(){ peek = !ansShown(); notesKey = ''; updateConsole(); },
+  audience: openAudience,
+  closeaud: function(){ vsend({ t:'close' }); try { if (aud.win && !aud.win.closed) aud.win.close(); } catch(e){} aud.win = null; aud.beat = 0; audCheck(); },
+  end: function(){ if (isArmed('end')) { armed.k = ''; finish(); } else arm('end', updateControls); },
+  csv: downloadCsv,
+  newsession: function(){ if (isArmed('new')) { armed.k = ''; store.del(SESSION_KEY); conns = {}; try { peer && peer.destroy(); } catch(e){} peer = null; newSession(); } else arm('new', function(){ render(true); }); },
+  change: function(){ if (S.phase === 'lobby' || isArmed('change')) leaveToLibrary(); else arm('change', function(){ render(true); }); },
+  edit: function(){ if (S.phase !== 'lobby') return; store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.href = editorUrl(PACK_KEY); },
+  newcode: function(){ newCode(); },
+  copylink: function(){
+    var u = joinUrl(), b = document.getElementById('copyBtn'); if (!u) return;
+    var done = function(){ if (b) { b.textContent = 'Link copied ✓'; setTimeout(function(){ if (b.isConnected) b.textContent = 'Copy link'; }, 2500); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(done, function(){ selectUrl(); });
+    else selectUrl();
+  }
+};
+function selectUrl(){ var el = document.querySelector('#join .url'); if (!el) return; var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+on('click', function(e){
+  var z = e.target.closest('img[data-zoom]'), el = e.target.closest('[data-act]');
+  if (VIEW) {                                       // projector window: the presenter window decides
+    if (z) vsend({ t:'zoom', img: z.getAttribute('data-zoom') });
+    else if (el) vsend({ t:'act', act: el.getAttribute('data-act') });
+    return;
+  }
+  if (z) { setZoom(z.getAttribute('data-zoom')); return; }
+  if (!el) return; var a = actions[el.getAttribute('data-act')]; if (a) a();
+});
+var STEP_KEYS = ['Enter', ' ', 'ArrowRight', 'PageDown'];   // PageDown / → = the "next" button of most presentation clickers
+function handleKey(k){
+  if (!S) return;
+  var zo = !!zoomId || !!document.querySelector('.zoomover.open');
+  if (k === 'Escape') { if (zo) actions.unzoom(); else if (qrOpen) actions.qr(); return; }
+  if (k === 'q' || k === 'Q') { actions.qr(); return; }
+  if (STEP_KEYS.indexOf(k) >= 0) {
+    if (zo) actions.unzoom();
+    if (S.phase === 'lobby') startQuiz(); else if (S.phase === 'vote') closeVoting(); else if (S.phase === 'closed') reveal(); else if (S.phase === 'reveal') next();
+    return;
+  }
+  if ((k === 'd' || k === 'D') && S.phase === 'closed' && S.round === 1) startVote(2);
+  if (k === '+' && S.phase === 'vote') addTime();
+}
+on('keydown', function(e){
+  if (!S || e.target.matches('input,select,textarea')) return;
+  var k = e.key, step = STEP_KEYS.indexOf(k) >= 0;
+  if (VIEW) { if (step || /^(Escape|q|Q|d|D|\+)$/.test(k)) { if (step) e.preventDefault(); vsend({ t:'key', key: k }); } return; }
+  if (step) e.preventDefault();
+  handleKey(k);
+});
+on('change', function(e){
+  var el = e.target, key = el.getAttribute('data-set'); if (!key) return;
+  settings[key] = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.tagName === 'SELECT') ? +el.value : el.value.trim();
+  saveSettings(); if (key === 'studentUrl') updateLobby(); pushView();
+});
+on('input', function(e){ if (e.target.getAttribute('data-set') === 'studentUrl') { settings.studentUrl = e.target.value.trim(); saveSettings(); updateLobby(); pushView(); } });
+
+/* ---------- pictures enlarged: in two-window mode the projector shows the same picture, if students may see it ---------- */
+var zoomId = null;
+function showZoom(id){
+  var o = document.querySelector('.zoomover');
+  if (!id || !hasImg(id)) { if (o) o.classList.remove('open'); return; }
+  if (!o) { o = document.createElement('div'); o.className = 'zoomover'; o.setAttribute('data-act', 'unzoom'); o.innerHTML = '<img alt="">'; document.body.appendChild(o); }
+  o.querySelector('img').src = IMAGES[id]; o.classList.add('open');
+}
+function setZoom(id){ zoomId = hasImg(id) ? id : null; showZoom(zoomId); renderProjChip(); pushView(); }
+function onProjector(id){        // is this picture on the projector right now? (never the explanation picture before the reveal)
+  if (!S || ['vote','closed','reveal'].indexOf(S.phase) < 0) return false;
+  var q = QUESTIONS[S.qi], expl = S.phase === 'reveal' && !showStem;
+  return (id === q.image && !expl) || (id === q.explainImage && expl);
+}
+offs.push(function(){ var o = document.querySelector('.zoomover'); if (o) o.remove(); });
+
+/* ---------- projector window, presenter side ---------- */
+function makeId(n){ var a = 'abcdefghijkmnpqrstuvwxyz23456789', s = '', r = new Uint8Array(n); crypto.getRandomValues(r); for (var i=0;i<n;i++) s += a[r[i] % 32]; return s; }
+var VIEW_ID = '';                                   // links this tab to its projector window; kept across reloads of this tab
+if (!VIEW) {
+  try { VIEW_ID = sessionStorage.getItem('livequiz-view-id') || ''; } catch(e){}
+  if (!/^[A-Za-z0-9]{6,24}$/.test(VIEW_ID)) { VIEW_ID = makeId(12); try { sessionStorage.setItem('livequiz-view-id', VIEW_ID); } catch(e){} }
+}
+var aud = { win: null, beat: 0, sentPack: 0, msg: '' }, audWas = false, peek = null, notesKey = '';
+var VIEW_ACTS = ['qr', 'unzoom', 'togglestem'];      // what a click on the projector window may do
+function audienceOn(){ if (VIEW || !VIEW_CH) return false; if (aud.win && aud.win.closed) return false; return Date.now() - aud.beat < 15000; }
+function consoleOn(){ return !!S && audienceOn() && ['vote','closed','reveal'].indexOf(S.phase) >= 0; }
+function audCheck(){
+  var now = audienceOn(); if (now === audWas) return;
+  audWas = now;
+  if (S && ['vote','closed','reveal'].indexOf(S.phase) >= 0) render(true); else renderProj();
+}
+function audienceUrl(){ return location.pathname + '?audience=' + VIEW_ID; }
+function openAudience(){
+  if (!VIEW_CH) return;
+  if (audienceOn()) {                               // already open: bring it to the front
+    var w0 = aud.win && !aud.win.closed ? aud.win : null;
+    if (!w0) { try { w0 = window.open('', AUD_NAME); if (w0 && w0.location.href === 'about:blank') w0.location.href = audienceUrl(); } catch(e){} }
+    if (w0) { aud.win = w0; try { w0.focus(); } catch(e){} }
+    return;
+  }
+  var w = null; try { w = window.open(audienceUrl(), AUD_NAME, 'popup,width=1280,height=760'); } catch(e){}
+  if (!w) { aud.msg = 'The browser blocked the new window. Allow pop-ups for this site (the icon at the right end of the address bar), then press the button again.'; renderProj(); return; }
+  aud.msg = ''; aud.win = w; placeOnOtherScreen(w); renderProj();
+}
+function placeOnOtherScreen(w){                     // Chrome can put the window on the projector itself (it asks once for permission)
+  if (!window.getScreenDetails || !window.screen || screen.isExtended !== true) return;
+  window.getScreenDetails().then(function(d){
+    var others = d.screens.filter(function(s){ return s !== d.currentScreen; });
+    var t = others.filter(function(s){ return s.isInternal === false; })[0] || others[0];
+    if (!t || w.closed) return;
+    try { w.moveTo(t.availLeft, t.availTop); w.resizeTo(t.availWidth, t.availHeight); } catch(e){}
+  }, function(){});
+}
+function onViewMsg(e){
+  var m = e.data; if (!m || typeof m !== 'object' || m.id !== VIEW_ID || !S) return;
+  if (m.t === 'beat') {
+    aud.beat = Date.now();
+    if (m.has !== PACK_KEY && Date.now() - aud.sentPack > 3000) { aud.sentPack = Date.now(); vsend({ t:'pack', key: PACK_KEY, quiz: QUIZ }); }
+    audCheck(); pushView(); return;
+  }
+  if (m.t === 'gone') { aud.beat = 0; aud.sentPack = 0; audCheck(); return; }
+  if (!audienceOn()) return;
+  if (m.t === 'key' && typeof m.key === 'string') handleKey(m.key);
+  else if (m.t === 'act' && VIEW_ACTS.indexOf(m.act) >= 0) actions[m.act]();
+  else if (m.t === 'zoom' && hasImg(m.img) && onProjector(m.img)) setZoom(m.img);
+}
+function viewState(){
+  var ans = {};
+  if (S.phase === 'end') ans = S.answers; else if (S.qi >= 0 && S.answers[S.qi]) ans[S.qi] = S.answers[S.qi];
+  return { t:'view', key: PACK_KEY,
+    S: { code: S.code, phase: S.phase, qi: S.qi, round: S.round, deadline: S.deadline, dur: S.dur, played: S.played.slice(), answers: ans, n: Object.keys(S.everyone).length },
+    online: onlineSids().length, net: { st: peerStatus, stuck: !!netStuck(), err: lastErr }, join: joinUrl(), check: checkPretty(),
+    confidence: !!settings.confidence, qr: qrOpen, stem: showStem, zoom: zoomId && onProjector(zoomId) ? zoomId : null };
+}
+var lastPush = 0, pushTimer = null;
+function pushView(){
+  if (VIEW || !S || !audienceOn()) return;
+  var wait = 80 - (Date.now() - lastPush);
+  if (wait > 0) { if (!pushTimer) pushTimer = setTimeout(function(){ pushTimer = null; pushView(); }, wait); return; }
+  lastPush = Date.now(); vsend(viewState());
+}
+function applyView(m){                              // projector window: draw what the presenter window sent
+  var prev = S, prevStem = showStem;
+  V = m; settings.confidence = !!m.confidence;
+  S = m.S; S.answers = S.answers || {}; S.played = S.played || []; S.everyone = {};
+  qrOpen = !!m.qr; showStem = !!m.stem;
+  var rebuilt = render(!prev || prev.code !== S.code);
+  if (!rebuilt && showStem !== prevStem && ['vote','closed','reveal'].indexOf(S.phase) >= 0) renderLeft();
+  var o = document.querySelector('.qrover'); if (o) o.classList.toggle('open', qrOpen);
+  renderNet(); showZoom(hasImg(m.zoom) ? m.zoom : null);
+}
+
+/* ---------- what the laptop shows about the projector ---------- */
+function projShows(){
+  if (!S) return '';
+  if (zoomId && onProjector(zoomId)) return 'enlarged picture';
+  if (qrOpen && ['vote','closed','reveal'].indexOf(S.phase) >= 0) return 'QR code';
+  return { lobby:'join screen', vote:'question · results hidden', closed:'question · results', end:'class results' }[S.phase] || (showStem ? 'question · results' : 'answer & explanation');
+}
+function renderProjChip(){
+  var c = document.getElementById('projchip'); if (c) c.innerHTML = '🖥 Projector: <b>'+esc(projShows())+'</b>';
+  var q = document.getElementById('qrchip'); if (q) q.classList.toggle('on', qrOpen);
+}
+function mirrorHtml(){
+  return window.screen && screen.isExtended === false ? '<b>Only one screen in use.</b> If the projector shows a copy of this laptop, students can see this presenter view. Set the display to <b>Extend</b> (Windows: <b>Win + P → Extend</b> · Mac: <b>System Settings → Displays</b>, turn mirroring off) and move the projector window there.' : '';
+}
+function renderProj(){                              // the "Projector window" box in the lobby
+  var el = document.getElementById('projrow'); if (!el) return;
+  if (!VIEW_CH) { el.innerHTML = '<small>A projector window needs Chrome or Edge.</small>'; return; }
+  el.innerHTML = audienceOn()
+    ? '<span class="on">🖥 Projector window is open</span><button class="btn small" data-act="audience">Show it</button><button class="btn small" data-act="closeaud" id="closeAudBtn">Close it</button>'+
+      '<small>The projector shows the join screen now and, during the quiz, only what students should see. This laptop shows the answer, live results and your notes.</small>'+
+      (screen.isExtended === false ? '<small class="warn">Only one screen in use: set the display to Extend (not mirror) before you start.</small>' : '')
+    : '<button class="btn" data-act="audience" id="audBtn">🖥 Open projector window</button>'+
+      '<small>Two screens: the projector shows the questions; this laptop keeps a presenter view with the answer, live results and notes. Set the display to Extend, not mirror.</small>'+
+      (aud.msg ? '<small class="warn">'+esc(aud.msg)+'</small>' : '');
+}
+function onScreenChange(){ renderProj(); var el = document.getElementById('mirror'); if (el) el.innerHTML = mirrorHtml(); if (consoleOn() && peek === null) { notesKey = ''; updateConsole(); } }
+
+/* ---------- QR ---------- */
+function joinUrl(){
+  if (VIEW) { var j = V && typeof V.join === 'string' ? V.join : ''; return /^https?:\/\//i.test(j) ? j : ''; }
+  var u = (settings.studentUrl || '').trim(); if (!/^https?:\/\//i.test(u)) return '';
+  var qs = new URLSearchParams(passParams); qs.set('s', S.code);
+  return u.split('#')[0] + (u.indexOf('?') >= 0 ? '&' : '?') + qs.toString() + '#k=' + FP;   // #k = fingerprint of the session key
+}
+function qrSvg(text){
+  var qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  var n = qr.getModuleCount(), m = 2, size = n + m*2, d = '';
+  for (var r=0;r<n;r++) for (var c=0;c<n;c++) if (qr.isDark(r,c)) d += 'M'+(c+m)+' '+(r+m)+'h1v1h-1z';
+  return '<svg viewBox="0 0 '+size+' '+size+'" shape-rendering="crispEdges" role="img" aria-label="QR code to join the quiz"><rect width="'+size+'" height="'+size+'" fill="#fff"/><path d="'+d+'" fill="#000"/></svg>';
+}
+function qrOverlay(){
+  var u = joinUrl();
+  return '<div class="qrover'+(qrOpen?' open':'')+'" data-act="qr"><div class="box">'+(u ? '<div class="qr">'+qrSvg(u)+'</div>' : '<p class="warn">Add the phone page address under Advanced in the lobby to show a QR code.</p>')+
+    '<div>Scan to join · or enter code</div><div class="code">'+esc(S.code)+'</div><div class="check">check code <b>'+esc(checkPretty())+'</b></div><div class="url">'+esc(u)+'</div><div class="hint">Click anywhere or press Q to close</div></div></div>';
+}
+
+/* ---------- rendering ---------- */
+function netStuck(){ return peerStatus === 'busy' && busySince && Date.now() - busySince > 15000; }
+function netHtml(){
+  var n = VIEW ? ((V && V.net) || {}) : null;
+  var st = VIEW ? String(n.st || 'connecting') : peerStatus, stuck = VIEW ? !!n.stuck : netStuck(), err = VIEW ? String(n.err || '') : lastErr;
+  var m = { online:['ok','Live'], connecting:['','Connecting…'], reconnecting:['','Reconnecting…'], busy:['','Re-opening session…'], unreachable:['err','Can’t reach server · retrying'], offline:['err','Offline'] }[st] || ['err', st];
+  return '<span class="net '+m[0]+'" id="net" title="'+esc(err || '')+'"><i></i>'+(stuck ? 'Another device is holding this session’s code' + (VIEW ? '' : ' <button class="btn small primary" data-act="newcode" id="newCodeBtn">Move to a new code</button>') : esc(m[1]))+'</span>';
+}
+function renderNet(){ var el = document.getElementById('net'); if (el) el.outerHTML = netHtml(); }
+var screenBase = '';
+function render(full){                              // returns true when the whole screen was rebuilt
+  if (!S) return false;
+  var base = S.phase + ':' + S.qi + ':' + S.round, key = base + (consoleOn() ? ':console' : '');
+  if (!full && key === screenKey) { updateScreen(); return false; }
+  if (!VIEW && base !== screenBase && zoomId) { zoomId = null; showZoom(null); }   // a new step closes an enlarged picture
+  screenKey = key; screenBase = base;
+  if (S.phase === 'lobby') buildLobby(); else if (S.phase === 'end') buildEnd(); else if (consoleOn()) buildConsole(); else buildQuestion();
+  pushView(); return true;
+}
+function updateScreen(){
+  if (!S) return;
+  if (S.phase === 'lobby') updateLobby(); else if (S.phase !== 'end') { if (consoleOn()) updateConsole(); else updateQuestion(); }
+  pushView();
+}
+function refreshCounts(){ updateScreen(); }
+
+function buildLobby(){
+  if (VIEW) {                                       // projector: a big join screen
+    app.innerHTML = '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div><span class="chip">'+TOTAL+' questions</span>'+netHtml()+'</header>'+
+      '<main class="audjoin" id="join"></main><footer></footer></div>';
+    updateLobby(); return;
+  }
+  var tOpts = function(sel, list){ return list.map(function(v){ return '<option value="'+v+'"'+(+sel===v?' selected':'')+'>'+(v ? (v+' seconds') : 'No time limit')+'</option>'; }).join(''); };
+  app.innerHTML =
+    '<div class="screen">'+
+      '<header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div>'+netHtml()+'</header>'+
+      '<main class="lobbygrid">'+
+        '<section class="card join" id="join"></section>'+
+        '<section class="card settings">'+
+          '<div class="pack"><b>'+esc(QUIZ.title)+'</b><span>'+TOTAL+' questions</span><button class="btn small" data-act="edit" id="editBtn">Edit</button><button class="btn small" data-act="change" id="changeBtn">Change quiz</button></div>'+
+          (WARNS && WARNS.length ? '<small class="warn">'+esc(WARNS.slice(0,3).join(' '))+(WARNS.length>3?' …':'')+'</small>' : '')+
+          '<div class="proj" id="projrow"></div>'+
+          '<div class="row"><div><label for="t1">Time per question</label><select id="t1" data-set="t1">'+tOpts(settings.t1,[30,45,60,90,120,180,0])+'</select></div>'+
+          '<div><label for="t2">Revote time</label><select id="t2" data-set="t2">'+tOpts(settings.t2,[30,45,60,90,0])+'</select></div></div>'+
+          '<label class="check"><input type="checkbox" data-set="autoClose"'+(settings.autoClose?' checked':'')+'> Close voting automatically when every connected student has answered</label>'+
+          '<label class="check"><input type="checkbox" data-set="confidence"'+(settings.confidence?' checked':'')+'> Ask “sure or guessing?” with each answer</label>'+
+          '<label for="sa">Start at question</label><input id="sa" type="number" min="1" max="'+TOTAL+'" data-set="startAt" value="'+Math.min(TOTAL, settings.startAt||1)+'">'+
+          '<button class="btn primary big" data-act="start" id="startBtn">Start quiz ▶</button>'+
+          '<details class="adv" id="adv"'+(joinUrl() ? '' : ' open')+'><summary>Advanced</summary>'+
+            '<label for="su">Phone page address</label><input id="su" type="url" data-set="studentUrl" placeholder="https://your-name.github.io/live-quiz/join/" value="'+esc(settings.studentUrl)+'">'+
+            '<small>Where the phone page is online; the QR code and the link open it. It fills itself in (this site’s join/ address), so there is normally nothing to change.</small></details>'+
+          '<p class="hint">Keep this tab open and the computer awake until the end. Keys: Enter, Space, → or a clicker’s Next = next step, D = revote, + = 30 more seconds, Q = show QR. Ctrl + / Ctrl − changes text size.</p>'+
+        '</section>'+
+      '</main>'+
+    '</div>';
+  updateLobby(); renderProj();
+}
+function updateLobby(){
+  var el = document.getElementById('join'); if (!el || S.phase !== 'lobby') return;
+  var u = joinUrl(), n = onlineN(), warn = '';
+  if (VIEW) {
+    var joined = '<b>'+n+'</b> student'+(n===1?'':'s')+' connected';
+    if (el.getAttribute('data-u') === u + '|' + S.code) { var j = document.getElementById('joined'); if (j) j.innerHTML = joined; return; }
+    el.setAttribute('data-u', u + '|' + S.code);
+    el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + '<div class="info">'+
+      (u ? '<div class="big">Scan the QR code with your phone camera to join</div><div>or open the link below and enter the code</div>'
+         : '<p class="warn">The phone page address is missing. Add it under Advanced in the lobby on the laptop.</p><div>Code</div>')+
+      '<div class="code" id="code">'+esc(S.code)+'</div>'+
+      '<div class="check">check code <b id="check">'+esc(checkPretty())+'</b></div>'+
+      (u ? '<div class="url">'+esc(u)+'</div>' : '')+
+      '<div class="joined" id="joined">'+joined+'</div></div>';
+    return;
+  }
+  if (!u) warn = '<p class="warn">Add the phone page address under Advanced (right) to show the QR code.</p>';
+  else if (peerStatus === 'unreachable') warn = '<p class="warn" id="neterr">Can’t reach the PeerJS server ('+esc(lastErr)+'). Retrying… If this doesn’t clear, open this page from its https address in Chrome, or check that the network allows it.</p>';
+  else if (peerStatus !== 'online') warn = '<p class="hint">Connecting to the PeerJS server… phones can join once the corner shows “Live”.</p>';
+  el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + warn +
+    '<div>Scan to join · or enter code</div><div class="code" id="code">'+esc(S.code)+'</div>'+
+    '<div class="check">check code <b id="check">'+esc(checkPretty())+'</b></div>'+
+    (u ? '<div class="url">'+esc(u)+'</div><button class="btn small" data-act="copylink" id="copyBtn">Copy link</button>' : '') +
+    '<div class="joined" id="joined"><b>'+n+'</b> student'+(n===1?'':'s')+' connected</div>';
+}
+
+function stemHtml(stem){
+  var html = '', list = [];
+  function flush(){ if (list.length) { html += '<ul>' + list.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('') + '</ul>'; list = []; } }
+  String(stem).split('\n').forEach(function(ln){ if (ln.indexOf('• ') === 0) list.push(ln.slice(2)); else { flush(); if (ln.trim()) html += '<p>'+esc(ln)+'</p>'; } });
+  flush(); return html;
+}
+function figHtml(id, cap){ if (!hasImg(id)) return ''; return '<figure class="qimg"><img src="'+IMAGES[id]+'" alt="'+esc(cap || 'Image')+'" data-zoom="'+esc(id)+'" title="Click to enlarge">'+(cap ? '<figcaption>'+esc(cap)+'</figcaption>' : '')+'</figure>'; }
+function buildQuestion(){                           // the projector screen (one window, or the projector window)
+  app.innerHTML =
+    '<div class="screen">'+
+      '<header class="top"><div class="qnum">Question '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
+      (S.round === 2 ? '<div class="badge r2">Round 2 · revote after discussion</div>' : '')+
+      '<div class="spacer"></div>'+
+      (!VIEW && VIEW_CH ? '<button class="chip" data-act="audience" id="audChip" title="Open a second window for the projector; this laptop then shows a presenter view">🖥 Projector window</button>' : '')+
+      '<button class="chip" data-act="qr" title="Show QR code (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
+      '<span class="chip" id="online"></span>'+netHtml()+'</header>'+
+      '<main class="grid"><section class="left" id="left"></section>'+
+      '<section class="right"><div class="status" id="status"></div><div class="opts" id="opts"></div></section></main>'+
+      (VIEW ? '<footer></footer>' : '<footer class="controls" id="controls"></footer>')+
+    '</div>' + qrOverlay();
+  renderLeft(); updateQuestion();
+}
+function topWrong(qi){
+  var q = QUESTIONS[qi], ls = LQ(qi), t = tallyOf(finalBucket(qi), qi), best = null, max = 0;
+  t.opts.forEach(function(o,i){ if (ls[i] !== q.answer && o.all > max) { max = o.all; best = ls[i]; } });
+  return best;
+}
+function explainHtml(){
+  var q = QUESTIONS[S.qi], ls = LQ(S.qi), why = q.why || {};
+  var tw = topWrong(S.qi), wl = ls.filter(function(l){ return l !== q.answer && why[l]; });
+  return '<div class="ans">Correct answer <b>'+q.answer+'</b><span>'+esc(q.options[ls.indexOf(q.answer)])+'</span></div>'+
+    (q.explain ? '<p>'+esc(q.explain)+'</p>' : '') + figHtml(q.explainImage, q.explainCaption) +
+    (wl.length ? '<h3>Why not the others</h3><ul class="why">'+
+      wl.map(function(l){ return '<li'+(l===tw?' class="top"':'')+'><b>'+l+'</b>'+esc(why[l])+(l===tw?'<em class="tag">most chosen wrong answer</em>':'')+'</li>'; }).join('')+'</ul>' : '')+
+    (q.objective ? '<p class="obj"><b>Take-home:</b> '+esc(q.objective)+'</p>' : '');
+}
+function renderLeft(){
+  var el = document.getElementById('left'); if (!el) return;
+  var q = QUESTIONS[S.qi];
+  if (S.phase === 'reveal' && !showStem) {
+    el.innerHTML = '<div class="explain">'+explainHtml()+(VIEW ? '' : '<button class="link" data-act="togglestem">Show the question again</button>')+'</div>';
+  } else {
+    el.innerHTML = '<div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image, q.imageCaption)+'<p class="lead">'+esc(q.lead)+'</p>'+
+      (S.phase === 'reveal' && !VIEW ? '<button class="link" data-act="togglestem">Back to the explanation</button>' : '');
+  }
+  el.scrollTop = 0;
+}
+function fmt(ms){ var s = Math.max(0, Math.ceil(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function statusHtml(con){                           // con: the laptop's presenter view, which sees live results
+  var q = QUESTIONS[S.qi], ls = LQ(S.qi), on = onlineN(), n = Object.keys(peekBucket(S.qi, S.round)).length;
+  var legend = settings.confidence ? '<span class="legend"><span>sure</span><span class="g">guessing</span></span>' : '';
+  if (S.phase === 'vote') {
+    return '<div class="count"><b>'+n+'</b> of '+on+' answered</div>' +
+      (S.deadline ? '<div class="timer" id="timer">'+fmt(S.deadline - Date.now())+'</div><div class="tbar"><span id="tfill"></span></div>' : '<div class="timer">no limit</div>') +
+      (con ? '<div class="live">Live results below are only on this laptop. The projector keeps them hidden until you close voting.</div>' : '<div class="note">Results stay hidden until voting closes.</div>');
+  }
+  if (S.phase === 'closed') return '<div class="count">Voting closed · <b>'+n+'</b> answer'+(n===1?'':'s')+'</div>'+legend;
+  var fb = finalBucket(S.qi), t = tallyOf(fb, S.qi), k = t.opts[ls.indexOf(q.answer)].all, cw = 0;
+  for (var sid in fb) if (fb[sid].c !== q.answer && fb[sid].sure === true) cw++;
+  return '<div class="count"><b>'+(t.n ? Math.round(k*100/t.n) : 0)+'%</b> correct ('+k+' of '+t.n+')</div>' +
+    (settings.confidence && t.n ? '<div class="chip">'+cw+' sure but wrong</div>' : '') + legend;
+}
+function optsHtml(bars, mark){                      // mark: 'reveal' = correct green, others dimmed; 'key' = answer marked for the presenter only
+  var q = QUESTIONS[S.qi], ls = LQ(S.qi);
+  var tally = tallyOf(S.phase === 'reveal' ? finalBucket(S.qi) : peekBucket(S.qi, S.round), S.qi);
+  var t1 = S.round === 2 ? tallyOf(peekBucket(S.qi, 1), S.qi) : null;
+  return q.options.map(function(o, i){
+    var right = ls[i] === q.answer;
+    var cls = 'opt' + (mark === 'reveal' ? (right ? ' correct' : ' dim') : (mark === 'key' && right ? ' key' : ''));
+    var b = '', count = '';
+    if (bars) {
+      var d = tally.n || 1, ti = tally.opts[i];
+      b = (t1 ? '<div class="ghost" title="Round 1"><span style="width:'+(t1.n ? t1.opts[i].all*100/t1.n : 0)+'%"></span></div>' : '') +
+        '<div class="bar"><span class="s" style="width:'+(ti.s*100/d)+'%"></span><span class="g" style="width:'+(ti.g*100/d)+'%"></span></div>';
+      count = '<div class="ocount"><b>'+(tally.n ? Math.round(ti.all*100/tally.n) : 0)+'%</b><small>'+ti.all+'</small>'+(t1 ? '<div class="r1">R1 '+(t1.n ? Math.round(t1.opts[i].all*100/t1.n) : 0)+'%</div>' : '')+'</div>';
+    }
+    return '<div class="'+cls+'" data-l="'+ls[i]+'"><div class="letter">'+ls[i]+'</div><div class="otext">'+esc(o)+(mark === 'key' && right ? '<span class="keytag">✓ answer</span>' : '')+b+'</div>'+count+'</div>';
+  }).join('');
+}
+function updateQuestion(){
+  if (!S || ['vote','closed','reveal'].indexOf(S.phase) < 0) return;
+  var onEl = document.getElementById('online'); if (onEl) onEl.innerHTML = '👥 <b>'+onlineN()+'</b> connected';
+  var st = document.getElementById('status'), op = document.getElementById('opts'); if (!st || !op) return;
+  st.innerHTML = statusHtml(false); tickTimer(true);
+  op.innerHTML = optsHtml(S.phase !== 'vote', S.phase === 'reveal' ? 'reveal' : '');
+  updateControls();
+}
+
+/* ---------- presenter view on the laptop (while the projector window is open) ---------- */
+function ansShown(){ return S.phase === 'reveal' || (peek === null ? (window.screen && screen.isExtended === true) : peek); }
+function nextHtml(){
+  if (S.qi >= TOTAL-1) return '<b>Last question.</b> Next comes the class results screen.';
+  var s = String(QUESTIONS[S.qi+1].stem).replace(/\n• /g, '; ').replace(/\s+/g, ' ').trim();
+  return '<b>Next · Question '+(S.qi+2)+':</b> '+esc(s.length > 170 ? s.slice(0, 168) + '…' : s);
+}
+function notesHtml(){
+  var head = '<div class="nh"><h2>Answer and teaching notes</h2>' + (S.phase === 'reveal' ? '' : '<button class="btn small" data-act="peek" id="peekBtn">'+(ansShown() ? 'Hide answer' : 'Show answer')+'</button>') + '</div>';
+  if (!ansShown()) return head + '<p class="hint">Hidden on this screen. Press “Show answer” when only you can see this laptop.</p>';
+  return head + '<div class="explain">' + explainHtml() + '</div>';
+}
+function buildConsole(){
+  var q = QUESTIONS[S.qi];
+  var kase = '<div class="card ccase" id="ccase"><div class="nh">The case</div><div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image, q.imageCaption)+'<p class="lead">'+esc(q.lead)+'</p></div>';
+  var notes = '<div class="card notes" id="notes"></div>';
+  app.innerHTML =
+    '<div class="screen console">'+
+      '<header class="top"><div class="qnum">Question '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
+      (S.round === 2 ? '<div class="badge r2">Round 2</div>' : '')+
+      '<span class="chip proj" id="projchip"></span><div class="spacer"></div>'+
+      '<button class="chip'+(qrOpen ? ' on' : '')+'" data-act="qr" id="qrchip" title="Show or hide the QR code on the projector (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
+      '<span class="chip" id="online"></span>'+netHtml()+'</header>'+
+      '<div class="mirror" id="mirror">'+mirrorHtml()+'</div>'+
+      // left: what is happening now (live results, the answer marked); right: the case and the notes,
+      // the case first while students vote and the notes first after the reveal
+      '<main class="cgrid"><section class="cleft" id="cleft"><div class="status" id="status"></div><div class="opts" id="copts"></div><div class="card nextq" id="nextq">'+nextHtml()+'</div></section>'+
+      '<section class="cright" id="cright">'+(S.phase === 'reveal' ? notes + kase : kase + notes)+'</section></main>'+
+      '<footer class="controls" id="controls"></footer>'+
+    '</div>';
+  notesKey = ''; updateConsole(); renderProjChip();
+}
+function updateConsole(){
+  if (!S || ['vote','closed','reveal'].indexOf(S.phase) < 0) return;
+  var onEl = document.getElementById('online'); if (onEl) onEl.innerHTML = '👥 <b>'+onlineN()+'</b> connected';
+  var st = document.getElementById('status'), op = document.getElementById('copts'), ne = document.getElementById('notes'); if (!st || !op) return;
+  st.innerHTML = statusHtml(true); tickTimer(true);
+  op.innerHTML = optsHtml(true, S.phase === 'reveal' ? 'reveal' : (ansShown() ? 'key' : ''));
+  var nk = ansShown() + ':' + S.phase + ':' + topWrong(S.qi);
+  if (ne && nk !== notesKey) { notesKey = nk; ne.innerHTML = notesHtml(); }
+  updateControls(); renderProjChip();
+}
+function updateControls(){
+  var el = document.getElementById('controls'); if (!el) return;
+  var con = consoleOn();
+  var left = '<button class="btn danger" data-act="end">'+(isArmed('end') ? 'Click again to end the quiz' : 'End quiz')+'</button>'+
+    (con ? '<button class="btn" data-act="closeaud" id="closeAudBtn">Close projector window</button>' : '')+'<div class="spacer"></div>';
+  var right = '';
+  if (S.phase === 'vote') right = (S.deadline ? '<button class="btn" data-act="more">+30 s<kbd>+</kbd></button>' : '') + '<button class="btn primary" data-act="close">Close voting<kbd>Enter</kbd></button>';
+  else if (S.phase === 'closed') right = (S.round === 1 ? '<button class="btn" data-act="revote">Discuss &amp; revote<kbd>D</kbd></button>' : '') + '<button class="btn primary" data-act="reveal">Reveal answer<kbd>Enter</kbd></button>';
+  else if (S.phase === 'reveal') right = (con ? '<button class="btn" data-act="togglestem" id="stemBtn">'+(showStem ? 'Projector: back to the explanation' : 'Projector: show the question again')+'</button>' : '') +
+    '<button class="btn primary" data-act="next">'+(S.qi < TOTAL-1 ? 'Next question' : 'Finish &amp; show results')+'<kbd>Enter</kbd></button>';
+  el.innerHTML = left + right;
+}
+function tickTimer(displayOnly){
+  if (!S || S.phase !== 'vote' || !S.deadline) return;
+  var left = S.deadline - Date.now();
+  if (left <= 0) { if (!displayOnly && !VIEW) closeVoting(); return; }
+  var t = document.getElementById('timer'), f = document.getElementById('tfill');
+  if (t) { t.textContent = fmt(left); t.classList.toggle('low', left <= 10000); }
+  if (f && S.dur) f.style.width = Math.max(0, Math.min(100, left*100/(S.dur*1000))) + '%';
+}
+every(function(){ tickTimer(false); }, 250);
+every(function(){ if (S) { refreshCounts(); maybeAutoClose(); } }, 2500);
+
+function buildEnd(){
+  var rows = S.played.map(function(qi){ var t = tallyOf(finalBucket(qi), qi), k = t.opts[LQ(qi).indexOf(QUESTIONS[qi].answer)].all; return { qi: qi, n: t.n, pc: t.n ? k*100/t.n : 0 }; });
+  var withVotes = rows.filter(function(r){ return r.n; });
+  var avg = withVotes.length ? withVotes.reduce(function(a,r){ return a + r.pc; }, 0) / withVotes.length : 0;
+  rows.sort(function(a,b){ return a.pc - b.pc; });
+  app.innerHTML =
+    '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+' · results</div><div class="spacer"></div>'+netHtml()+'</header>'+
+    '<main class="endgrid"><section class="card"><div class="avg">'+Math.round(avg)+'%</div><p>class average · '+everyoneN()+' students · '+S.played.length+' questions</p>'+
+    '<p class="hint">Each student now sees their own score on their phone. Nobody else sees it.</p>'+
+    (VIEW ? '' :
+    '<p><button class="btn primary" data-act="csv">Download results (CSV)</button></p>'+
+    '<p><button class="btn" data-act="newsession">'+(isArmed('new') ? 'Click again — this clears these results' : 'Run this quiz again (new session)')+'</button></p>'+
+    '<p><button class="btn" data-act="change">'+(isArmed('change') ? 'Click again — this clears these results' : 'Load another quiz')+'</button></p>')+'</section>'+
+    '<section class="card"><h2 style="margin-top:0">Questions by % correct (hardest first)</h2><div class="hard">'+
+    rows.map(function(r){ var c = r.pc < 50 ? 'low' : r.pc < 70 ? 'mid' : ''; return '<div class="lbl">Q'+(r.qi+1)+'</div><div class="hb"><span class="'+c+'" style="width:'+r.pc+'%"></span></div><div class="pc">'+Math.round(r.pc)+'% <small>('+r.n+')</small></div>'; }).join('')+
+    '</div></section></main>'+(VIEW ? '<footer></footer>' : '<footer class="controls"></footer>')+'</div>';
+}
+function downloadCsv(){
+  var maxN = S.played.reduce(function(m, qi){ return Math.max(m, QUESTIONS[qi].options.length); }, 0), LS = letters(maxN);
+  var head = ['Question','Correct','R1 answered','R1 % correct'].concat(LS.map(function(l){ return 'R1 '+l; }), ['R2 answered','R2 % correct'], LS.map(function(l){ return 'R2 '+l; }), ['Final answered','Final % correct','Sure but wrong']);
+  var lines = ['"' + String(QUIZ.title).replace(/"/g,'""') + '"', head.join(',')];
+  S.played.forEach(function(qi){
+    var q = QUESTIONS[qi], ai = LQ(qi).indexOf(q.answer), row = [qi+1, q.answer];
+    [1,2].forEach(function(r){ var t = tallyOf(peekBucket(qi, r), qi); row.push(t.n, t.n ? Math.round(t.opts[ai].all*100/t.n) : ''); LS.forEach(function(l, i){ row.push(t.opts[i] ? t.opts[i].all : ''); }); });
+    var fb = finalBucket(qi), tf = tallyOf(fb, qi), cw = 0; for (var s in fb) if (fb[s].c !== q.answer && fb[s].sure === true) cw++;
+    row.push(tf.n, tf.n ? Math.round(tf.opts[ai].all*100/tf.n) : '', cw);
+    lines.push(row.join(','));
+  });
+  var blob = new Blob([lines.join('\n')], { type:'text/csv' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'quiz-results-' + String(QUIZ.title).toLowerCase().replace(/[^a-z0-9]+/g,'-').slice(0,40) + '-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+/* ---------- start ---------- */
+if (VIEW) return { apply: applyView, dispose: function(){ offs.forEach(function(f){ try { f(); } catch(e){} }); offs = []; } };
+if (VIEW_CH) VIEW_CH.addEventListener('message', onViewMsg);
+window.addEventListener('pagehide', function(){ if (audienceOn()) vsend({ t:'bye' }); });
+try { if (window.screen && screen.addEventListener) screen.addEventListener('change', onScreenChange); } catch(e){}
+every(audCheck, 1000);
+hashImages().then(function(){
+  if (MODE === 'resume') {
+    S = store.get(SESSION_KEY); S.answers = S.answers || {}; S.played = S.played || []; S.everyone = S.everyone || {}; conns = {};
+    if (S.phase === 'vote' && S.deadline && S.deadline < Date.now()) { S.phase = 'closed'; S.deadline = null; save(); }
+    loadKeys(true).then(function(fresh){
+      // The session key is kept in this browser. If it is gone, phones would (rightly) refuse this screen,
+      // so move to a new code and show the QR for everyone to scan again.
+      if (fresh) { S.code = makeCode(); save(); saveKeys(); qrOpen = true; }
+      startPeer(); render(true);
+    }, keyFailure);
+  } else {
+    store.del(SESSION_KEY); newSession();
+  }
+}, keyFailure);
+}
+})();
+</script>
+</body>
+</html>
