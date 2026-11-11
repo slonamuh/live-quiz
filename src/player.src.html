@@ -112,9 +112,25 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .loaderr{max-width:34rem;text-align:left}
 .loaderr ul{margin:.3rem 0 0 1rem;padding:0}
 .recent{display:flex;flex-direction:column;gap:.5rem}
-.rrow{display:grid;grid-template-columns:1fr auto auto auto;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
+.rrow{display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
 .rrow .rt{font-weight:600}
 .rrow .rm{color:var(--muted);font-size:.8rem}
+.rrow .rd{font-size:.85rem;margin:.1rem 0 .15rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.casesover{position:fixed;inset:0;z-index:40;background:rgba(20,24,30,.55);display:flex;align-items:center;justify-content:center;padding:4vh 1rem}
+.cpanel{background:var(--panel);border-radius:14px;max-width:54rem;width:100%;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.chead{display:flex;gap:1rem;align-items:flex-start;padding:1.1rem 1.3rem .6rem;border-bottom:1px solid var(--line)}
+.chead>div{flex:1;min-width:0}
+.chead h2{margin:0 0 .2rem}
+.chead .cdesc{margin:.2rem 0 .3rem}
+.cpanel>.hint{margin:.6rem 1.3rem 0}
+.clist{list-style:none;margin:0;padding:.4rem 1.3rem;overflow:auto;flex:1}
+.clist li{display:flex;gap:.8rem;padding:.55rem 0;border-bottom:1px solid var(--line)}
+.clist li:last-child{border-bottom:0}
+.clist .cn{flex:none;width:2rem;text-align:right;font-weight:700;color:var(--muted)}
+.clist .ctopic{font-size:.8rem;color:var(--muted)}
+.clist .cconcept{font-weight:600}
+.clist .cstem{color:var(--muted);font-style:italic;font-size:.9rem}
+.cfoot{display:flex;gap:.5rem;justify-content:flex-end;padding:.8rem 1.3rem;border-top:1px solid var(--line)}
 .join{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.6rem}
 .join .qr{width:min(48vh,28rem);aspect-ratio:1;background:#fff;border-radius:12px;padding:.2rem}
 .join .qr svg{width:100%;height:100%;display:block}
@@ -161,7 +177,6 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .center{display:flex;align-items:center;justify-content:center;padding:2rem}
 .center .card{max-width:38rem}
 .center h1{margin-top:0}
-.studentnote a{color:var(--accent)}
 .settings details.adv{margin-top:1rem;border-top:1px solid var(--line);padding-top:.6rem}
 .settings details.adv summary{cursor:pointer;color:var(--muted);font-size:.9rem;font-weight:600}
 @media (max-width:760px){ .libgrid,.lobbygrid{grid-template-columns:1fr} .top{flex-wrap:wrap} }
@@ -331,10 +346,21 @@ function hash(str){ var h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (var i=0, ch; i<st
 
 /* ---------- pack checking ---------- */
 var IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
+/* Optional teacher-only fields: the quiz's description, and per case a First Aid topic path
+   (chapter › subtopic › entry, up to 3 levels) and the concept it tests. They are shown only on the
+   quiz-choosing page (and in the results); never sent to phones. A topic may be a list or "A › B › C". */
+function topicOf(q){
+  var t = q && q.topic;
+  if (typeof t === 'string') t = t.split(/\s*[›>]\s*/);
+  if (!Array.isArray(t)) return [];
+  return t.map(function(x){ return typeof x === 'string' ? x.trim() : ''; }).filter(Boolean).slice(0, 3);
+}
+function conceptOf(q){ return q && typeof q.concept === 'string' ? q.concept.trim() : ''; }
 function checkPack(p){
   var errs = [], warns = [];
   if (!p || typeof p !== 'object' || Array.isArray(p)) return { errs: ['This file is not a quiz pack.'], warns: [] };
   if (!Array.isArray(p.questions) || !p.questions.length) return { errs: ['The file has no questions.'], warns: [] };
+  if (p.description != null && typeof p.description !== 'string') errs.push('The quiz description must be text.');
   var images = (p.images && typeof p.images === 'object') ? p.images : {};
   Object.keys(images).forEach(function(k){ if (typeof images[k] !== 'string' || !IMG_RE.test(images[k])) errs.push('Image “' + k + '” is not a valid embedded picture.'); });
   p.questions.forEach(function(q, i){
@@ -346,6 +372,8 @@ function checkPack(p){
     var ls = letters(q.options.length);
     if (ls.indexOf(q.answer) < 0) errs.push(n + 'the correct answer must be one of ' + ls.join(', ') + '.');
     ['image', 'explainImage'].forEach(function(k){ if (q[k] && !images[q[k]]) errs.push(n + 'picture “' + q[k] + '” is missing from the pack.'); });
+    if (q.topic != null && typeof q.topic !== 'string' && !(Array.isArray(q.topic) && q.topic.length <= 3 && q.topic.every(function(t){ return typeof t === 'string'; }))) errs.push(n + 'the topic must be up to 3 names: chapter, subtopic, entry.');
+    if (q.concept != null && typeof q.concept !== 'string') errs.push(n + 'the concept must be text.');
     if (!q.explain) warns.push('Question ' + (i+1) + ' has no explanation.');
   });
   return { errs: errs, warns: warns };
@@ -361,11 +389,9 @@ function editorUrl(key){
 }
 
 /* ---------- library: choose a quiz pack ---------- */
-function joinHome(){ try { return new URL('join/', location.href).href.replace(/^https?:\/\//, ''); } catch(e){ return 'join/'; } }
 function library(msgHtml){
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">Live quiz · player</div><div class="spacer"></div>'+
-      '<span class="hint studentnote">Student? Scan the QR code on the classroom screen, or open <a href="join/">'+esc(joinHome())+'</a></span><span class="hint">v'+APP_VERSION+'</span></header>'+
+    '<div class="screen"><header class="top"><div class="title">Live quiz · player</div><div class="spacer"></div><span class="hint">v'+APP_VERSION+'</span></header>'+
     '<main class="libgrid">'+
       '<section class="card drop" id="drop"><h1>Load a quiz</h1>'+
         '<p>Choose a quiz pack file (<b>.quiz.json</b>), for example from your Google Drive folder, or drag it onto this box.</p>'+
@@ -387,14 +413,46 @@ function renderRecent(){
   idb.all().then(function(list){
     list = (list || []).sort(function(a,b){ return b.loadedAt - a.loadedAt; });
     if (!list.length) { el.innerHTML = '<p class="hint">None yet.</p>'; return; }
-    el.innerHTML = list.map(function(r){ return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div><div class="rm">'+r.n+' questions · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
-      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><a class="btn small" href="'+esc(editorUrl(r.key))+'" title="Open this quiz in the editor">Edit</a><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
+    el.innerHTML = list.map(function(r){
+      var d = r.pack && typeof r.pack.description === 'string' ? r.pack.description.trim() : '';
+      return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div>'+(d ? '<div class="rd">'+esc(d)+'</div>' : '')+'<div class="rm">'+r.n+' questions · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
+      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><button class="btn small" data-cases="'+esc(r.key)+'" title="What each case is about (only on this screen)">Cases</button>'+
+      '<a class="btn small" href="'+esc(editorUrl(r.key))+'" title="Open this quiz in the editor">Edit</a><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
     el.onclick = function(e){
-      var u = e.target.closest('[data-use]'), f = e.target.closest('[data-forget]');
-      if (u) idb.get(u.getAttribute('data-use')).then(function(r){ if (r) { r.loadedAt = Date.now(); idb.put(r).catch(function(){}); start(r.pack, r.key, 'new'); } });
+      var u = e.target.closest('[data-use]'), f = e.target.closest('[data-forget]'), c = e.target.closest('[data-cases]');
+      if (u) useRecent(u.getAttribute('data-use'));
+      if (c) idb.get(c.getAttribute('data-cases')).then(function(r){ if (r) casesDialog(r); });
       if (f) idb.del(f.getAttribute('data-forget')).then(renderRecent, renderRecent);
     };
   }, function(){ el.innerHTML = '<p class="hint">This browser can’t remember quizzes here — just choose the file each time.</p>'; });
+}
+function useRecent(key){ idb.get(key).then(function(r){ if (r) { r.loadedAt = Date.now(); idb.put(r).catch(function(){}); start(r.pack, r.key, 'new'); } }); }
+/* The list of cases with their topic and concept: for the teacher choosing a quiz. It names what each case
+   tests, so it exists only on this page, never in the lobby, the quiz screens or the projector window. */
+function casesDialog(r){
+  var p = r.pack, qs = p.questions || [], d = typeof p.description === 'string' ? p.description.trim() : '';
+  var any = qs.some(function(q){ return conceptOf(q) || topicOf(q).length; });
+  var o = document.createElement('div'); o.className = 'casesover'; o.id = 'casesover';
+  o.innerHTML = '<div class="cpanel" role="dialog" aria-modal="true" aria-labelledby="casesTitle">'+
+    '<div class="chead"><div><h2 id="casesTitle">'+esc(r.title)+'</h2>'+(d ? '<p class="cdesc">'+esc(d)+'</p>' : '')+
+      '<p class="rm">'+qs.length+' cases · the concepts give the answers away, so this list is only shown here, never during the quiz</p></div>'+
+      '<button class="btn small" data-close>Close</button></div>'+
+    (any ? '' : '<p class="hint">This quiz has no topics or concepts yet; each case shows its first words. Add them in the editor (Edit).</p>')+
+    '<ol class="clist">'+qs.map(function(q, i){
+      var t = topicOf(q), c = conceptOf(q), s = String(q.stem || '').replace(/\n• /g, '; ').replace(/\s+/g, ' ').trim();
+      return '<li><span class="cn">'+(i+1)+'</span><div>'+(t.length ? '<div class="ctopic">'+t.map(esc).join(' › ')+'</div>' : '')+
+        (c ? '<div class="cconcept">'+esc(c)+'</div>' : '<div class="cstem">'+esc(s.length > 120 ? s.slice(0, 118) + '…' : s)+'</div>')+'</div></li>';
+    }).join('')+'</ol>'+
+    '<div class="cfoot"><button class="btn" data-close>Close</button><button class="btn primary" data-usecase>Use this quiz</button></div></div>';
+  function close(){ document.removeEventListener('keydown', onKey); o.remove(); }
+  function onKey(e){ if (e.key === 'Escape') close(); }
+  o.addEventListener('click', function(e){
+    if (e.target === o || e.target.closest('[data-close]')) close();
+    else if (e.target.closest('[data-usecase]')) { close(); useRecent(r.key); }
+  });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(o);
+  var b = o.querySelector('[data-close]'); if (b) b.focus();
 }
 function showLoadError(lines){
   var el = document.getElementById('loaderr'); if (!el) return;

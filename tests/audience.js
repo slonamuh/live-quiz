@@ -117,6 +117,8 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   await P.click('#stemBtn'); await A.waitForSelector('#left .stem');
   assert((await P.textContent('#projchip')).includes('question'), 'the laptop can put the question back on the projector');
   await P.click('#stemBtn'); await A.waitForSelector('#left .explain');
+  { const all = (await P.innerText('body')) + (await A.innerText('body')) + (await T[0].innerText('body'));
+    assert(!/Placeholder concept|Placeholder entry|Placeholder subtopic/.test(all), 'topics and concepts appear on neither screen nor the phones, even after the reveal'); }
   await P.screenshot({ path: `${OUT}/24-laptop-reveal.png` });
   await A.screenshot({ path: `${OUT}/25-projector-reveal.png` });
 

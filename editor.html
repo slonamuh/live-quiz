@@ -57,7 +57,14 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .side{border-right:1px solid var(--line);background:#faf9f6;display:flex;flex-direction:column;min-height:0}
 .meta{padding:.8rem 1rem;border-bottom:1px solid var(--line)}
 .meta label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.2rem}
-.meta input{width:100%;padding:.45rem .6rem;border:1px solid var(--line);border-radius:8px;background:#fff}
+.meta input,.meta textarea{width:100%;padding:.45rem .6rem;border:1px solid var(--line);border-radius:8px;background:#fff}
+.meta textarea{min-height:2.6rem;font-size:.88rem;resize:none}
+.meta label.m2{margin-top:.6rem}
+.meta .sub{font-weight:400}
+.rrow .rd{font-size:.85rem;margin:.1rem 0 .15rem}
+.tprow{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:.5rem;margin-bottom:.5rem}
+.field label.mini{display:block;font-weight:400;margin-bottom:0}
+.field label.mini span{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:.15rem}
 .summary{font-size:.85rem;margin-top:.6rem;display:flex;flex-direction:column;gap:.2rem}
 .summary .bad{color:var(--bad);font-weight:600}
 .summary .wn{color:var(--warn);font-weight:600}
@@ -216,7 +223,13 @@ function hash(s){ let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0, ch; i < 
 function packKey(p){ const base = slug(p.id || p.title || 'quiz') || 'quiz'; return base + '-' + hash(JSON.stringify(p.questions) + JSON.stringify(Object.keys(p.images || {}))); }
 
 /* ---------- the quiz being edited ---------- */
-const QKEYS = ['stem', 'lead', 'options', 'answer', 'explain', 'why', 'objective'];
+const QKEYS = ['stem', 'lead', 'options', 'answer', 'explain', 'why', 'objective', 'topic', 'concept'];
+/* First Aid for the USMLE Step 1 chapter names (Sections II and III): suggested as the first topic level. */
+const FA_CHAPTERS = ['Biochemistry', 'Immunology', 'Microbiology', 'Pathology', 'Pharmacology', 'Public Health Sciences',
+  'Cardiovascular', 'Endocrine', 'Gastrointestinal', 'Hematology and Oncology', 'Musculoskeletal, Skin, and Connective Tissue',
+  'Neurology and Special Senses', 'Psychiatry', 'Renal', 'Reproductive', 'Respiratory'];
+/* topic: up to 3 levels (chapter › subtopic › entry); a file may hold a list or "A › B › C" */
+function topicIn(t){ if (typeof t === 'string') t = t.split(/\s*[›>]\s*/); const a = Array.isArray(t) ? t.slice(0, 3).map(x => typeof x === 'string' ? x.trim() : '') : []; while (a.length < 3) a.push(''); return a; }
 let Q = null;           // { meta: {format, version, id, title, created, …}, images: {}, items: [Item] }
 let cur = 0;            // selected case
 let fileHandle = null;  // Chrome: the file to save back to
@@ -225,8 +238,9 @@ let sourceKey = null;   // the "Recent quizzes" entry this came from
 let dirty = false;
 let armed = '';         // a destructive button waiting for its second click
 
-/* Item = { stem, lead, opts: [{ t, w }], c (correct index or -1), explain, objective, extra: {image, imageCaption, …, unknown fields} } */
-function blankItem(){ return { stem: '', lead: '', opts: [0,1,2,3,4].map(() => ({ t: '', w: '' })), c: -1, explain: '', objective: '', extra: {} }; }
+/* Item = { stem, lead, opts: [{ t, w }], c (correct index or -1), explain, objective, topic: [chapter, subtopic, entry], concept,
+           extra: {image, imageCaption, …, unknown fields} } */
+function blankItem(){ return { stem: '', lead: '', opts: [0,1,2,3,4].map(() => ({ t: '', w: '' })), c: -1, explain: '', objective: '', topic: ['', '', ''], concept: '', extra: {} }; }
 function fromPack(p){
   const meta = {}, images = (p.images && typeof p.images === 'object' && !Array.isArray(p.images)) ? Object.assign({}, p.images) : {};
   Object.keys(p).forEach(k => { if (k !== 'questions' && k !== 'images') meta[k] = p[k]; });
@@ -237,13 +251,14 @@ function fromPack(p){
     const extra = {};
     Object.keys(q).forEach(k => { if (QKEYS.indexOf(k) < 0) extra[k] = q[k]; });
     return { stem: str(q.stem), lead: str(q.lead), opts: opts.map((t, i) => ({ t: t, w: str(why[LET[i]]) })), c: LET.slice(0, opts.length).indexOf(q.answer),
-             explain: str(q.explain), objective: str(q.objective), extra: extra };
+             explain: str(q.explain), objective: str(q.objective), topic: topicIn(q.topic), concept: str(q.concept), extra: extra };
   });
   return { meta: meta, images: images, items: items };
 }
 function toPack(){
   const m = Q.meta, out = { format: 'acsom-live-quiz', version: 1, id: m.id || slug(m.title) || 'quiz', title: m.title || '', created: m.created || today() };
   Object.keys(m).forEach(k => { if (!(k in out)) out[k] = m[k]; });
+  if (typeof out.description === 'string') { if (out.description.trim()) out.description = out.description.trim(); else delete out.description; }
   if (Object.keys(Q.images).length) out.images = Q.images;
   out.questions = Q.items.map(it => {
     const q = { stem: it.stem, lead: it.lead, options: it.opts.map(o => o.t), answer: it.c >= 0 ? LET[it.c] : '' };
@@ -251,6 +266,9 @@ function toPack(){
     const why = {}; it.opts.forEach((o, i) => { if (i !== it.c && o.w.trim()) why[LET[i]] = o.w; });
     if (Object.keys(why).length) q.why = why;
     if (it.objective.trim()) q.objective = it.objective;
+    const tp = it.topic.map(x => x.trim()); while (tp.length && !tp[tp.length - 1]) tp.pop();
+    if (tp.length) q.topic = tp;
+    if (it.concept.trim()) q.concept = it.concept.trim();
     Object.keys(it.extra).forEach(k => { q[k] = it.extra[k]; });
     return q;
   });
@@ -291,6 +309,12 @@ function checkItem(it){
     const abs = /\b(always|never)\b/i, absWrong = it.opts.some((o, i) => i !== it.c && abs.test(o.t));
     if (absWrong && !abs.test(it.opts[it.c].t)) w.push('“Always” or “never” appears only in wrong options: it gives them away.');
   }
+  const ch = it.topic[0].trim();
+  if (ch && !FA_CHAPTERS.some(c => c.toLowerCase() === ch.toLowerCase())) w.push('“' + ch + '” is not a First Aid chapter name; pick one from the list so topics line up across quizzes.');
+  if (!it.topic[0].trim() && (it.topic[1].trim() || it.topic[2].trim())) w.push('The topic has no chapter; fill in the levels from the left.');
+  if (it.concept.trim().length > 90) w.push('Keep the concept short (a few words, like a flash-card title).');
+  if (!it.concept.trim() && Q.items.some(x => x.concept.trim())) w.push('No concept (other cases have one).');
+  if (!it.topic[0].trim() && Q.items.some(x => x.topic[0].trim())) w.push('No topic (other cases have one).');
   const texts = [it.explain, it.objective].concat(it.opts.map(o => o.w));
   if (texts.some(t => LETTER_REF.test(t))) w.push('An explanation refers to an option by its letter; letters change when options move. Name the option instead.');
   const nw = (it.stem.match(/\S+/g) || []).length;
@@ -340,7 +364,8 @@ function renderRecent(){
   packs.all().then(list => {
     list = (list || []).filter(r => r && r.pack).sort((a, b) => b.loadedAt - a.loadedAt);
     if (!list.length) { el.innerHTML = '<p class="hint">None yet.</p>'; return; }
-    el.innerHTML = list.map(r => '<div class="rrow"><div><div class="rt">' + esc(r.title) + '</div><div class="rm">' + esc(r.n) + ' cases · ' + esc(new Date(r.loadedAt).toLocaleDateString()) + '</div></div>' +
+    el.innerHTML = list.map(r => '<div class="rrow"><div><div class="rt">' + esc(r.title) + '</div>' + (typeof r.pack.description === 'string' && r.pack.description.trim() ? '<div class="rd">' + esc(r.pack.description.trim()) + '</div>' : '') +
+      '<div class="rm">' + esc(r.n) + ' cases · ' + esc(new Date(r.loadedAt).toLocaleDateString()) + '</div></div>' +
       '<button class="btn small" data-edit="' + esc(r.key) + '">Edit</button></div>').join('');
     el.onclick = e => { const b = e.target.closest('[data-edit]'); if (b) guardDiscard(() => openRecent(b.getAttribute('data-edit'))); };
   }, () => { el.innerHTML = '<p class="hint">This browser can’t list quizzes here — open the file instead.</p>'; });
@@ -424,6 +449,7 @@ function editor(statusMsg){
       '<button class="btn primary" id="playBtn">Play now ▶</button></header>' +
     '<div class="ed"><aside class="side">' +
       '<div class="meta"><label for="titleIn">Quiz title</label><input id="titleIn" type="text" value="' + esc(Q.meta.title || '') + '" placeholder="e.g. Lymphomas Practice Test">' +
+        '<label for="descIn" class="m2">Description <span class="sub">shown when choosing a quiz</span></label><textarea id="descIn" rows="2" placeholder="e.g. Hodgkin and non-Hodgkin lymphomas, plasma cell disorders, translocations">' + esc(typeof Q.meta.description === 'string' ? Q.meta.description : '') + '</textarea>' +
         '<div class="summary" id="summary"></div></div>' +
       '<div class="list" id="list"></div>' +
       '<div class="sidefoot"><button class="btn" id="addBtn">+ Add case</button><button class="btn" id="balanceBtn">Balance answer letters…</button>' +
@@ -446,6 +472,8 @@ function editor(statusMsg){
   setupDrag(document.getElementById('list'));
   document.getElementById('addBtn').onclick = () => { Q.items.splice(cur + 1, 0, blankItem()); cur = cur + 1; changed(true); };
   document.getElementById('titleIn').addEventListener('input', e => { Q.meta.title = e.target.value; changed(false); });
+  document.getElementById('descIn').addEventListener('input', e => { Q.meta.description = e.target.value; autosize(e.target); changed(false); });
+  autosize(document.getElementById('descIn'));
   document.getElementById('list').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) { cur = +b.getAttribute('data-i'); armed = ''; renderList(); renderCase(); document.getElementById('main').scrollTop = 0; } });
   setStatus(statusMsg);
   renderList(); renderCase();
@@ -459,7 +487,7 @@ function renderList(){
   const chk = checkQuiz(), list = document.getElementById('list'), sum = document.getElementById('summary');
   list.innerHTML = Q.items.map((it, i) => {
     const r = chk.per[i], cls = r.e.length ? ' e' : (r.w.length ? ' w' : '');
-    const label = it.stem.trim() ? it.stem.trim().slice(0, 70) : 'New case';
+    const label = it.concept.trim() || (it.stem.trim() ? it.stem.trim().slice(0, 70) : 'New case');
     return '<button class="item' + (i === cur ? ' sel' : '') + cls + '" data-i="' + i + '" draggable="true" title="' + esc(label) + '"><span class="n">' + (i + 1) + '</span><span class="s">' + esc(label) +
       '</span><span class="k">' + (it.c >= 0 ? LET[it.c] : '?') + '</span></button>';
   }).join('');
@@ -501,6 +529,10 @@ function renderCase(){
           LET.slice(0, n).map((l, i) => '<option value="' + i + '"' + (i === it.c ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' : '') + '</div></div>' +
     '<div class="field"><label for="expIn">Explanation<span class="sub">2–4 sentences: the decisive clue and the principle</span></label><textarea id="expIn" data-f="explain">' + esc(it.explain) + '</textarea></div>' +
     '<div class="field"><label for="objIn">Take-home point<span class="sub">one sentence</span></label><textarea id="objIn" data-f="objective">' + esc(it.objective) + '</textarea></div>' +
+    '<div class="field topic"><label for="tp0">Topic and concept<span class="sub">First Aid names; for you only: shown when choosing a quiz, never to students during the quiz</span></label>' +
+      '<div class="tprow">' + [['Chapter', 'Hematology and Oncology'], ['Subtopic', 'Lymphomas'], ['Entry (if applicable)', 'Hodgkin lymphoma']].map((l, k) =>
+        '<label class="mini"><span>' + l[0] + '</span><input type="text" id="tp' + k + '" data-tp="' + k + '" list="dl' + k + '" value="' + esc(it.topic[k]) + '" placeholder="e.g. ' + l[1] + '" autocomplete="off"></label>').join('') + '</div>' +
+      '<label class="mini"><span>Concept tested</span><input type="text" id="conceptIn" data-f="concept" value="' + esc(it.concept) + '" placeholder="e.g. Reed–Sternberg cells: CD15/CD30"></label>' + topicLists() + '</div>' +
     '<div class="field"><label>Pictures<span class="sub">optional; paste, drop or choose a file (resized for phones automatically)</span></label><div class="pics">' + pics + '</div></div>' +
   '</div>';
   main.querySelectorAll('img[data-src]').forEach(img => {          // set as a property: never parsed as HTML
@@ -509,6 +541,12 @@ function renderCase(){
   });
   main.querySelectorAll('textarea').forEach(autosize);
   wordCount();
+}
+/* suggestions: First Aid chapters, and the names already used in this quiz (so spelling stays the same) */
+function topicLists(){
+  const used = k => Array.from(new Set(Q.items.map(x => x.topic[k].trim()).filter(Boolean))).sort();
+  const opts = a => a.map(v => '<option value="' + esc(v) + '">').join('');
+  return '<datalist id="dl0">' + opts(Array.from(new Set(FA_CHAPTERS.concat(used(0))))) + '</datalist><datalist id="dl1">' + opts(used(1)) + '</datalist><datalist id="dl2">' + opts(used(2)) + '</datalist>';
 }
 function autosize(t){ t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
 function wordCount(){ const el = document.getElementById('wc'); if (el) { const n = (Q.items[cur].stem.match(/\S+/g) || []).length; el.textContent = n + ' words (exam cases: about 60–140)'; } }
@@ -521,6 +559,7 @@ document.addEventListener('input', e => {
   if (t.hasAttribute('data-f')) it[t.getAttribute('data-f')] = t.value;
   else if (t.hasAttribute('data-o')) it.opts[+t.getAttribute('data-o')].t = t.value;
   else if (t.hasAttribute('data-w')) it.opts[+t.getAttribute('data-w')].w = t.value;
+  else if (t.hasAttribute('data-tp')) it.topic[+t.getAttribute('data-tp')] = t.value;
   else if (t.hasAttribute('data-cap')) { const k = t.getAttribute('data-cap'); if (t.value.trim()) it.extra[k] = t.value; else delete it.extra[k]; }
   else return;
   if (t.getAttribute('data-f') === 'stem') wordCount();
@@ -727,13 +766,15 @@ function buildPrint(mode){
   html += Q.items.map((it, i) => '<div class="q"><h3>' + (i + 1) + '.</h3>' + stemPrint(it.stem) + picPrint(it, 'image') + '<p class="lead">' + esc(it.lead) + '</p>' +
     '<ul class="popts">' + it.opts.map((o, j) => '<li>' + LET[j] + '. ' + esc(o.t) + '</li>').join('') + '</ul></div>').join('');
   if (mode !== 'q') {
-    html += '<div class="newpage"><h2>Answer key</h2><table><tr><th>Case</th><th>Answer</th><th>Correct option</th></tr>' +
-      Q.items.map((it, i) => '<tr><td>' + (i + 1) + '</td><td>' + (it.c >= 0 ? LET[it.c] : '—') + '</td><td>' + (it.c >= 0 ? esc(it.opts[it.c].t) : '') + '</td></tr>').join('') + '</table></div>';
+    const withC = Q.items.some(it => it.concept.trim());
+    html += '<div class="newpage"><h2>Answer key</h2><table><tr><th>Case</th><th>Answer</th><th>Correct option</th>' + (withC ? '<th>Concept</th>' : '') + '</tr>' +
+      Q.items.map((it, i) => '<tr><td>' + (i + 1) + '</td><td>' + (it.c >= 0 ? LET[it.c] : '—') + '</td><td>' + (it.c >= 0 ? esc(it.opts[it.c].t) : '') + '</td>' + (withC ? '<td>' + esc(it.concept.trim()) + '</td>' : '') + '</tr>').join('') + '</table></div>';
   }
   if (mode === 'x') {
     html += '<div class="newpage"><h2>Explanations</h2>' + Q.items.map((it, i) => {
       const why = it.opts.map((o, j) => (j !== it.c && o.w.trim()) ? '<li><b>' + LET[j] + '</b> — ' + esc(o.w) + '</li>' : '').join('');
-      return '<div class="q"><h3>' + (i + 1) + '. Answer: ' + (it.c >= 0 ? LET[it.c] + ' — ' + esc(it.opts[it.c].t) : '—') + '</h3>' +
+      const tp = it.topic.map(x => x.trim()).filter(Boolean), meta = tp.join(' › ') + (tp.length && it.concept.trim() ? ' · ' : '') + it.concept.trim();
+      return '<div class="q"><h3>' + (i + 1) + '. Answer: ' + (it.c >= 0 ? LET[it.c] + ' — ' + esc(it.opts[it.c].t) : '—') + '</h3>' + (meta ? '<p class="cap">' + esc(meta) + '</p>' : '') +
         (it.explain ? '<p>' + esc(it.explain) + '</p>' : '') + picPrint(it, 'explainImage') + (why ? '<p>Why not the others:</p><ul>' + why + '</ul>' : '') +
         (it.objective ? '<p><b>Take-home:</b> ' + esc(it.objective) + '</p>' : '') + '</div>';
     }).join('') + '</div>';

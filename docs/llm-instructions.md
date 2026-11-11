@@ -31,6 +31,7 @@ The JSON is read by a program. It must be valid JSON and follow the format exact
 - Write a realistic clinical case, about 60–140 words: age and sex, setting, chief complaint, relevant history, examination, then labs, imaging or pathology as needed.
 - Vary the patients across the pack: ages, sexes, settings (clinic, emergency department, ward, research lab) and presentations. Every patient must fit the condition's typical patient (age of onset, sex ratio, where it presents); never make a patient atypical just for variety. Vary the story, not just the numbers.
 - Put lab panels on separate lines that start with `• ` (bullet and space), for example `• Serum C4: low`. Give units, with temperature as `38.6°C (101.5°F)`. Give only the values the reasoning uses (the abnormal ones, and the normal ones that rule out a distractor) plus the few a physician would routinely order for this complaint; never a filler panel. Normal values lie inside standard reference ranges; abnormal values are clearly abnormal and consistent with each other.
+- **Lab values use the NBME Laboratory Reference Values (December 2024), the table shown on USMLE exams, in conventional units only** (mg/dL, mEq/L, g/dL, U/L, /mm³; never SI units such as mmol/L or μmol/L). Write each value as a number with its unit, the way that table writes them, e.g. `• Hemoglobin 8.9 g/dL`, `• Leukocyte count 15,500/mm³`, `• Urea nitrogen 32 mg/dL`. "Normal" values lie inside its ranges and abnormal ones clearly outside them, because students check the values against that table on their phones (the Labs button). Do not add reference ranges in the case.
 - **Do not give the answer away.** Never name the diagnosis or any intermediate step in the stem or the lead-in when the question asks about a mechanism, finding or treatment. Do not include a pathognomonic test result (for example a positive dihydrorhodamine test, "giant granules on smear", or the name of the accumulating metabolite) when that result makes the question a one-step recall. The student should have to recognize the condition from the clinical picture, then apply knowledge about it: **two-step (second-order) reasoning**.
 - **Reasoning depth (make it hard).** 2-step: findings → hidden diagnosis or mechanism → asked fact. 3-step: findings → diagnosis → a second inference (the drug used, the complication, the pathway) → asked fact about that. Every question is at least 2-step; use 3-step whenever the chain allows. No 1-step recall (findings → asked fact) unless the REQUEST asks for it.
 - **Exclusion by reasoning.** For every wrong option, the stem contains the finding a prepared student uses to rule it out, taken from that option's discriminator (for example, a normal ejection fraction that rules out doxorubicin cardiotoxicity). Never a flat negation of the option itself, such as "no proteinuria" when nephrotic syndrome is an option.
@@ -68,7 +69,17 @@ The JSON is read by a program. It must be valid JSON and follow the format exact
 - Real drug names, standard units, First Aid terms; no invented syndromes, eponyms, statistics or studies.
 - Arrows (→ ↑ ↓) and symbols (α β γ κ λ ±) are fine.
 
-### 3.6 Accuracy
+### 3.6 Description, topic and concept (for the teacher only)
+These help the teacher choose a set and, later, read the results. The app shows them only on the page where the teacher chooses a quiz (and in the results), never to students during the quiz, so `concept` may name the answer.
+- `description` (once, for the whole pack): one or two sentences saying what the set covers, e.g. `"Hodgkin and non-Hodgkin lymphomas, plasma cell disorders, translocations and associated infections."`
+- `topic` (every question): **First Aid for the USMLE Step 1 terminology**, up to three levels in a list: `[chapter, subtopic, entry]`.
+  - chapter: exactly one of Biochemistry, Immunology, Microbiology, Pathology, Pharmacology, Public Health Sciences, Cardiovascular, Endocrine, Gastrointestinal, Hematology and Oncology, Musculoskeletal, Skin, and Connective Tissue, Neurology and Special Senses, Psychiatry, Renal, Reproductive, Respiratory;
+  - subtopic: the group of related entries within that chapter, named as First Aid names it where it can (e.g. `"Lymphomas"`, `"Anemias"`);
+  - entry: the specific First Aid entry, when there is one (e.g. `"Hodgkin lymphoma"`); otherwise give two levels.
+  - Spell each name the same way every time it appears in the pack.
+- `concept` (every question): the fact tested in a few words (at most about 12), like a flash-card title, e.g. `"Reed–Sternberg cells: CD15/CD30"`.
+
+### 3.7 Accuracy
 - Every fact must be standard, current Step 1 knowledge. If a detail is controversial or you are not sure, test a different, well-established fact instead.
 - Make sure exactly one option is defensible as best, and that the stem contains enough information to choose it.
 
@@ -80,6 +91,7 @@ The JSON is read by a program. It must be valid JSON and follow the format exact
   "version": 1,
   "id": "example-01",
   "title": "Example Pack — Two Sample Questions",
+  "description": "Two sample questions: the first treatment of anaphylaxis and a drug-induced vitamin deficiency.",
   "created": "2026-10-30",
   "questions": [
     {
@@ -94,7 +106,9 @@ The JSON is read by a program. It must be valid JSON and follow the format exact
         "D": "Albuterol suits an asthma attack with normal blood pressure; it does not treat this patient's hypotension or airway edema.",
         "E": "Montelukast is for long-term control of mild asthma or allergic rhinitis; it has no role in acute anaphylaxis."
       },
-      "objective": "Intramuscular epinephrine is the first treatment for anaphylaxis; antihistamines and steroids are adjuncts."
+      "objective": "Intramuscular epinephrine is the first treatment for anaphylaxis; antihistamines and steroids are adjuncts.",
+      "topic": ["Immunology", "Hypersensitivity types", "Type I hypersensitivity"],
+      "concept": "Anaphylaxis: intramuscular epinephrine first"
     },
     {
       "stem": "A 31-year-old man is started on a four-drug regimen for pulmonary tuberculosis. Six weeks later, he reports burning pain and numbness in both feet that began gradually. He eats a varied diet, drinks alcohol rarely, and takes no other medications. Examination shows decreased pinprick and vibration sensation in a stocking distribution and reduced ankle reflexes.\n• Hemoglobin 14.2 g/dL\n• Mean corpuscular volume 88 μm³\n• Alanine aminotransferase 24 U/L",
@@ -108,7 +122,9 @@ The JSON is read by a program. It must be valid JSON and follow the format exact
         "D": "Riboflavin deficiency causes cheilosis, glossitis and corneal vascularization in a malnourished patient; this patient eats a varied diet.",
         "E": "Thiamine deficiency causes neuropathy or Wernicke encephalopathy in alcohol use disorder or malnutrition; this patient rarely drinks and eats well."
       },
-      "objective": "Isoniazid causes vitamin B6 deficiency neuropathy; give pyridoxine with isoniazid."
+      "objective": "Isoniazid causes vitamin B6 deficiency neuropathy; give pyridoxine with isoniazid.",
+      "topic": ["Biochemistry", "Nutrition", "Vitamin B6 (pyridoxine)"],
+      "concept": "Isoniazid → vitamin B6 deficiency neuropathy"
     }
   ]
 }
@@ -122,6 +138,7 @@ The JSON is read by a program. It must be valid JSON and follow the format exact
 | `version` | Always `1` (a number) |
 | `id` | Short lowercase name with hyphens, e.g. `"immunology-02"` |
 | `title` | Shown on the screens, e.g. `"Immunology 2 — Hypersensitivity"` |
+| `description` | String: what the set covers (section 3.6) |
 | `created` | Today's date, `YYYY-MM-DD` |
 | `questions` | Array of question objects, in the order they will be asked |
 | `stem` | String. Paragraphs separated by `\n`; lab lines start with `• ` |
@@ -131,6 +148,8 @@ The JSON is read by a program. It must be valid JSON and follow the format exact
 | `explain` | String |
 | `why` | Object whose keys are **exactly the wrong letters** (for 5 options with answer B: A, C, D, E) |
 | `objective` | String |
+| `topic` | Array of 2–3 strings: First Aid chapter, subtopic, entry (section 3.6) |
+| `concept` | String: the fact tested, a few words |
 
 ### Pictures (only if the teacher provides them)
 
@@ -145,7 +164,7 @@ Never invent, describe as attached, or link to pictures. If the teacher provides
 ## 5. Checklist (check every question before output)
 
 For each question:
-- [ ] Original vignette, realistic, 60–140 words, varied patient; lab values on `• ` lines with units
+- [ ] Original vignette, realistic, 60–140 words, varied patient; lab values on `• ` lines in NBME conventional units, judged against the NBME reference ranges
 - [ ] Diagnosis and intermediate steps not named, and no pathognomonic giveaway; at least 2-step, 3-step where the chain allows
 - [ ] Every wrong option is ruled out by a clue in the stem, not by a flat negation of the option
 - [ ] Lab values only those the reasoning uses (plus routine ones), consistent with each other; options add no new data
@@ -155,10 +174,12 @@ For each question:
 - [ ] Exactly one best answer; facts standard and current
 - [ ] `explain`, a `why` line for every wrong option (ruling-out clue + the patient in whom it would be right), and `objective` are present; no option referred to by its letter
 - [ ] No more than 5 words in a row copied from any source or example question
+- [ ] `topic` uses First Aid names (the chapter exactly as listed in section 3.6); `concept` names the fact tested in a few words
 
 For the whole pack:
 - [ ] Answer letters balanced across A–E; no long runs of the same letter
 - [ ] No two questions are near-duplicates; concepts spread across the topic
+- [ ] `description` says what the set covers; the same topic names are spelled the same way throughout
 - [ ] The JSON is valid and follows section 4 exactly
 
 ## 6. What to output
@@ -167,7 +188,7 @@ For the whole pack:
 2. **After the code block, a short report**:
    - suggested file name, e.g. `immunology-02.quiz.json`
    - the answer distribution (e.g. A 5 · B 5 · C 5 · D 5 · E 5)
-   - a numbered list: question number → concept tested (one line each)
+   - a numbered list: question number → its topic and `concept` (one line each)
    - anything the teacher should check (a source discrepancy, pictures to embed)
 
 **Pack size:** write the number of questions the REQUEST asks for (10, 20, 30 or any other number); if it gives none, write **15**. Deliver the whole pack as one JSON document in one reply. Never stop in the middle of the JSON: if the pack is too long for one reply (usually only above about 30 questions), split it into parts of about equal size, each a complete, valid pack with its own balanced answer key (ids `immunology-02-1`, `immunology-02-2`; titles ending "(part 1 of 2)", "(part 2 of 2)"). Deliver the first part, then continue when the teacher says "next".

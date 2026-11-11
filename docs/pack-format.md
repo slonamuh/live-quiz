@@ -10,6 +10,7 @@ A quiz pack is one UTF-8 JSON file, by convention named `<topic>-<NN>.quiz.json`
   "version": 1,
   "id": "example-01",
   "title": "Example pack",
+  "description": "Anaphylaxis and other type I hypersensitivity reactions.",
   "created": "2026-10-30",
   "images": {
     "rash": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
@@ -28,6 +29,8 @@ A quiz pack is one UTF-8 JSON file, by convention named `<topic>-<NN>.quiz.json`
         "E": "H2 blockers are adjuncts at most."
       },
       "objective": "Epinephrine is first-line for anaphylaxis.",
+      "topic": ["Immunology", "Hypersensitivity types", "Type I hypersensitivity"],
+      "concept": "Anaphylaxis: epinephrine first",
       "image": "rash",
       "imageCaption": "Urticarial rash"
     }
@@ -44,6 +47,7 @@ A quiz pack is one UTF-8 JSON file, by convention named `<topic>-<NN>.quiz.json`
 | `format`, `version` | recommended | `"acsom-live-quiz"`, `1` |
 | `id` | recommended | Short name; together with the content it identifies the pack in "Recent quizzes" |
 | `title` | recommended | Shown on the screens and in the CSV (defaults to the file name) |
+| `description` | optional | One or two sentences on what the set covers; shown with the quiz in "Recent quizzes" and its Cases list |
 | `created` | optional | Date, for your records |
 | `images` | optional | Map of picture id → embedded picture (`data:image/png|jpeg|gif|webp|svg+xml;base64,...`) |
 | `questions` | **required** | List of questions, shown in this order |
@@ -59,12 +63,16 @@ A quiz pack is one UTF-8 JSON file, by convention named `<topic>-<NN>.quiz.json`
 | `explain` | recommended | Explanation shown at reveal (2–4 sentences). |
 | `why` | recommended | Map of each *wrong* letter → one line on why it is wrong. |
 | `objective` | recommended | Take-home sentence. |
+| `topic` | optional | First Aid topic path, up to 3 names: chapter, subtopic, entry, e.g. `["Hematology and Oncology", "Lymphomas", "Hodgkin lymphoma"]`. A string `"A › B › C"` is accepted too (the editor saves it as a list). |
+| `concept` | optional | The fact tested, in a few words, e.g. `"Reed–Sternberg cells: CD15/CD30"`. |
+
+`description`, `topic` and `concept` are for the teacher. The player shows them only on the quiz-choosing page (the **Cases** button in "Recent quizzes"); they are never sent to phones and never shown on the screens during the quiz, so `concept` may name the answer.
 | `image`, `imageCaption` | optional | Picture id (from `images`) shown under the case, and its caption. |
 | `explainImage`, `explainCaption` | optional | Picture shown with the explanation at reveal. |
 
 ## Rules the player enforces
 
-A pack is rejected, with a message naming the question, if: there are no questions; a question has no `stem` or `lead`; it has fewer than 2 or more than 8 options, or an empty option; `answer` is not one of its letters; a picture id is missing from `images`; or a picture is not an embedded image. Missing explanations are allowed (the lobby shows a warning, and the reveal simply shows the answer).
+A pack is rejected, with a message naming the question, if: there are no questions; a question has no `stem` or `lead`; it has fewer than 2 or more than 8 options, or an empty option; `answer` is not one of its letters; a picture id is missing from `images`; or a picture is not an embedded image; or `description` or `concept` is not text, or `topic` is not up to 3 names. Missing explanations are allowed (the lobby shows a warning, and the reveal simply shows the answer).
 
 ## Pictures
 
