@@ -529,7 +529,7 @@ function renderCase(){
           LET.slice(0, n).map((l, i) => '<option value="' + i + '"' + (i === it.c ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' : '') + '</div></div>' +
     '<div class="field"><label for="expIn">Explanation<span class="sub">2–4 sentences: the decisive clue and the principle</span></label><textarea id="expIn" data-f="explain">' + esc(it.explain) + '</textarea></div>' +
     '<div class="field"><label for="objIn">Take-home point<span class="sub">one sentence</span></label><textarea id="objIn" data-f="objective">' + esc(it.objective) + '</textarea></div>' +
-    '<div class="field topic"><label for="tp0">Topic and concept<span class="sub">First Aid names; for you only: shown when choosing a quiz, never to students during the quiz</span></label>' +
+    '<div class="field topic"><label for="tp0">Topic and concept<span class="sub">First Aid names; for you: shown when choosing a quiz and in the results at the end, never during the quiz</span></label>' +
       '<div class="tprow">' + [['Chapter', 'Hematology and Oncology'], ['Subtopic', 'Lymphomas'], ['Entry (if applicable)', 'Hodgkin lymphoma']].map((l, k) =>
         '<label class="mini"><span>' + l[0] + '</span><input type="text" id="tp' + k + '" data-tp="' + k + '" list="dl' + k + '" value="' + esc(it.topic[k]) + '" placeholder="e.g. ' + l[1] + '" autocomplete="off"></label>').join('') + '</div>' +
       '<label class="mini"><span>Concept tested</span><input type="text" id="conceptIn" data-f="concept" value="' + esc(it.concept) + '" placeholder="e.g. Reed–Sternberg cells: CD15/CD30"></label>' + topicLists() + '</div>' +

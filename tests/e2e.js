@@ -193,6 +193,15 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   await T[0].waitForSelector('.score');
   assert((await T[0].textContent('.score')).trim() === '3 / 3', 'phone score 3 / 3');
   assert(!(await leaks(T[0])).length, '… nor on the phone’s final score screen');
+  await P.waitForSelector('.hard .hmeta');
+  const metas = await P.$$eval('.hard .hmeta', ms => ms.map(m => m.innerText.replace(/\s+/g, ' ').trim()));
+  assert(metas.length === 2 && metas.some(m => m.includes('Hematology and Oncology › Placeholder subtopic › Placeholder entry one') && m.includes('Placeholder concept one')) &&
+    metas.some(m => m.includes('Immunology › Placeholder subtopic') && m.includes('Placeholder concept two')), 'results: each question shows its First Aid topic and concept (none for a case without them)');
+  await P.screenshot({ path: `${OUT}/08b-results-topics.png` });
+  const [dl2] = await Promise.all([P.waitForEvent('download'), P.click('[data-act="csv"]')]);
+  const csv2 = fs.readFileSync(await dl2.path(), 'utf8').split('\n');
+  assert(csv2[1].endsWith(',Chapter,Subtopic,Entry,Concept') && csv2.some(l => l.endsWith('"Hematology and Oncology","Placeholder subtopic","Placeholder entry one","Placeholder concept one"')),
+    'CSV export adds the topic and concept columns at the end');
 
   log('Recent quizzes');
   await P.click('[data-act="change"]'); await P.click('[data-act="change"]');

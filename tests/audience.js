@@ -160,6 +160,7 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   await P.click('[data-act="end"]'); await P.click('[data-act="end"]');
   await A3.waitForSelector('.avg', { timeout: 10000 });
   assert((await A3.$$('[data-act="csv"], [data-act="newsession"], [data-act="change"]')).length === 0 && !!(await P.$('[data-act="csv"]')), 'results: the projector shows the class results; the buttons stay on the laptop');
+  assert((await A3.innerText('.hard')).includes('Placeholder concept one'), 'the projector’s results show the topic and concept too');
   await A3.screenshot({ path: `${OUT}/26-projector-results.png` });
 
   assert(errors === 0, 'no script errors in any window or on any phone');

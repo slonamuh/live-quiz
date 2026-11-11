@@ -173,6 +173,9 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .hard .hb span.low{background:var(--bad)}
 .hard .hb span.mid{background:var(--warn)}
 .hard .pc{text-align:right;font-variant-numeric:tabular-nums}
+.hard .hmeta{grid-column:2 / -1;margin:-.15rem 0 .45rem;font-size:.85rem;line-height:1.3}
+.hard .hmeta .ht{display:block;color:var(--muted);font-size:.78rem}
+.hard .hmeta .hk{display:block;font-weight:600}
 
 .center{display:flex;align-items:center;justify-content:center;padding:2rem}
 .center .card{max-width:38rem}
@@ -3491,18 +3494,25 @@ function buildEnd(){
     '<p><button class="btn" data-act="newsession">'+(isArmed('new') ? 'Click again — this clears these results' : 'Run this quiz again (new session)')+'</button></p>'+
     '<p><button class="btn" data-act="change">'+(isArmed('change') ? 'Click again — this clears these results' : 'Load another quiz')+'</button></p>')+'</section>'+
     '<section class="card"><h2 style="margin-top:0">Questions by % correct (hardest first)</h2><div class="hard">'+
-    rows.map(function(r){ var c = r.pc < 50 ? 'low' : r.pc < 70 ? 'mid' : ''; return '<div class="lbl">Q'+(r.qi+1)+'</div><div class="hb"><span class="'+c+'" style="width:'+r.pc+'%"></span></div><div class="pc">'+Math.round(r.pc)+'% <small>('+r.n+')</small></div>'; }).join('')+
+    rows.map(function(r){ var c = r.pc < 50 ? 'low' : r.pc < 70 ? 'mid' : '', t = topicOf(QUESTIONS[r.qi]), k = conceptOf(QUESTIONS[r.qi]);
+      // the case's First Aid topic and concept (teacher-written), shown only here at the end and in the quiz-choosing page
+      return '<div class="lbl">Q'+(r.qi+1)+'</div><div class="hb"><span class="'+c+'" style="width:'+r.pc+'%"></span></div><div class="pc">'+Math.round(r.pc)+'% <small>('+r.n+')</small></div>'+
+        (t.length || k ? '<div class="hmeta">'+(t.length ? '<span class="ht">'+t.map(esc).join(' › ')+'</span>' : '')+(k ? '<span class="hk">'+esc(k)+'</span>' : '')+'</div>' : ''); }).join('')+
     '</div></section></main>'+(VIEW ? '<footer></footer>' : '<footer class="controls"></footer>')+'</div>';
 }
 function downloadCsv(){
   var maxN = S.played.reduce(function(m, qi){ return Math.max(m, QUESTIONS[qi].options.length); }, 0), LS = letters(maxN);
   var head = ['Question','Correct','R1 answered','R1 % correct'].concat(LS.map(function(l){ return 'R1 '+l; }), ['R2 answered','R2 % correct'], LS.map(function(l){ return 'R2 '+l; }), ['Final answered','Final % correct','Sure but wrong']);
+  var withTopics = S.played.some(function(qi){ return topicOf(QUESTIONS[qi]).length || conceptOf(QUESTIONS[qi]); });
+  if (withTopics) head = head.concat(['Chapter', 'Subtopic', 'Entry', 'Concept']);
+  function cell(x){ x = String(x || ''); if (/^[=+\-@]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g, '""') + '"'; }   // quoted; no spreadsheet formulas
   var lines = ['"' + String(QUIZ.title).replace(/"/g,'""') + '"', head.join(',')];
   S.played.forEach(function(qi){
     var q = QUESTIONS[qi], ai = LQ(qi).indexOf(q.answer), row = [qi+1, q.answer];
     [1,2].forEach(function(r){ var t = tallyOf(peekBucket(qi, r), qi); row.push(t.n, t.n ? Math.round(t.opts[ai].all*100/t.n) : ''); LS.forEach(function(l, i){ row.push(t.opts[i] ? t.opts[i].all : ''); }); });
     var fb = finalBucket(qi), tf = tallyOf(fb, qi), cw = 0; for (var s in fb) if (fb[s].c !== q.answer && fb[s].sure === true) cw++;
     row.push(tf.n, tf.n ? Math.round(tf.opts[ai].all*100/tf.n) : '', cw);
+    if (withTopics) { var tp = topicOf(q); row.push(cell(tp[0]), cell(tp[1]), cell(tp[2]), cell(conceptOf(q))); }
     lines.push(row.join(','));
   });
   var blob = new Blob([lines.join('\n')], { type:'text/csv' }), a = document.createElement('a');
