@@ -92,6 +92,18 @@ const WHY = {
   await E.fill('#objIn', 'Vitamin B12 deficiency: macrocytic anemia plus neurologic signs; folate deficiency has no neurologic signs.');
   await E.waitForSelector('#checks.ok', { timeout: 3000 });
   assert(true, 'a complete case passes all checks');
+
+  log('Description, First Aid topic and concept');
+  await E.fill('#descIn', 'Anemias: causes, laboratory patterns and neurologic signs.');
+  assert((await E.$$eval('#dl0 option', os => os.map(o => o.value))).includes('Hematology and Oncology'), 'the chapter box suggests the First Aid chapters');
+  await E.fill('#tp0', 'Hematology');
+  await E.waitForSelector('#checks >> text=not a First Aid chapter name');
+  assert(true, 'a chapter name that is not First Aid’s is flagged');
+  await E.fill('#tp0', 'Hematology and Oncology'); await E.fill('#tp1', 'Anemias'); await E.fill('#tp2', 'Vitamin B12 deficiency');
+  await E.fill('#conceptIn', 'B12 deficiency: macrocytic anemia plus posterior column signs');
+  await E.waitForSelector('#checks.ok', { timeout: 3000 });
+  await E.waitForFunction(() => document.querySelector('.item[data-i="0"] .s').textContent.startsWith('B12 deficiency'));
+  assert(true, 'the case list shows the concept');
   await E.screenshot({ path: `${OUT}/21-editor-case.png` });
 
   log('Checks for common giveaways');
@@ -137,6 +149,8 @@ const WHY = {
   assert(saved.suggested === 'editor-test-quiz.quiz.json', 'the file is named after the quiz (' + saved.suggested + ')');
   const q2 = saved.json.questions[1];
   assert(saved.json.format === 'acsom-live-quiz' && saved.json.version === 1 && saved.json.questions.length === 2, 'the file is a version-1 quiz pack with both cases');
+  assert(saved.json.description === 'Anemias: causes, laboratory patterns and neurologic signs.' && saved.json.questions.every(q => JSON.stringify(q.topic) === '["Hematology and Oncology","Anemias","Vitamin B12 deficiency"]' && q.concept.startsWith('B12 deficiency')),
+    'the description, topic path and concept are saved (a duplicated case keeps them)');
   assert(q2.options.length === 4 && q2.answer === 'A' && q2.options[0] === 'Cobalamin' && JSON.stringify(Object.keys(q2.why)) === '["B","C","D"]' && q2.why.B === WHY[1], 'answer letter and “why not” keys follow the edited options');
   const tool = checkWithTool(saved.file);
   assert(tool.errors.length === 0, 'the repository checker accepts the saved file');
@@ -171,6 +185,8 @@ const WHY = {
   const o = saved.json;
   assert(saved.suggested === 'pictures-extra.quiz.json', 'saving keeps the file name it was opened with');
   assert(JSON.stringify(o.images) === JSON.stringify(pics.images) && o.questions[0].image === pics.questions[0].image && o.questions[0].imageCaption === pics.questions[0].imageCaption, 'pictures and captions are saved unchanged');
+  assert(o.description === pics.description && JSON.stringify(o.questions[0].topic) === JSON.stringify(pics.questions[0].topic) && JSON.stringify(o.questions[1].topic) === '["Immunology","Placeholder subtopic"]' &&
+    o.questions[1].concept === pics.questions[1].concept && !('topic' in o.questions[2]) && !('concept' in o.questions[2]), 'description, topics and concepts are kept (a topic written “A › B” is saved as a list)');
   assert(o.notes === 'kept by the editor' && JSON.stringify(o.questions[0].trap) === JSON.stringify(pics.questions[0].trap) && o.title === 'Pictures (edited)', 'fields the editor does not know are kept; the edit is saved');
 
   log('Unsaved changes survive closing the tab');

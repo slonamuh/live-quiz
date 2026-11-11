@@ -3,6 +3,7 @@
  "version": 1,
  "id": "pictures",
  "title": "Test pack with pictures",
+ "description": "Placeholder quiz for testing pictures, six options and the topic fields.",
  "created": "2026-10-30",
  "questions": [
   {
@@ -25,7 +26,13 @@
    },
    "objective": "Pictures reach phones.",
    "image": "histo",
-   "imageCaption": "Test histology image"
+   "imageCaption": "Test histology image",
+   "topic": [
+    "Hematology and Oncology",
+    "Placeholder subtopic",
+    "Placeholder entry one"
+   ],
+   "concept": "Placeholder concept one"
   },
   {
    "stem": "Test case two has six options.",
@@ -49,7 +56,9 @@
    },
    "objective": "Six options work.",
    "explainImage": "chart",
-   "explainCaption": "Explanation chart"
+   "explainCaption": "Explanation chart",
+   "topic": "Immunology › Placeholder subtopic",
+   "concept": "Placeholder concept two"
   },
   {
    "stem": "Test case three has four options and no explanation.",

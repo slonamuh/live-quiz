@@ -50,7 +50,7 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   await P.goto(`${BASE}/presenter.html?${PQ}#x`);
   await P.waitForSelector('#file', { state: 'attached' });
   assert(P.url() === `${BASE}/?${PQ}#x`, 'the old presenter.html address forwards to the player, keeping its parameters');
-  assert((await P.textContent('.studentnote')).includes('127.0.0.1:8080/join/'), 'the player tells a student who lands on it where to go');
+  assert(!(await P.$('.studentnote')) && !(await P.textContent('header')).includes('Student?'), 'the player’s main page has no note for students');
   const old = await phone(browser, `${BASE}/?s=ABCDE&${PQ}#k=${'A'.repeat(22)}`, 'old-link');
   await old.waitForURL(/\/join\/\?s=ABCDE/);
   assert(new URL(old.url()).hash === '#k=' + 'A'.repeat(22) && (await old.$$('#file')).length === 0, 'an old student link to the site’s main address goes on to the phone page, key kept');
@@ -78,8 +78,30 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   for (let i = 0; i < 3; i++) S.push(await phone(browser, url, 'S' + i, i === 2));
   for (const s of S) await s.waitForSelector('text=You’re in', { timeout: 25000 });
   await P.waitForFunction(() => document.querySelector('#joined b').textContent === '3', null, { timeout: 15000 });
+  assert(await S[0].$eval('#labBtn', b => b.hidden), 'no Labs button before the quiz starts');
   await P.click('#startBtn');
   for (const s of S) await s.waitForSelector('.opt');
+
+  log('Lab values on the phone');
+  const L = S[0], phoneUrl = L.url();
+  await L.click('#labBtn');
+  await L.waitForSelector('#lab:not([hidden]) .labr');
+  const row = async name => L.$$eval('#labList .labr', (rs, n) => { const r = rs.find(x => x.firstChild.textContent.startsWith(n)); return r ? r.querySelector('.v').textContent : null; }, name);
+  assert((await row('Sodium')) === '136–146 mEq/L' && (await row('Potassium')) === '3.5–5.0 mEq/L', 'Labs opens the NBME reference values on the Serum tab');
+  assert(await L.$eval('#tm', t => t.getBoundingClientRect().bottom <= document.getElementById('lab').getBoundingClientRect().top + 1 && t.textContent.length > 0), 'the timer stays visible above the lab values');
+  await L.fill('#labQ', 'bun');
+  assert((await row('Urea nitrogen')) === '7–18 mg/dL', 'search finds a test by its abbreviation (BUN)');
+  await L.fill('#labQ', 'glucose');
+  assert((await L.$$('#labList .labr')).length === 3, 'search looks across all tabs (serum and CSF glucose)');
+  await L.fill('#labQ', '');
+  await L.click('#labTabs button[data-tab="Blood"]');
+  assert((await row('Hemoglobin, female')) === '12.0–16.0 g/dL' && (await row('Platelet count')) === '150,000–400,000/mm³', 'the Blood tab lists the hematologic values');
+  await L.screenshot({ path: `${OUT}/03-phone-labs.png` });
+  await L.goBack();
+  await L.waitForSelector('#lab', { state: 'hidden' });
+  assert(L.url() === phoneUrl && !!(await L.$('.opt')), 'the phone’s Back button closes the lab values and stays on the question');
+  await L.click('#labBtn'); await L.click('#labBtn');
+  await L.waitForSelector('#lab', { state: 'hidden' });
   await answer(S[0], 'B', true); await answer(S[1], 'A', false);
   assert((await P.$$('.opt .bar')).length === 0, 'results stay hidden while voting is open');
   await answer(S[2], 'B', true);
@@ -164,14 +186,43 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   await P.waitForSelector('text=Voting closed'); await P.keyboard.press('Enter');
   await T[0].waitForSelector('.banner.good');
   assert(!(await T[0].$('.why')) && !(await P.$('.explain h3')), 'no explanation → no empty “why not” section');
+  const CONCEPTS = ['Placeholder concept one', 'Placeholder concept two', 'Placeholder entry one', 'Placeholder subtopic'];
+  const leaks = async page => { const t = await page.innerText('body'); return CONCEPTS.filter(c => t.includes(c)); };
+  assert(!(await leaks(P)).length && !(await leaks(T[0])).length, 'topics and concepts appear neither on the screen nor on phones during the quiz');
   await P.keyboard.press('Enter');
   await T[0].waitForSelector('.score');
   assert((await T[0].textContent('.score')).trim() === '3 / 3', 'phone score 3 / 3');
+  assert(!(await leaks(T[0])).length, '… nor on the phone’s final score screen');
+  await P.waitForSelector('.hard .hmeta');
+  const metas = await P.$$eval('.hard .hmeta', ms => ms.map(m => m.innerText.replace(/\s+/g, ' ').trim()));
+  assert(metas.length === 2 && metas.some(m => m.includes('Hematology and Oncology › Placeholder subtopic › Placeholder entry one') && m.includes('Placeholder concept one')) &&
+    metas.some(m => m.includes('Immunology › Placeholder subtopic') && m.includes('Placeholder concept two')), 'results: each question shows its First Aid topic and concept (none for a case without them)');
+  await P.screenshot({ path: `${OUT}/08b-results-topics.png` });
+  const [dl2] = await Promise.all([P.waitForEvent('download'), P.click('[data-act="csv"]')]);
+  const csv2 = fs.readFileSync(await dl2.path(), 'utf8').split('\n');
+  assert(csv2[1].endsWith(',Chapter,Subtopic,Entry,Concept') && csv2.some(l => l.endsWith('"Hematology and Oncology","Placeholder subtopic","Placeholder entry one","Placeholder concept one"')),
+    'CSV export adds the topic and concept columns at the end');
 
   log('Recent quizzes');
   await P.click('[data-act="change"]'); await P.click('[data-act="change"]');
   await P.waitForSelector('#recent .rrow');
   assert((await P.$$('#recent .rrow')).length === 2, 'recent list has both quizzes');
+  assert((await P.textContent('#recent .rrow:has-text("pictures") .rd')).includes('Placeholder quiz for testing'), 'the recent list shows a quiz’s description');
+  await P.click('#recent .rrow:has-text("pictures") [data-cases]');
+  await P.waitForSelector('#casesover .clist li');
+  const items = await P.$$eval('#casesover .clist li', ls => ls.map(l => l.innerText.replace(/\s+/g, ' ').trim()));
+  assert(items.length === 3 && items[0].includes('Hematology and Oncology › Placeholder subtopic › Placeholder entry one') && items[0].includes('Placeholder concept one'),
+    '“Cases” lists each case with its First Aid topic path and concept');
+  assert(items[1].includes('Immunology › Placeholder subtopic') && items[1].includes('Placeholder concept two'), '… a topic written as “A › B” works too');
+  assert(items[2].includes('Test case three'), '… and a case without them shows its first words');
+  await P.screenshot({ path: `${OUT}/09-cases.png` });
+  await P.keyboard.press('Escape');
+  await P.waitForSelector('#casesover', { state: 'detached' });
+  await P.click('#recent .rrow:has-text("Sample quiz") [data-cases]');
+  await P.waitForSelector('#casesover');
+  assert((await P.textContent('#casesover')).includes('no topics or concepts yet') && (await P.$$('#casesover .clist li')).length === 25, 'a quiz without them says so and lists all its cases');
+  await P.click('#casesover .cfoot [data-close]');
+  await P.waitForSelector('#casesover', { state: 'detached' });
   await P.click('#recent .rrow:has-text("Sample quiz") [data-use]');
   await P.waitForSelector('.settings .pack');
   assert((await P.textContent('.settings .pack')).includes('25 questions'), '“Use” reopens a quiz without the file');

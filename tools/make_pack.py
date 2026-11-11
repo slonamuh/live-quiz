@@ -55,6 +55,8 @@ def validate(pack):
     qs = pack.get('questions') or []
     if not qs:
         errs.append('the pack has no questions')
+    if 'description' in pack and not isinstance(pack['description'], str):
+        errs.append('"description" must be text')
     images = pack.get('images') or {}
     for k, v in images.items():
         if not isinstance(v, str) or not v.startswith(IMAGE_PREFIXES):
@@ -77,6 +79,12 @@ def validate(pack):
         for key in ('image', 'explainImage'):
             if q.get(key) and q[key] not in images:
                 errs.append(f'Q{i}: picture {q[key]!r} is not in "images"')
+        # optional, teacher-only: First Aid topic path (up to 3 levels) and the concept tested
+        t = q.get('topic')
+        if t is not None and not isinstance(t, str) and not (isinstance(t, list) and len(t) <= 3 and all(isinstance(x, str) for x in t)):
+            errs.append(f'Q{i}: "topic" must be up to 3 names: chapter, subtopic, entry')
+        if 'concept' in q and not isinstance(q['concept'], str):
+            errs.append(f'Q{i}: "concept" must be text')
         if not q.get('explain'):
             warns.append(f'Q{i}: no explanation')
         missing = [l for l in letters if l != q.get('answer') and not (q.get('why') or {}).get(l)]
@@ -90,6 +98,10 @@ def validate(pack):
             others = max(l for j, l in enumerate(lengths) if j != c)
             if lengths[c] >= 25 and lengths[c] >= others * 1.10:
                 warns.append(f'Q{i}: the correct option is clearly the longest (test-wise cue)')
+    if any(q.get('concept') for q in qs) and not all(q.get('concept') for q in qs):
+        warns.append('some cases have a "concept" and others do not')
+    if any(q.get('topic') for q in qs) and not all(q.get('topic') for q in qs):
+        warns.append('some cases have a "topic" and others do not')
     dist = Counter(q.get('answer') for q in qs)
     if len(qs) >= 10 and dist and max(dist.values()) - min(dist.get(l, 0) for l in LETTERS[:5]) > 2:
         warns.append(f'answer letters are unbalanced: {dict(sorted(dist.items()))}')

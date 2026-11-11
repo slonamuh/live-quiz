@@ -83,10 +83,26 @@ figure.qimg figcaption{color:var(--muted);font-size:.85rem;margin-top:4px}
 .big.bad{font-size:1.4rem}
 .small{font-size:.85rem}
 .join button{width:100%;margin-top:12px;min-height:54px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-weight:700;font-size:1.1rem}
+/* lab values sheet (NBME reference values), opened from the header during a question */
+.labbtn{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;cursor:pointer}
+.labbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.labsheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch}
+.labsheet .in{max-width:40rem;margin:0 auto;padding:10px 16px calc(24px + env(safe-area-inset-bottom))}
+.labsheet input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:16px}
+.labtabs{display:flex;gap:6px;margin:10px 0 4px;flex-wrap:wrap}
+.labtabs button{flex:1;min-width:4.5rem;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 6px;font-weight:600;font-size:.9rem;cursor:pointer}
+.labtabs button.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.labtabs.dim button{opacity:.45}
+.labg{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 4px}
+.labr{display:flex;gap:10px;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.labr .v{text-align:right;font-weight:700;white-space:nowrap}
+.labr .tab{font-size:.75rem;color:var(--muted);display:block}
+.labsrc{font-size:.75rem;color:var(--muted);margin-top:14px}
 </style>
 </head>
 <body>
-<header><span class="dot" id="dot"></span><span class="t" id="ht">Live quiz</span><span class="timer" id="tm"></span></header>
+<header><span class="dot" id="dot"></span><span class="t" id="ht">Live quiz</span><span class="timer" id="tm"></span><button class="labbtn" id="labBtn" type="button" hidden aria-expanded="false">Labs</button></header>
+<div class="labsheet" id="lab" hidden role="dialog" aria-label="Laboratory reference values"></div>
 <div class="wrap" id="app"></div>
 <div class="dock" id="dock" hidden></div>
 <script>/*! PeerJS | MIT License | peerjs.com */
@@ -327,7 +343,52 @@ function figHtml(im){
 function setDock(html){ if (html) { dock.innerHTML = '<div class="in">'+html+'</div>'; dock.hidden = false; } else { dock.hidden = true; dock.innerHTML = ''; } }
 function header(){
   document.getElementById('ht').textContent = st && st.q ? ('Question ' + (st.qi+1) + ' of ' + st.total) : (st && st.title ? st.title : 'Live quiz');
+  document.getElementById('labBtn').hidden = !(st && st.q);
+  if (labOpen && (!st || !st.q || st.qi !== labQi)) closeLab(false);       // the question changed or ended
 }
+
+/* ---------- lab values: NBME laboratory reference values (December 2024), conventional units ----------
+   Opened from the header during a question, like the exam's Lab Values button. Below the header, so the
+   timer stays in view; the phone's Back button closes it. Built into the page: no network needed. */
+var LABS = [["Serum","Electrolytes and kidney","Sodium (Na⁺)","136–146 mEq/L","na"],["Serum","Electrolytes and kidney","Potassium (K⁺)","3.5–5.0 mEq/L","k"],["Serum","Electrolytes and kidney","Chloride (Cl⁻)","95–105 mEq/L","cl"],["Serum","Electrolytes and kidney","Bicarbonate (HCO₃⁻)","22–28 mEq/L","hco3 bicarb co2"],["Serum","Electrolytes and kidney","Urea nitrogen","7–18 mg/dL","bun urea"],["Serum","Electrolytes and kidney","Creatinine","0.6–1.2 mg/dL","cr"],["Serum","Electrolytes and kidney","Glucose, fasting","70–100 mg/dL","sugar"],["Serum","Electrolytes and kidney","Glucose, random, non-fasting","<140 mg/dL","sugar"],["Serum","Electrolytes and kidney","Calcium","8.4–10.2 mg/dL","ca"],["Serum","Electrolytes and kidney","Magnesium (Mg²⁺)","1.5–2.0 mg/dL","mg"],["Serum","Electrolytes and kidney","Phosphorus (inorganic)","3.0–4.5 mg/dL","phosphate po4"],["Serum","Liver and pancreas","Alanine aminotransferase (ALT)","10–40 U/L","alt sgpt"],["Serum","Liver and pancreas","Aspartate aminotransferase (AST)","12–38 U/L","ast sgot"],["Serum","Liver and pancreas","Alkaline phosphatase","25–100 U/L","alp alk phos"],["Serum","Liver and pancreas","Amylase","25–125 U/L",""],["Serum","Liver and pancreas","Bilirubin, total","0.1–1.0 mg/dL","bili"],["Serum","Liver and pancreas","Bilirubin, direct","0.0–0.3 mg/dL","bili conjugated"],["Serum","Liver and pancreas","Proteins, total","6.0–7.8 g/dL","protein"],["Serum","Liver and pancreas","Albumin","3.5–5.5 g/dL","alb"],["Serum","Liver and pancreas","Globulin","2.3–3.5 g/dL",""],["Serum","Lipids","Cholesterol, total, normal","<200 mg/dL","tc"],["Serum","Lipids","Cholesterol, total, high",">240 mg/dL","tc"],["Serum","Lipids","HDL","40–60 mg/dL","hdl cholesterol"],["Serum","Lipids","LDL","<160 mg/dL","ldl cholesterol"],["Serum","Lipids","Triglycerides, normal","<150 mg/dL","tg"],["Serum","Lipids","Triglycerides, borderline","151–199 mg/dL","tg"],["Serum","Iron studies","Ferritin, male","20–250 ng/mL",""],["Serum","Iron studies","Ferritin, female","10–120 ng/mL",""],["Serum","Iron studies","Iron, male","65–175 µg/dL","fe"],["Serum","Iron studies","Iron, female","50–170 µg/dL","fe"],["Serum","Iron studies","Total iron-binding capacity","250–400 µg/dL","tibc"],["Serum","Iron studies","Transferrin","200–360 mg/dL",""],["Serum","Endocrine","Follicle-stimulating hormone, male","4–25 mIU/mL","fsh"],["Serum","Endocrine","Follicle-stimulating hormone, female, premenopause","4–30 mIU/mL","fsh"],["Serum","Endocrine","Follicle-stimulating hormone, female, midcycle peak","10–90 mIU/mL","fsh"],["Serum","Endocrine","Follicle-stimulating hormone, female, postmenopause","40–250 mIU/mL","fsh"],["Serum","Endocrine","Luteinizing hormone, male","6–23 mIU/mL","lh"],["Serum","Endocrine","Luteinizing hormone, female, follicular phase","5–30 mIU/mL","lh"],["Serum","Endocrine","Luteinizing hormone, female, midcycle","75–150 mIU/mL","lh"],["Serum","Endocrine","Luteinizing hormone, female, postmenopause","30–200 mIU/mL","lh"],["Serum","Endocrine","Growth hormone (arginine stimulation), fasting","<5 ng/mL","gh"],["Serum","Endocrine","Growth hormone (arginine stimulation), provocative stimuli",">7 ng/mL","gh"],["Serum","Endocrine","Prolactin (hPRL), male","<17 ng/mL","prl"],["Serum","Endocrine","Prolactin (hPRL), female","<25 ng/mL","prl"],["Serum","Endocrine","Cortisol, 0800 h","5–23 µg/dL",""],["Serum","Endocrine","Cortisol, 1600 h","3–15 µg/dL",""],["Serum","Endocrine","Cortisol, 2000 h","<50% of 0800 h",""],["Serum","Endocrine","TSH","0.4–4.0 µU/mL","thyroid stimulating hormone thyrotropin"],["Serum","Endocrine","Triiodothyronine (T₃) (RIA)","100–200 ng/dL","t3"],["Serum","Endocrine","Triiodothyronine (T₃) resin uptake","25%–35%","t3 ru"],["Serum","Endocrine","Thyroxine (T₄)","5–12 µg/dL","t4"],["Serum","Endocrine","Free T₄","0.9–1.7 ng/dL","t4 ft4"],["Serum","Endocrine","Thyroidal iodine (¹²³I) uptake","8%–30% of administered dose/24 h","raiu radioactive"],["Serum","Endocrine","Intact PTH","10–60 pg/mL","parathyroid hormone"],["Serum","Endocrine","17-Hydroxycorticosteroids, male","3.0–10.0 mg/24 h","17-ohcs"],["Serum","Endocrine","17-Hydroxycorticosteroids, female","2.0–8.0 mg/24 h","17-ohcs"],["Serum","Endocrine","17-Ketosteroids, total, male","8–20 mg/24 h","17-ks"],["Serum","Endocrine","17-Ketosteroids, total, female","6–15 mg/24 h","17-ks"],["Serum","Immunoglobulins","IgA","76–390 mg/dL","immunoglobulin"],["Serum","Immunoglobulins","IgE","0–380 IU/mL","immunoglobulin"],["Serum","Immunoglobulins","IgG","650–1500 mg/dL","immunoglobulin"],["Serum","Immunoglobulins","IgM","50–300 mg/dL","immunoglobulin"],["Serum","Other","Creatinine clearance, male","97–137 mL/min","crcl gfr"],["Serum","Other","Creatinine clearance, female","88–128 mL/min","crcl gfr"],["Serum","Other","Creatine kinase, male","25–90 U/L","ck cpk"],["Serum","Other","Creatine kinase, female","10–70 U/L","ck cpk"],["Serum","Other","Lactate dehydrogenase","45–200 U/L","ldh"],["Serum","Other","Osmolality","275–295 mOsmol/kg H₂O","osm"],["Serum","Other","Uric acid","3.0–8.2 mg/dL","urate"],["Serum","Arterial blood gases (room air)","PO₂","75–105 mm Hg","po2 pao2 oxygen abg"],["Serum","Arterial blood gases (room air)","PCO₂","33–45 mm Hg","pco2 paco2 carbon dioxide abg"],["Serum","Arterial blood gases (room air)","pH","7.35–7.45","abg"],["CSF","Cerebrospinal fluid","Cell count","0–5/mm³","wbc cells"],["CSF","Cerebrospinal fluid","Chloride","118–132 mEq/L","cl"],["CSF","Cerebrospinal fluid","Gamma globulin","3%–12% of total proteins","igg"],["CSF","Cerebrospinal fluid","Glucose","40–70 mg/dL","sugar"],["CSF","Cerebrospinal fluid","Pressure","70–180 mm H₂O","opening"],["CSF","Cerebrospinal fluid","Proteins, total","<40 mg/dL","protein"],["Blood","Complete blood count","Hematocrit, male","41%–53%","hct"],["Blood","Complete blood count","Hematocrit, female","36%–46%","hct"],["Blood","Complete blood count","Hemoglobin, male","13.5–17.5 g/dL","hb hgb"],["Blood","Complete blood count","Hemoglobin, female","12.0–16.0 g/dL","hb hgb"],["Blood","Complete blood count","Erythrocyte count (RBC), male","4.3–5.9 million/mm³","rbc red cells"],["Blood","Complete blood count","Erythrocyte count (RBC), female","3.5–5.5 million/mm³","rbc red cells"],["Blood","Complete blood count","Mean corpuscular hemoglobin (MCH)","25–35 pg/cell","mch"],["Blood","Complete blood count","Mean corpuscular hemoglobin concentration (MCHC)","31%–36% Hb/cell","mchc"],["Blood","Complete blood count","Mean corpuscular volume (MCV)","80–100 µm³","mcv"],["Blood","Complete blood count","Reticulocyte count","0.5%–1.5%","retic"],["Blood","Complete blood count","Leukocyte count (WBC)","4500–11,000/mm³","wbc white cells"],["Blood","Complete blood count","Neutrophils, segmented","54%–62%","differential polys"],["Blood","Complete blood count","Neutrophils, bands","3%–5%","differential"],["Blood","Complete blood count","Lymphocytes","25%–33%","differential"],["Blood","Complete blood count","Monocytes","3%–7%","differential"],["Blood","Complete blood count","Eosinophils","1%–3%","differential eos"],["Blood","Complete blood count","Basophils","0%–0.75%","differential"],["Blood","Complete blood count","Platelet count","150,000–400,000/mm³","plt platelets"],["Blood","Complete blood count","CD4⁺ T-lymphocyte count","≥500/mm³","cd4"],["Blood","Coagulation","Partial thromboplastin time (PTT), activated","25–40 seconds","ptt aptt"],["Blood","Coagulation","Prothrombin time (PT)","11–15 seconds","pt inr"],["Blood","Coagulation","D-dimer","≤250 ng/mL","d dimer"],["Blood","Other","Erythrocyte sedimentation rate (Westergren), male","0–15 mm/h","esr sed rate"],["Blood","Other","Erythrocyte sedimentation rate (Westergren), female","0–20 mm/h","esr sed rate"],["Blood","Other","Hemoglobin A1c","≤6%","hba1c a1c glycated"],["Blood","Other","Troponin I","≤0.04 ng/mL","trop"],["Blood","Other","Plasma volume, male","25–43 mL/kg",""],["Blood","Other","Plasma volume, female","28–45 mL/kg",""],["Blood","Other","Red cell volume, male","20–36 mL/kg",""],["Blood","Other","Red cell volume, female","19–31 mL/kg",""],["Urine & BMI","Urine","Calcium","100–300 mg/24 h","ca"],["Urine & BMI","Urine","Osmolality","50–1200 mOsmol/kg H₂O","osm"],["Urine & BMI","Urine","Oxalate","8–40 µg/mL",""],["Urine & BMI","Urine","Proteins, total","<150 mg/24 h","protein proteinuria"],["Urine & BMI","Body mass index","BMI, adult","19–25 kg/m²","bmi body mass index"]];
+var labOpen = false, labQi = -1, labTab = 'Serum';
+var LAB_TABS = ['Serum', 'CSF', 'Blood', 'Urine & BMI'];
+function labRows(){
+  var el = document.getElementById('labList'), q = (document.getElementById('labQ').value || '').trim().toLowerCase(), html = '', last = '';
+  var hits = LABS.filter(function(r){ return q ? (r[2] + ' ' + r[4] + ' ' + r[1]).toLowerCase().indexOf(q) >= 0 : r[0] === labTab; });
+  hits.forEach(function(r){
+    var gh = q ? '' : r[1];
+    if (gh && gh !== last) { html += '<div class="labg">' + esc(gh) + '</div>'; last = gh; }
+    html += '<div class="labr"><span>' + esc(r[2]) + (q ? '<span class="tab">' + esc(r[0] === 'Serum' && r[1].indexOf('blood gases') >= 0 ? 'Arterial blood gases' : r[0]) + '</span>' : '') + '</span><span class="v">' + esc(r[3]) + '</span></div>';
+  });
+  el.innerHTML = html || '<p class="muted">No test matches “' + esc(q) + '”.</p>';
+  document.getElementById('labTabs').classList.toggle('dim', !!q);
+  Array.prototype.forEach.call(document.querySelectorAll('#labTabs button'), function(b){ b.classList.toggle('sel', b.getAttribute('data-tab') === labTab); });
+}
+function openLab(){
+  var sh = document.getElementById('lab');
+  if (!sh.firstChild) {
+    sh.innerHTML = '<div class="in"><input id="labQ" type="search" placeholder="Search, e.g. potassium, BUN, TSH" aria-label="Search lab tests" autocomplete="off">' +
+      '<div class="labtabs" id="labTabs">' + LAB_TABS.map(function(t){ return '<button type="button" data-tab="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>' +
+      '<div id="labList"></div><p class="labsrc">Reference ranges: NBME Laboratory Reference Values (December 2024), the table shown on USMLE exams. Conventional units.</p></div>';
+    document.getElementById('labQ').addEventListener('input', labRows);
+    document.getElementById('labTabs').addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; labTab = b.getAttribute('data-tab'); document.getElementById('labQ').value = ''; labRows(); sh.scrollTop = 0; });
+  }
+  sh.style.top = document.querySelector('header').offsetHeight + 'px';
+  labRows(); sh.hidden = false; labOpen = true; labQi = st && st.q ? st.qi : -1;
+  document.body.style.overflow = 'hidden';
+  var b = document.getElementById('labBtn'); b.textContent = '✕ Labs'; b.classList.add('on'); b.setAttribute('aria-expanded', 'true');
+  try { history.pushState({ lab: 1 }, ''); } catch(e){}
+}
+function closeLab(fromBack){
+  if (!labOpen) return;
+  labOpen = false; document.getElementById('lab').hidden = true; document.body.style.overflow = '';
+  var b = document.getElementById('labBtn'); b.textContent = 'Labs'; b.classList.remove('on'); b.setAttribute('aria-expanded', 'false');
+  if (!fromBack && history.state && history.state.lab) try { history.back(); } catch(e){}
+}
+document.getElementById('labBtn').addEventListener('click', function(){ if (labOpen) closeLab(false); else openLab(); });
+window.addEventListener('popstate', function(){ if (labOpen) closeLab(true); });
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && labOpen) closeLab(false); });
 function tick(){
   var tm = document.getElementById('tm');
   if (deadline && st && st.phase === 'vote') { var s = Math.max(0, Math.ceil((deadline - Date.now())/1000)); tm.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); tm.classList.toggle('low', s <= 10); }

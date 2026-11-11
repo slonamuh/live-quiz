@@ -117,6 +117,8 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   await P.click('#stemBtn'); await A.waitForSelector('#left .stem');
   assert((await P.textContent('#projchip')).includes('question'), 'the laptop can put the question back on the projector');
   await P.click('#stemBtn'); await A.waitForSelector('#left .explain');
+  { const all = (await P.innerText('body')) + (await A.innerText('body')) + (await T[0].innerText('body'));
+    assert(!/Placeholder concept|Placeholder entry|Placeholder subtopic/.test(all), 'topics and concepts appear on neither screen nor the phones, even after the reveal'); }
   await P.screenshot({ path: `${OUT}/24-laptop-reveal.png` });
   await A.screenshot({ path: `${OUT}/25-projector-reveal.png` });
 
@@ -158,6 +160,7 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   await P.click('[data-act="end"]'); await P.click('[data-act="end"]');
   await A3.waitForSelector('.avg', { timeout: 10000 });
   assert((await A3.$$('[data-act="csv"], [data-act="newsession"], [data-act="change"]')).length === 0 && !!(await P.$('[data-act="csv"]')), 'results: the projector shows the class results; the buttons stay on the laptop');
+  assert((await A3.innerText('.hard')).includes('Placeholder concept one'), 'the projector’s results show the topic and concept too');
   await A3.screenshot({ path: `${OUT}/26-projector-results.png` });
 
   assert(errors === 0, 'no script errors in any window or on any phone');
