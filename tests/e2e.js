@@ -150,6 +150,17 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   await P.setInputFiles('#file', path.join(FIX, 'pictures.quiz.json'));
   url = await lobbyUrl(P);
   assert((await P.textContent('.settings')).includes('Question 3 has no explanation'), 'lobby warns about a missing explanation');
+  await P.click('#contentsBtn');
+  await P.waitForSelector('#casesover .clist li');
+  assert((await P.$$('#casesover .clist li')).length === 3 && (await P.textContent('#casesover')).includes('Placeholder concept one') &&
+    !!(await P.$('#casesWarn')) && !(await P.$('[data-usecase]')), 'the lobby’s Contents button shows the quiz’s cases, warns that one screen may be the projector, and has no “Use this quiz”');
+  await P.keyboard.press('Enter');
+  await P.waitForSelector('#casesover', { state: 'detached' });
+  await P.waitForTimeout(300);
+  assert(!!(await P.$('#startBtn')) && !(await P.$('#status')), 'Enter in the list closes it and does not start the quiz behind it');
+  await P.click('#contentsBtn'); await P.waitForSelector('#casesover');
+  await P.keyboard.press('Escape');
+  await P.waitForSelector('#casesover', { state: 'detached' });
   const T = [];
   for (let i = 0; i < 2; i++) T.push(await phone(browser, url, 'T' + i));
   for (const s of T) await s.waitForSelector('text=You’re in', { timeout: 25000 });
@@ -207,12 +218,19 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   await P.click('[data-act="change"]'); await P.click('[data-act="change"]');
   await P.waitForSelector('#recent .rrow');
   assert((await P.$$('#recent .rrow')).length === 2, 'recent list has both quizzes');
+  { const m = await P.evaluate(() => {           // a long list: add 20 copies of a row, measure, remove them
+      const r = document.getElementById('recent'), extra = [];
+      for (let i = 0; i < 20; i++) { const c = r.querySelector('.rrow').cloneNode(true); c.classList.add('fake'); r.appendChild(c); extra.push(c); }
+      const d = document.querySelector('#drop h1').getBoundingClientRect(), main = document.querySelector('.libgrid').getBoundingClientRect();
+      const out = { mid: Math.abs((d.top + d.bottom) / 2 - (main.top + main.bottom) / 2), listScrolls: r.scrollHeight > r.clientHeight, pageScrolls: document.scrollingElement.scrollHeight > innerHeight + 1, gridScrolls: document.querySelector('.libgrid').scrollHeight > document.querySelector('.libgrid').clientHeight + 1 };
+      extra.forEach(c => c.remove()); return out; });
+    assert(m.listScrolls && !m.pageScrolls && !m.gridScrolls && m.mid < 140, '“Load a quiz” stays centred when the recent list is long; the list scrolls in its own card'); }
   assert((await P.textContent('#recent .rrow:has-text("pictures") .rd')).includes('Placeholder quiz for testing'), 'the recent list shows a quiz’s description');
   await P.click('#recent .rrow:has-text("pictures") [data-cases]');
   await P.waitForSelector('#casesover .clist li');
   const items = await P.$$eval('#casesover .clist li', ls => ls.map(l => l.innerText.replace(/\s+/g, ' ').trim()));
   assert(items.length === 3 && items[0].includes('Hematology and Oncology › Placeholder subtopic › Placeholder entry one') && items[0].includes('Placeholder concept one'),
-    '“Cases” lists each case with its First Aid topic path and concept');
+    '“Contents” lists each case with its First Aid topic path and concept');
   assert(items[1].includes('Immunology › Placeholder subtopic') && items[1].includes('Placeholder concept two'), '… a topic written as “A › B” works too');
   assert(items[2].includes('Test case three'), '… and a case without them shows its first words');
   await P.screenshot({ path: `${OUT}/09-cases.png` });

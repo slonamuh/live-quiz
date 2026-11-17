@@ -66,7 +66,7 @@ Like PowerPoint's presenter view. In the lobby press **🖥 Open projector windo
 
 ## Before each class
 
-1. Open the **player** in Chrome, choose **Choose quiz file** (or **Use** next to a recent quiz). **Cases** next to a recent quiz lists each case's topic and concept, so you can check what a set covers before you pick it; it is shown only there.
+1. Open the **player** in Chrome, choose **Choose quiz file** (or **Use** next to a recent quiz). **Contents** (next to a recent quiz, and in the lobby next to the quiz's name) shows the quiz's description and each case's topic and concept, so you can check which set you opened; it is never shown during the quiz. With one screen the lobby is on the projector, so open it there only if students may see it.
 2. Check the corner says **Live** (green).
 3. Keep the laptop **plugged in and awake**, and keep the player tab open until the end.
 
@@ -84,7 +84,7 @@ A quiz pack is one file per topic, e.g. `immunology-01.quiz.json`. It contains t
 
 - start a **new quiz**, **open a file**, **paste an AI assistant's reply** (the whole reply: the editor finds the quiz in it), or pick one of the **Recent quizzes**;
 - write or fix each case: case text, question line, options (tick the correct one), a "why not" line under each wrong option, the explanation and the take-home point; add, duplicate, move or delete cases and options; drag cases in the list to reorder them;
-- give the quiz a short **description**, and each case a **topic** in First Aid terms (chapter › subtopic › entry, with the First Aid chapter names and the names already used in the quiz suggested) and the **concept** it tests ("Reed–Sternberg cells: CD15/CD30"). These are for you: the player shows them when you choose a quiz (**Cases** in "Recent quizzes") and in the results at the end (and the results CSV), never during the quiz;
+- give the quiz a short **description**, and each case a **topic** in First Aid terms (chapter › subtopic › entry, with the First Aid chapter names and the names already used in the quiz suggested) and the **concept** it tests ("Reed–Sternberg cells: CD15/CD30"). These are for you: the player shows them when you choose a quiz (**Contents** in "Recent quizzes" and in the lobby) and in the results at the end (and the results CSV), never during the quiz;
 - add **pictures**: paste, drop or choose a file in a case's two picture boxes (shown with the case, or at the reveal). Pictures are resized to at most 1400 px and kept under about 400 KB: PNG for diagrams, JPEG for photos;
 - **balance the answer letters**: the editor shows how often each letter is correct and can even them out by swapping each moved answer with another option (with a preview and Undo); one case's answer can also be moved to a chosen letter;
 - see **checks** as you type: what stops the player from loading the quiz (red) and common giveaways (amber: the correct answer is the longest option, a word from the case repeated only in the correct answer, an option named by its letter, letters left at the start of options, unbalanced answer letters);
