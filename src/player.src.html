@@ -118,6 +118,35 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .settings fieldset.mode{border:1px solid var(--line);border-radius:10px;padding:.5rem .8rem .6rem;margin:.6rem 0 .4rem}
 .settings fieldset.mode legend{font-weight:700;padding:0 .3rem}
 .settings fieldset.mode label{display:block;font-weight:400;margin:.25rem 0}
+.settings fieldset.mode label small{display:block;margin:0 0 .15rem 1.45rem;font-size:.78rem}
+.settings .modes{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.settings .modes fieldset.mode{margin:.6rem 0 .2rem;min-width:0}
+.badge.self{background:var(--accent-soft);color:var(--accent)}
+.rungrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.2rem;padding:1rem 1.4rem;min-height:0}
+.rungrid .card{overflow:auto}
+.rcol{display:flex;flex-direction:column;gap:1rem;min-height:0}
+.runmain{flex:1}
+.rbig{font-size:1.6rem}
+.rbig b{font-size:3.4rem;font-weight:800;margin-right:.2rem}
+.rline{display:flex;justify-content:space-between;align-items:baseline;margin-top:.9rem;font-size:1.1rem}
+.rline b{font-size:1.6rem;font-variant-numeric:tabular-nums}
+.rline b.low{color:var(--bad)}
+.pbar{height:.8rem;background:var(--track);border-radius:99px;overflow:hidden;margin-top:.3rem}
+.pbar span{display:block;height:100%;background:var(--accent)}
+.runmain .tbar{margin-top:.3rem}
+.runmain .tbar span{display:block;height:100%;background:var(--muted)}
+.runmain h3{margin:1.2rem 0 .5rem;font-size:1rem}
+.runmain h3 small,.runcases h2 small{font-weight:400;color:var(--muted);font-size:.75rem}
+.sbars{display:grid;grid-template-columns:repeat(auto-fill,minmax(6rem,1fr));gap:.45rem .7rem}
+.sb{display:block;height:.6rem;background:var(--track);border-radius:99px;overflow:hidden}
+.sb i{display:block;height:100%;background:var(--accent)}
+.sb.done i{background:var(--good)}
+.runjoin{display:flex;gap:1rem;align-items:center}
+.runjoin .qr{width:7.5rem;aspect-ratio:1;background:#fff;border-radius:8px;flex:none}
+.runjoin .qr svg{width:100%;height:100%;display:block}
+.runjoin .code{font-size:1.8rem;font-weight:800;letter-spacing:.15em}
+.runcases h2{margin-top:0;font-size:1.2rem}
+.hard .lbl .key{display:inline-block;min-width:1.4rem;text-align:center;border-radius:6px;background:var(--good-soft);color:var(--good);font-size:.8rem;padding:0 .2rem}
 .settings label .sub{font-weight:400;color:var(--muted);font-size:.85em}
 .badge.exam{background:#3a3f8f;color:#fff}
 .cpanel>.hint{margin:.6rem 1.3rem 0}
@@ -182,7 +211,7 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .settings details.adv summary .sub{display:block;font-weight:400;font-size:.8rem;margin:.15rem 0 0 1rem}
 .settings details.adv[open] summary .sub{display:none}
 .settings details.adv summary{cursor:pointer;color:var(--muted);font-size:.9rem;font-weight:600}
-@media (max-width:760px){ .libgrid,.lobbygrid{grid-template-columns:1fr} .top{flex-wrap:wrap} .libgrid{grid-template-rows:none;overflow:auto} .libside .recent{overflow:visible} }
+@media (max-width:760px){ .libgrid,.lobbygrid,.rungrid,.settings .modes{grid-template-columns:1fr} .top{flex-wrap:wrap} .libgrid{grid-template-rows:none;overflow:auto} .libside .recent{overflow:visible} }
 
 /* projector window: lobby setting + header chip on the laptop */
 .settings .proj{margin:.8rem 0 .2rem;padding:.7rem .8rem;border:1px dashed var(--line);border-radius:10px}
@@ -479,7 +508,7 @@ function start(pack, key, mode, warns){
   if (saved && saved.packKey && saved.savedAt && Date.now() - saved.savedAt < 12*3600*1000 && (saved.played || []).length) {
     idb.get(saved.packKey).then(function(rec){
       if (!rec || !rec.pack) { library('<p class="hint">Your last session used “'+esc(saved.packTitle || 'a set')+'”. Load that file again to continue it, or choose another set.</p>'); return; }
-      var where = saved.phase === 'end' ? 'finished' : 'at case ' + (saved.qi+1) + ' of ' + rec.n;
+      var where = saved.phase === 'end' ? 'finished' : saved.phase === 'run' ? 'running self-paced' : 'at case ' + (saved.qi+1) + ' of ' + rec.n;
       app.innerHTML = '<div class="screen"><header class="top"><div class="title">Live quiz · player</div></header><main class="center"><div class="card">'+
         '<h1>Continue the last session?</h1><p><b>'+esc(rec.title)+'</b> — session <b>'+esc(saved.code)+'</b> was '+where+', with '+nOf(Object.keys(saved.everyone||{}).length, 'student')+'. Phones reconnect by themselves if you continue.</p>'+
         '<p><button class="btn primary big" id="resumeBtn">Continue session '+esc(saved.code)+'</button></p>'+
@@ -534,7 +563,7 @@ function checkPretty(){ if (VIEW) return V ? String(V.check || '') : ''; return 
 function hashImages(){ return Promise.all(Object.keys(IMAGES).map(function(id){ return sha256(IMAGES[id]).then(function(h){ IMG_HASH[id] = b64u(h); }); })); }
 function signText(text){ return crypto.subtle.sign({ name:'ECDSA', hash:'SHA-256' }, KEYPAIR.privateKey, new TextEncoder().encode(text)).then(b64u); }
 
-var settings = Object.assign({ studentUrl:'', t1:90, t2:60, autoClose:true, confidence:true, startAt:1, scale:1 }, store.get(SETTINGS_KEY) || {});
+var settings = Object.assign({ studentUrl:'', t1:90, t2:60, tp:90, pace:'together', shuffle:false, autoClose:true, confidence:true, startAt:1, scale:1 }, store.get(SETTINGS_KEY) || {});
 var SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.4];     // text size on the room's screen (A− / A+)
 if (SCALES.indexOf(+settings.scale) < 0) settings.scale = 1;
 if (/^https?:$/.test(location.protocol)) {
@@ -622,7 +651,9 @@ function setupConn(conn){
     if (!sid || !conns[sid] || conns[sid].conn !== conn) return;
     conns[sid].last = Date.now();
     if (msg.t === 'hb') { try { conn.send({ t:'pong' }); } catch(e){} return; }
-    if (msg.t === 'answer') onAnswer(sid, msg);
+    if (msg.t === 'answer') { if (S.phase === 'run') runAnswer(sid, msg); else onAnswer(sid, msg); }
+    else if (msg.t === 'next') runNext(sid, msg);
+    else if (msg.t === 'rev') onRev(sid, msg);
   });
   conn.on('close', function(){ if (sid && conns[sid] && conns[sid].conn === conn) { delete conns[sid]; refreshCounts(); } });
   conn.on('error', function(){});
@@ -653,26 +684,39 @@ function maybeAutoClose(){
 
 /* ---------- messages to phones ---------- */
 function imgRef(id, cap){ return id && IMAGES[id] ? { id: PACK_KEY + ':' + id, caption: cap || '', hash: IMG_HASH[id] || '' } : null; }
+function revealOf(q){ return { answer: q.answer, explain: q.explain || '', why: q.why || {}, objective: q.objective || '', image: imgRef(q.explainImage, q.explainCaption) }; }
+function caseOf(q){ return { stem: q.stem, lead: q.lead, options: q.options, image: imgRef(q.image, q.imageCaption) }; }
 function stateFor(sid){
   var st = { t:'state', v: 2, title: QUIZ.title, phase: S.phase, qi: S.qi, total: TOTAL, round: S.round, confidence: !!settings.confidence };
   if (isExam()) { st.exam = true; if (S.review) st.review = true; }
+  if (S.phase === 'run') return runStateFor(sid, st);
   if (S.phase === 'vote' || S.phase === 'closed' || S.phase === 'reveal') {
     var q = QUESTIONS[S.qi];
-    st.q = { stem: q.stem, lead: q.lead, options: q.options, image: imgRef(q.image, q.imageCaption) };
+    st.q = caseOf(q);
     st.mine = peekBucket(S.qi, S.round)[sid] || null;
     st.first = S.round === 2 ? (peekBucket(S.qi, 1)[sid] || null) : null;
     if (S.phase === 'vote' && S.deadline) st.remaining = Math.max(0, Math.round((S.deadline - Date.now())/1000));
-    if (S.phase === 'reveal') { st.reveal = { answer: q.answer, explain: q.explain || '', why: q.why || {}, objective: q.objective || '', image: imgRef(q.explainImage, q.explainCaption) }; st.final = finalBucket(S.qi)[sid] || null; }
+    if (S.phase === 'reveal') { st.reveal = revealOf(q); st.final = finalBucket(S.qi)[sid] || null; }
   }
-  if (S.phase === 'end') st.result = resultFor(sid);
+  if (S.phase === 'end') {
+    st.result = resultFor(sid);
+    var rv = revOf(sid);                            // the case this student opened from their results
+    if (rv >= 0) st.rev = { qi: rv, q: caseOf(QUESTIONS[rv]), reveal: revealOf(QUESTIONS[rv]), final: finalBucket(rv)[sid] || null };
+  }
   return st;
 }
 var CHUNK = 15000;
+function caseView(sid){                            // the case this phone shows now, and whether with its explanation
+  if (['vote','closed','reveal'].indexOf(S.phase) >= 0) return { qi: S.qi, reveal: S.phase === 'reveal' };
+  if (S.phase === 'run' && !S.timeUp) { var qi = seatCase(S.seats && S.seats[sid]); if (qi >= 0) return { qi: qi, reveal: !isExam() && !!peekBucket(qi, 1)[sid] }; }
+  if (S.phase === 'end') { var rv = revOf(sid); if (rv >= 0) return { qi: rv, reveal: true }; }
+  return null;
+}
 function pushImages(sid){
-  var c = conns[sid]; if (!c || !c.conn.open || ['vote','closed','reveal'].indexOf(S.phase) < 0) return;
-  var q = QUESTIONS[S.qi], ids = [];
+  var c = conns[sid], v = c && c.conn.open ? caseView(sid) : null; if (!v) return;
+  var q = QUESTIONS[v.qi], ids = [];
   if (q.image) ids.push(q.image);
-  if (S.phase === 'reveal' && q.explainImage) ids.push(q.explainImage);
+  if (v.reveal && q.explainImage) ids.push(q.explainImage);
   ids.forEach(function(id){
     var key = PACK_KEY + ':' + id, data = IMAGES[id];
     if (!data || c.sent[key]) return;
@@ -703,7 +747,7 @@ function broadcast(){ for (var sid in conns) send(sid); }
 /* Practice: results and the answer after each case. Exam: cases one after another with no results or answers;
    at the end a review steps through every case asked (class results, answer, explanation), then the results. */
 function isExam(){ return !!S && S.mode === 'exam'; }
-function startQuiz(){ var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)); S.mode = settings.mode === 'exam' ? 'exam' : 'practice'; S.review = false; S.qi = s-1; startVote(1); }
+function startQuiz(){ if (settings.pace === 'self') return startRun(); var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)); S.pace = 'together'; S.mode = settings.mode === 'exam' ? 'exam' : 'practice'; S.review = false; S.qi = s-1; startVote(1); }
 function startReview(){ if (!S.played.length) return finish(); S.review = true; S.round = 1; S.qi = S.played[0]; reveal(); }
 function startVote(round){
   S.phase = 'vote'; S.round = round; showStem = false;
@@ -723,6 +767,86 @@ function finish(){ S.phase = 'end'; S.deadline = null; save(); broadcast(); rend
 function addTime(){ if (S.phase !== 'vote') return; S.deadline = Math.max(S.deadline || Date.now(), Date.now()) + 30000; S.dur = (S.dur || 0) + 30; save(); broadcast(); updateScreen(); }
 function leaveToLibrary(){ store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.reload(); }
 
+/* ---------- self-paced: every phone moves through the cases on its own; the room's screen shows only progress ----------
+   Each student has a seat: their order of the cases (the same for everyone, or shuffled) and how far they are.
+   A phone is sent only the case its student is on. Practice: the answer and explanation right after answering, then
+   Next. Exam: the answer is saved and the next case follows; answers come when the teacher ends the exam.
+   One total time for the whole set (or none); when it is up, no more answers are taken. */
+function isSelf(){ return !!S && S.pace === 'self'; }
+function shuffled(a){ a = a.slice(); var r = new Uint32Array(a.length || 1); crypto.getRandomValues(r); for (var i = a.length - 1; i > 0; i--) { var j = r[i] % (i + 1), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function startRun(){
+  var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)), list = [], per = +settings.tp;
+  for (var i = s - 1; i < TOTAL; i++) list.push(i);
+  S.pace = 'self'; S.mode = settings.mode === 'exam' ? 'exam' : 'practice'; S.review = false; S.shuffle = !!settings.shuffle;
+  S.phase = 'run'; S.qi = -1; S.round = 1; S.played = list; S.seats = {}; S.timeUp = false;
+  S.dur = per > 0 ? per * list.length : 0; S.deadline = per > 0 ? Date.now() + S.dur * 1000 : null;
+  save(); broadcast(); render(true);
+}
+function seatOf(sid){                               // a student's seat; a student who joins during the run gets one at once
+  if (!S.seats) S.seats = {};
+  var st = S.seats[sid];
+  if ((!st || !st.order) && S.phase === 'run' && !S.timeUp) { st = S.seats[sid] = { order: S.shuffle ? shuffled(S.played) : S.played.slice(), i: 0 }; save(); }
+  return st && st.order ? st : null;
+}
+function seatCase(st){ return st && st.order && st.i < st.order.length ? st.order[st.i] : -1; }
+function runStateFor(sid, st){
+  var seat = seatOf(sid), qi = seatCase(seat);
+  st.pace = 'self'; st.count = S.played.length;
+  if (S.deadline) st.remaining = Math.max(0, Math.round((S.deadline - Date.now()) / 1000));
+  if (qi < 0 || S.timeUp) {
+    var answered = 0, score = 0;
+    S.played.forEach(function(q){ var a = peekBucket(q, 1)[sid]; if (a) { answered++; if (a.c === QUESTIONS[q].answer) score++; } });
+    st.phase = 'done'; st.done = { answered: answered, timeUp: !!S.timeUp, finished: !!seat && qi < 0 };
+    if (!isExam()) st.done.score = score;
+    return st;
+  }
+  var q = QUESTIONS[qi], mine = peekBucket(qi, 1)[sid] || null;
+  st.qi = qi; st.pos = seat.i + 1; st.q = caseOf(q); st.mine = mine;
+  if (mine && !isExam()) { st.phase = 'reveal'; st.reveal = revealOf(q); st.final = mine; } else st.phase = 'vote';
+  return st;
+}
+function runAnswer(sid, m){
+  var seat = seatOf(sid), qi = seatCase(seat);
+  if (!seat || S.timeUp || qi < 0 || m.qi !== qi || m.round !== 1 || LQ(qi).indexOf(m.c) < 0) { send(sid); return; }
+  var b = bucket(qi, 1);
+  if (!b[sid]) { b[sid] = { c: m.c, sure: settings.confidence ? m.sure !== false : null }; if (isExam()) seat.i++; save(); }
+  send(sid); refreshCounts();
+}
+function runNext(sid, m){                           // Practice: the student read the explanation and wants the next case
+  if (!S || S.phase !== 'run') { send(sid); return; }
+  var seat = seatOf(sid), qi = seatCase(seat);
+  if (seat && !S.timeUp && qi >= 0 && m.qi === qi && peekBucket(qi, 1)[sid]) { seat.i++; save(); }
+  send(sid); refreshCounts();
+}
+function revOf(sid){ var r = S.seats && S.seats[sid] && S.seats[sid].rev; return typeof r === 'number' && S.played.indexOf(r) >= 0 ? r : -1; }
+function onRev(sid, m){                             // after the end: a student opens one case from their results (or goes back)
+  if (!S || S.phase !== 'end' || typeof m.qi !== 'number') { send(sid); return; }
+  if (!S.seats) S.seats = {};
+  var seat = S.seats[sid] || (S.seats[sid] = {});
+  seat.rev = S.played.indexOf(m.qi) >= 0 ? m.qi : null;
+  send(sid);
+}
+function runTimeUp(){ if (!S || S.phase !== 'run' || S.timeUp) return; S.timeUp = true; S.deadline = null; save(); broadcast(); render(true); }
+function addRunTime(){                              // +5 minutes, also after the time is up
+  if (!S || S.phase !== 'run' || (!S.deadline && !S.timeUp)) return;
+  S.deadline = Math.max(S.deadline || 0, Date.now()) + 300000; S.dur = (S.dur || 0) + 300; S.timeUp = false;
+  save(); broadcast(); render(true);
+}
+function runSummary(full){                          // full: the laptop while the projector window shows the room
+  var seats = S.seats || {}, n = S.played.length, done = 0, answered = 0, bars = [], students = 0;
+  Object.keys(seats).forEach(function(sid){
+    var st = seats[sid]; if (!st.order) return;
+    var a = 0; S.played.forEach(function(qi){ if (peekBucket(qi, 1)[sid]) a++; });
+    students++; answered += a; if (a >= n || seatCase(st) < 0) done++; bars.push(n ? a / n : 0);
+  });
+  bars.sort(function(x, y){ return y - x; });
+  var cases = (!isExam() || full) ? S.played.map(function(qi){
+    var t = tallyOf(peekBucket(qi, 1), qi), k = t.opts[LQ(qi).indexOf(QUESTIONS[qi].answer)].all;
+    return { qi: qi, n: t.n, pc: t.n ? Math.round(k * 100 / t.n) : 0, key: full ? QUESTIONS[qi].answer : '' };
+  }) : null;
+  return { students: students, done: done, answered: answered, possible: students * n, count: n, bars: bars, cases: cases, timeUp: !!S.timeUp, full: !!full };
+}
+
 var actions = {
   start: startQuiz,
   close: closeVoting,
@@ -737,7 +861,8 @@ var actions = {
   contents: function(){ if (S.phase === 'lobby') casesDialog({ key: PACK_KEY, title: QUIZ.title, pack: QUIZ }, { lobby: true, oneScreen: !audienceOn() }); },
   audience: openAudience,
   closeaud: function(){ vsend({ t:'close' }); try { if (aud.win && !aud.win.closed) aud.win.close(); } catch(e){} aud.win = null; aud.beat = 0; audCheck(); },
-  end: function(){ if (isArmed('end')) { armed.k = ''; if (isExam() && !S.review && S.phase !== 'lobby') startReview(); else finish(); } else arm('end', updateControls); },
+  end: function(){ if (isArmed('end')) { armed.k = ''; if (isExam() && !S.review && S.phase !== 'lobby' && !isSelf()) startReview(); else finish(); } else arm('end', updateControls); },
+  more5: addRunTime,
   csv: downloadCsv,
   newsession: function(){ if (isArmed('new')) { armed.k = ''; store.del(SESSION_KEY); conns = {}; try { peer && peer.destroy(); } catch(e){} peer = null; newSession(); } else arm('new', function(){ render(true); }); },
   change: function(){ if (S.phase === 'lobby' || isArmed('change')) leaveToLibrary(); else arm('change', function(){ render(true); }); },
@@ -769,6 +894,7 @@ function handleKey(k){
   var zo = !!zoomId || !!document.querySelector('.zoomover.open');
   if (k === 'Escape') { if (zo) actions.unzoom(); else if (qrOpen) actions.qr(); return; }
   if (k === 'q' || k === 'Q') { actions.qr(); return; }
+  if (S.phase === 'run') { if (k === '+') addRunTime(); return; }   // self-paced: the phones move on, not the screen
   if (STEP_KEYS.indexOf(k) >= 0) {
     if (zo) actions.unzoom();
     if (S.phase === 'lobby') startQuiz(); else if (S.phase === 'vote') closeVoting(); else if (S.phase === 'closed') { if (isExam()) next(); else reveal(); } else if (S.phase === 'reveal') next();
@@ -787,7 +913,7 @@ on('keydown', function(e){
 on('change', function(e){
   var el = e.target, key = el.getAttribute('data-set'); if (!key) return;
   settings[key] = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.tagName === 'SELECT') ? +el.value : el.value.trim();
-  saveSettings(); if (key === 'studentUrl') updateLobby();
+  saveSettings(); if (key === 'studentUrl') updateLobby(); if (key === 'pace' || key === 'startAt') paceSync();
   var sum = document.getElementById('advsum'); if (sum) sum.innerHTML = advSummary();
   pushView();
 });
@@ -823,7 +949,7 @@ function consoleOn(){ return !!S && audienceOn() && ['vote','closed','reveal'].i
 function audCheck(){
   var now = audienceOn(); if (now === audWas) return;
   audWas = now; applyScale();
-  if (S && ['vote','closed','reveal'].indexOf(S.phase) >= 0) render(true); else renderProj();
+  if (S && ['vote','closed','reveal','run'].indexOf(S.phase) >= 0) render(true); else renderProj();
 }
 function audienceUrl(){ return location.pathname + '?audience=' + VIEW_ID; }
 function openAudience(){
@@ -864,7 +990,8 @@ function viewState(){
   var ans = {};
   if (S.phase === 'end') ans = S.answers; else if (S.qi >= 0 && S.answers[S.qi]) ans[S.qi] = S.answers[S.qi];
   return { t:'view', key: PACK_KEY,
-    S: { code: S.code, phase: S.phase, qi: S.qi, round: S.round, deadline: S.deadline, dur: S.dur, played: S.played.slice(), answers: ans, n: Object.keys(S.everyone).length, mode: S.mode, review: !!S.review },
+    S: { code: S.code, phase: S.phase, qi: S.qi, round: S.round, deadline: S.deadline, dur: S.dur, played: S.played.slice(), answers: ans, n: Object.keys(S.everyone).length, mode: S.mode, review: !!S.review, pace: S.pace, timeUp: !!S.timeUp },
+    run: S.phase === 'run' ? runSummary(false) : null,
     online: onlineSids().length, net: { st: peerStatus, stuck: !!netStuck(), err: lastErr }, join: joinUrl(), check: checkPretty(),
     confidence: !!settings.confidence, qr: qrOpen, stem: showStem, zoom: zoomId && onProjector(zoomId) ? zoomId : null, scale: settings.scale };
 }
@@ -889,6 +1016,7 @@ function applyView(m){                              // projector window: draw wh
 /* ---------- what the laptop shows about the projector ---------- */
 function projShows(){
   if (!S) return '';
+  if (S.phase === 'run') return qrOpen ? 'QR code' : 'progress, no cases';
   if (zoomId && onProjector(zoomId)) return 'enlarged picture';
   if (qrOpen && ['vote','closed','reveal'].indexOf(S.phase) >= 0) return 'QR code';
   return { lobby:'join screen', vote:'case · results hidden', closed: isExam() ? 'case · answers saved' : 'case · results', end:'class results' }[S.phase] || (showStem ? 'case · results' : 'answer & explanation');
@@ -971,20 +1099,35 @@ function render(full){                              // returns true when the who
   if (!full && key === screenKey) { updateScreen(); return false; }
   if (!VIEW && base !== screenBase && zoomId) { zoomId = null; showZoom(null); }   // a new step closes an enlarged picture
   screenKey = key; screenBase = base;
-  if (S.phase === 'lobby') buildLobby(); else if (S.phase === 'end') buildEnd(); else if (consoleOn()) buildConsole(); else buildQuestion();
+  if (S.phase === 'lobby') buildLobby(); else if (S.phase === 'end') buildEnd(); else if (S.phase === 'run') buildRun(); else if (consoleOn()) buildConsole(); else buildQuestion();
   pushView(); return true;
 }
 function updateScreen(){
   if (!S) return;
-  if (S.phase === 'lobby') updateLobby(); else if (S.phase !== 'end') { if (consoleOn()) updateConsole(); else updateQuestion(); }
+  if (S.phase === 'lobby') updateLobby(); else if (S.phase === 'run') updateRun(); else if (S.phase !== 'end') { if (consoleOn()) updateConsole(); else updateQuestion(); }
   pushView();
 }
 function refreshCounts(){ updateScreen(); }
 
+function runCount(){ return Math.max(1, TOTAL - Math.min(TOTAL, Math.max(1, parseInt(settings.startAt, 10) || 1)) + 1); }
+function tpOpts(){                                  // self-paced: one total time, shown in minutes, chosen as seconds per case
+  var n = runCount();
+  return [60, 75, 90, 120, 0].map(function(v){
+    var m = Math.ceil(v * n / 60), t = m >= 60 ? Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '') : m + ' min';
+    return '<option value="'+v+'"'+(+settings.tp === v ? ' selected' : '')+'>'+(v ? t + ' (' + v + ' s per case)' : 'No time limit')+'</option>';
+  }).join('');
+}
+function paceSync(){                                // the lobby after Pace or the first case changed
+  var self = settings.pace === 'self', a = document.getElementById('timeTog'), b = document.getElementById('timeSelf'), tp = document.getElementById('tp');
+  if (a) a.hidden = self; if (b) b.hidden = !self; if (tp) tp.innerHTML = tpOpts();
+}
 function advSummary(){                            // one line under "More options": what is set there
-  var a = [];
-  if (settings.mode !== 'exam') a.push('revote ' + (+settings.t2 ? settings.t2 + ' s' : 'no limit'));
-  a.push(settings.autoClose ? 'closes when all have answered' : 'you close voting');
+  var a = [], self = settings.pace === 'self';
+  if (self) a.push(settings.shuffle ? '<b>shuffled order</b>' : 'same order for everyone');
+  else {
+    if (settings.mode !== 'exam') a.push('revote ' + (+settings.t2 ? settings.t2 + ' s' : 'no limit'));
+    a.push(settings.autoClose ? 'closes when all have answered' : 'you close voting');
+  }
   a.push('“sure or guessing?” ' + (settings.confidence ? 'on' : 'off'));
   var sa = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt, 10) || 1));
   if (sa > 1) a.push('<b>starts at case ' + sa + '</b>');
@@ -996,6 +1139,7 @@ function buildLobby(){
       '<main class="audjoin" id="join"></main><footer></footer></div>';
     updateLobby(); return;
   }
+  var self = settings.pace === 'self';
   var tOpts = function(sel, list){ return list.map(function(v){ return '<option value="'+v+'"'+(+sel===v?' selected':'')+'>'+(v ? (v+' seconds') : 'No time limit')+'</option>'; }).join(''); };
   app.innerHTML =
     '<div class="screen">'+
@@ -1006,15 +1150,20 @@ function buildLobby(){
           '<div class="pack"><b>'+esc(QUIZ.title)+'</b><span>'+nOf(TOTAL, 'case')+'</span><button class="btn small" data-act="contents" id="contentsBtn" title="The set description and what each case tests">Contents</button><button class="btn small" data-act="edit" id="editBtn">Edit</button><button class="btn small" data-act="change" id="changeBtn">Change set</button></div>'+
           (WARNS && WARNS.length ? '<small class="warn">'+esc(WARNS.slice(0,3).join(' '))+(WARNS.length>3?' …':'')+'</small>' : '')+
           '<div class="proj" id="projrow"></div>'+
+          '<div class="modes"><fieldset class="mode" id="paceSet"><legend>Pace</legend>'+
+            '<label><input type="radio" name="pace" data-set="pace" value="together"'+(self ? '' : ' checked')+'> <b>Together</b><small>you move the class case by case</small></label>'+
+            '<label><input type="radio" name="pace" data-set="pace" value="self" id="paceSelf"'+(self ? ' checked' : '')+'> <b>Self-paced</b><small>each student at their own speed</small></label></fieldset>'+
           '<fieldset class="mode" id="modeSet"><legend>Mode</legend>'+
-            '<label><input type="radio" name="mode" data-set="mode" value="practice"'+(settings.mode === 'exam' ? '' : ' checked')+'> <b>Practice</b> · answers after each case</label>'+
-            '<label><input type="radio" name="mode" data-set="mode" value="exam" id="modeExam"'+(settings.mode === 'exam' ? ' checked' : '')+'> <b>Exam</b> · answers at the end</label></fieldset>'+
-          '<label for="t1">Time per case</label><select id="t1" data-set="t1">'+tOpts(settings.t1,[30,45,60,90,120,180,0])+'</select>'+
+            '<label><input type="radio" name="mode" data-set="mode" value="practice"'+(settings.mode === 'exam' ? '' : ' checked')+'> <b>Practice</b><small>answers after each case</small></label>'+
+            '<label><input type="radio" name="mode" data-set="mode" value="exam" id="modeExam"'+(settings.mode === 'exam' ? ' checked' : '')+'> <b>Exam</b><small>answers at the end</small></label></fieldset></div>'+
+          '<div id="timeTog"'+(self ? ' hidden' : '')+'><label for="t1">Time per case</label><select id="t1" data-set="t1">'+tOpts(settings.t1,[30,45,60,90,120,180,0])+'</select></div>'+
+          '<div id="timeSelf"'+(self ? '' : ' hidden')+'><label for="tp">Total time <span class="sub">(for the whole set)</span></label><select id="tp" data-set="tp">'+tpOpts()+'</select></div>'+
           '<button class="btn primary big" data-act="start" id="startBtn">Start quiz ▶</button>'+
           '<details class="adv" id="adv"'+(joinUrl() ? '' : ' open')+'><summary>More options<span class="sub" id="advsum">'+advSummary()+'</span></summary>'+
             '<label for="t2">Revote time <span class="sub">(Practice: the second vote after the discussion)</span></label><select id="t2" data-set="t2">'+tOpts(settings.t2,[30,45,60,90,0])+'</select>'+
             '<label class="check"><input type="checkbox" data-set="autoClose"'+(settings.autoClose?' checked':'')+'> Close voting automatically when every connected student has answered</label>'+
             '<label class="check"><input type="checkbox" data-set="confidence"'+(settings.confidence?' checked':'')+'> Ask “sure or guessing?” with each answer</label>'+
+            '<label class="check"><input type="checkbox" data-set="shuffle" id="shuffleChk"'+(settings.shuffle?' checked':'')+'> Self-paced: shuffle the case order for each student</label>'+
             '<label for="sa">Start at case <span class="sub">(to continue a long set in the next lecture)</span></label><input id="sa" type="number" min="1" max="'+TOTAL+'" data-set="startAt" value="'+Math.min(TOTAL, settings.startAt||1)+'">'+
             '<label for="su">Phone page address</label><input id="su" type="url" data-set="studentUrl" placeholder="https://your-name.github.io/live-quiz/join/" value="'+esc(settings.studentUrl)+'">'+
             '<small>Where the phone page is online; the QR code and the link open it. It fills itself in (this site’s join/ address), so there is normally nothing to change.</small>'+
@@ -1186,6 +1335,13 @@ function updateConsole(){
 function updateControls(){
   var el = document.getElementById('controls'); if (!el) return;
   var con = consoleOn();
+  if (S.phase === 'run') {
+    var ex = isExam();
+    el.innerHTML = '<button class="btn danger" data-act="end">'+(isArmed('end') ? (ex ? 'Click again to end the exam and send the answers' : 'Click again to end and show the results') : (ex ? 'End exam' : 'End quiz'))+'</button>'+
+      (audienceOn() ? '<button class="btn" data-act="closeaud" id="closeAudBtn">Close projector window</button>' : '')+'<div class="spacer"></div>'+
+      (S.deadline || S.timeUp ? '<button class="btn" data-act="more5" id="more5Btn">+5 min<kbd>+</kbd></button>' : '');
+    return;
+  }
   var exam = isExam(), endTxt = !exam ? (isArmed('end') ? 'Click again to end the quiz' : 'End quiz')
     : S.review ? (isArmed('end') ? 'Click again for the results' : 'Skip to the results') : (isArmed('end') ? 'Click again to end and review the answers' : 'End exam');
   var left = '<button class="btn danger" data-act="end">'+endTxt+'</button>'+
@@ -1199,6 +1355,13 @@ function updateControls(){
   el.innerHTML = left + right;
 }
 function tickTimer(displayOnly){
+  if (S && S.phase === 'run' && S.deadline) {
+    var rl = S.deadline - Date.now(), rt = document.getElementById('rtimer');
+    if (rl <= 0) { if (!displayOnly && !VIEW) runTimeUp(); return; }
+    if (rt) { rt.textContent = fmt(rl); rt.classList.toggle('low', rl <= 60000); }
+    var rf = document.getElementById('rtfill'); if (rf && S.dur) rf.style.width = Math.max(0, Math.min(100, rl * 100 / (S.dur * 1000))) + '%';
+    return;
+  }
   if (!S || S.phase !== 'vote' || !S.deadline) return;
   var left = S.deadline - Date.now();
   if (left <= 0) { if (!displayOnly && !VIEW) closeVoting(); return; }
@@ -1209,6 +1372,46 @@ function tickTimer(displayOnly){
 every(function(){ tickTimer(false); }, 250);
 every(function(){ if (S) { refreshCounts(); maybeAutoClose(); } }, 2500);
 
+/* ---------- self-paced: the progress screen (projector, or the laptop) ---------- */
+function buildRun(){
+  var con = !VIEW && audienceOn();
+  app.innerHTML =
+    '<div class="screen">'+
+      '<header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="badge self">Self-paced · '+(isExam() ? 'Exam' : 'Practice')+'</div>'+
+      (con ? '<span class="chip proj" id="projchip"></span>' : '')+'<div class="spacer"></div>'+
+      (!VIEW && VIEW_CH && !con ? '<button class="chip" data-act="audience" id="audChip" title="Open a second window for the projector; this laptop then also shows the answer key">🖥 Projector window</button>' : '')+
+      '<button class="chip'+(qrOpen ? ' on' : '')+'" data-act="qr" id="qrchip" title="Show the QR code full screen (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
+      '<span class="chip" id="online"></span>'+tsizeHtml()+netHtml()+'</header>'+
+      '<main class="rungrid" id="rungrid"></main>'+
+      (VIEW ? '<footer></footer>' : '<footer class="controls" id="controls"></footer>')+
+    '</div>' + qrOverlay();
+  updateRun(); if (con) renderProjChip();
+}
+function updateRun(){
+  var el = document.getElementById('rungrid'); if (!el || !S || S.phase !== 'run') return;
+  var onEl = document.getElementById('online'); if (onEl) onEl.innerHTML = '👥 <b>'+onlineN()+'</b> connected';
+  var R = VIEW ? (V && V.run) : runSummary(audienceOn()); if (!R) return;
+  var pc = R.possible ? Math.round(R.answered * 100 / R.possible) : 0, exam = isExam();
+  var timeTxt = R.timeUp ? 'Time is up' : S.deadline ? fmt(S.deadline - Date.now()) : 'no limit';
+  var main = '<section class="card runmain">'+
+      '<div class="rbig"><b id="rdone">'+R.done+'</b> of '+nOf(R.students, 'student')+' finished</div>'+
+      '<div class="rline"><span>Completion</span><b id="rpc">'+pc+'%</b></div><div class="pbar"><span style="width:'+pc+'%"></span></div>'+
+      '<div class="rline"><span>'+(R.timeUp ? 'No more answers' : 'Time left')+'</span><b id="rtimer"'+(R.timeUp ? ' class="low"' : '')+'>'+timeTxt+'</b></div>'+
+      (S.deadline ? '<div class="tbar"><span id="rtfill"></span></div>' : '')+
+      '<h3>Each student <small>anonymous · the furthest first</small></h3>'+
+      (R.bars.length ? '<div class="sbars">'+R.bars.map(function(f){ return '<span class="sb'+(f >= 1 ? ' done' : '')+'"><i style="width:'+Math.round(f * 100)+'%"></i></span>'; }).join('')+'</div>'
+        : '<p class="hint">Nobody has started yet. A student who joins now starts at the first case.</p>')+
+    '</section>';
+  var u = joinUrl();
+  var late = u && !R.timeUp ? '<section class="card runjoin"><div class="qr">'+qrSvg(u)+'</div><div><div class="hint">Late? Scan to join</div><div class="code">'+esc(S.code)+'</div><div class="hint">check code <b>'+esc(checkPretty())+'</b></div></div></section>' : '';
+  var cases = R.cases ? '<section class="card runcases"><h2>'+(exam ? 'Cases so far' : '% correct per case so far')+(R.full ? ' <small>with the answer key: only on this laptop</small>' : '')+'</h2><div class="hard">'+
+      R.cases.map(function(c){ var cl = c.pc < 50 ? 'low' : c.pc < 70 ? 'mid' : '';
+        return '<div class="lbl">'+(c.qi + 1)+(c.key ? ' <span class="key">'+esc(c.key)+'</span>' : '')+'</div><div class="hb"><span class="'+(c.n ? cl : '')+'" style="width:'+(c.n ? c.pc : 0)+'%"></span></div>'+
+          '<div class="pc">'+(c.n ? c.pc+'% <small>('+c.n+')</small>' : '<small>no answers yet</small>')+'</div>'; }).join('')+'</div></section>'
+    : '<section class="card runcases"><h2>Cases</h2><p class="hint">Exam: the results per case appear when you end the exam, so nobody learns which cases are hard while others are still working.</p></section>';
+  el.innerHTML = '<div class="rcol">'+main+late+'</div>'+cases;
+  tickTimer(true); updateControls();
+}
 function buildEnd(){
   var rows = S.played.map(function(qi){ var t = tallyOf(finalBucket(qi), qi), k = t.opts[LQ(qi).indexOf(QUESTIONS[qi].answer)].all; return { qi: qi, n: t.n, pc: t.n ? k*100/t.n : 0 }; });
   var withVotes = rows.filter(function(r){ return r.n; });
@@ -1259,6 +1462,7 @@ hashImages().then(function(){
   if (MODE === 'resume') {
     S = store.get(SESSION_KEY); S.answers = S.answers || {}; S.played = S.played || []; S.everyone = S.everyone || {}; conns = {};
     if (S.phase === 'vote' && S.deadline && S.deadline < Date.now()) { S.phase = 'closed'; S.deadline = null; save(); }
+    if (S.phase === 'run' && S.deadline && S.deadline < Date.now()) { S.timeUp = true; S.deadline = null; save(); }
     loadKeys(true).then(function(fresh){
       // The session key is kept in this browser. If it is gone, phones would (rightly) refuse this screen,
       // so move to a new code and show the QR for everyone to scan again.

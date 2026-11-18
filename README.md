@@ -42,6 +42,16 @@ Choose the mode in the lobby, before you start:
 - **Practice** (the default): after each case the class sees the results, then you reveal the answer and explanation, with an optional discussion round.
 - **Exam**: cases follow one another with no results and no answers. When voting closes the screen shows only how many answered, phones say "Answer saved", and **Next** (Enter) goes on. After the last case (or **End exam**), a review steps through every case asked: the class results, the correct answer and the explanation on the screen, and on each phone that student's own answer, right or wrong. Then the results and each student's private score.
 
+### Together or self-paced
+
+Choose the pace in the lobby, next to the mode:
+- **Together** (the default): you move the class case by case, as above.
+- **Self-paced**: after **Start quiz** each phone gets the first case; the student answers, and the next case comes at once, without waiting for anyone. The screen shows no cases, only progress: how many students finished, the overall completion, the time left, one anonymous bar per student, and a small QR code for latecomers. In **Practice** each phone shows the answer and explanation right after answering, then *Next case*, and the screen shows % correct per case so far. In **Exam** the answers are saved without being shown, the screen shows only progress, and the answers and scores come when you press **End exam**. With the projector window open, your laptop also sees % correct per case and the answer key.
+- **Total time** replaces *Time per case*: one time for the whole set (60–120 s per case, shown in minutes), or no limit. When it runs out no more answers are taken; **+5 min** (or the + key) opens it again where each student was.
+- **More options → Self-paced: shuffle the case order for each student** makes copying from a neighbour's phone harder. By default everyone gets the same order.
+- Students go forward only, one case at a time. The discussion round is off in self-paced.
+- At the end every phone shows its score and the list of cases; tapping a case opens its answer and explanation (this works after a *Together* session too).
+
 ### Two screens: presenter view on the laptop, questions on the projector
 
 Like PowerPoint's presenter view. In the lobby press **🖥 Open projector window** (or the **🖥 Projector window** chip during a question).

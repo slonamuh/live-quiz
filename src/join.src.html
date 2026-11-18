@@ -67,7 +67,9 @@ figure.qimg figcaption{color:var(--muted);font-size:.85rem;margin-top:4px}
 .zoom img{max-width:none;width:auto;min-width:100%;height:auto;background:#fff}
 .zoom .x{position:fixed;top:10px;right:12px;background:#fff;color:#000;border:0;border-radius:50%;width:40px;height:40px;font-size:22px;font-weight:700;cursor:pointer}
 .score{font-size:3.2rem;font-weight:800;line-height:1}
-.res{display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center}
+.res{display:flex;flex-direction:column}
+.res .rr{display:grid;grid-template-columns:2.2rem 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:10px 2px;cursor:pointer;color:inherit}
+.res .rr:first-child{border-top:0}
 .res .ok{color:var(--good);font-weight:800}
 .res .no{color:var(--bad);font-weight:800}
 .join label{display:block;text-align:left;font-weight:600;margin:12px 0 4px}
@@ -250,29 +252,44 @@ function optStr(x, max){ return x == null ? '' : str(x, max); }
 function letter(x){ if (typeof x !== 'string' || !/^[A-H]$/.test(x)) throw 0; return x; }
 function answerOf(a){ if (a == null) return null; if (typeof a !== 'object') throw 0; if (!(a.sure === true || a.sure === false || a.sure == null)) throw 0; return { c: letter(a.c), sure: a.sure == null ? null : a.sure }; }
 function imageOf(im){ if (im == null) return null; if (typeof im !== 'object') throw 0; return { id: str(im.id, 300), caption: optStr(im.caption, 500), hash: str(im.hash, 64) }; }
+function caseOf(q){
+  if (!q || typeof q !== 'object' || !Array.isArray(q.options) || q.options.length < 2 || q.options.length > 8) throw 0;
+  return { stem: str(q.stem, 20000), lead: str(q.lead, 2000), options: q.options.map(function(x){ return str(x, 1000); }), image: imageOf(q.image) };
+}
+function revealOf(R){
+  if (!R || typeof R !== 'object') throw 0;
+  var why = {};
+  if (R.why != null) { if (typeof R.why !== 'object') throw 0; Object.keys(R.why).forEach(function(k){ if (/^[A-H]$/.test(k)) why[k] = str(R.why[k], 3000); }); }
+  return { answer: letter(R.answer), explain: optStr(R.explain, 20000), why: why, objective: optStr(R.objective, 3000), image: imageOf(R.image) };
+}
 function cleanState(m){
   try {
-    if (!m || m.t !== 'state' || ['lobby','vote','closed','reveal','end'].indexOf(m.phase) < 0) return null;
+    if (!m || m.t !== 'state' || ['lobby','vote','closed','reveal','end','done'].indexOf(m.phase) < 0) return null;
     if (!isInt(m.qi, -1, 9999) || !isInt(m.total, 1, 10000)) return null;
     var o = { t:'state', phase: m.phase, title: optStr(m.title, 300), qi: m.qi, total: m.total, round: m.round === 2 ? 2 : 1, confidence: m.confidence === true, exam: m.exam === true, review: m.review === true };
+    if (m.remaining != null) { if (!isInt(m.remaining, 0, 864000)) return null; o.remaining = m.remaining; }
+    if (m.pace === 'self') {                        // self-paced: this student's own place in the set
+      if (!isInt(m.count, 1, 10000)) return null;
+      o.pace = 'self'; o.count = m.count;
+      if (m.pos != null) { if (!isInt(m.pos, 1, m.count)) return null; o.pos = m.pos; }
+    }
     if (m.phase === 'vote' || m.phase === 'closed' || m.phase === 'reveal') {
-      var q = m.q;
-      if (!q || typeof q !== 'object' || !Array.isArray(q.options) || q.options.length < 2 || q.options.length > 8) return null;
-      o.q = { stem: str(q.stem, 20000), lead: str(q.lead, 2000), options: q.options.map(function(x){ return str(x, 1000); }), image: imageOf(q.image) };
+      o.q = caseOf(m.q);
       o.mine = answerOf(m.mine); o.first = answerOf(m.first);
-      if (m.remaining != null) { if (!isInt(m.remaining, 0, 86400)) return null; o.remaining = m.remaining; }
-      if (m.phase === 'reveal') {
-        var R = m.reveal; if (!R || typeof R !== 'object') return null;
-        var why = {};
-        if (R.why != null) { if (typeof R.why !== 'object') return null; Object.keys(R.why).forEach(function(k){ if (/^[A-H]$/.test(k)) why[k] = str(R.why[k], 3000); }); }
-        o.reveal = { answer: letter(R.answer), explain: optStr(R.explain, 20000), why: why, objective: optStr(R.objective, 3000), image: imageOf(R.image) };
-        o.final = answerOf(m.final);
-      }
+      if (m.phase === 'reveal') { o.reveal = revealOf(m.reveal); o.final = answerOf(m.final); }
+    }
+    if (m.phase === 'done') {
+      var d = m.done; if (!d || typeof d !== 'object' || !isInt(d.answered, 0, 10000) || !o.pace) return null;
+      o.done = { answered: d.answered, timeUp: d.timeUp === true, finished: d.finished === true, score: d.score == null ? null : (isInt(d.score, 0, 10000) ? d.score : null) };
     }
     if (m.phase === 'end') {
       var r = m.result;
       if (!r || typeof r !== 'object' || !isInt(r.score, 0, 10000) || !isInt(r.total, 0, 10000) || !Array.isArray(r.items) || r.items.length > 10000) return null;
       o.result = { score: r.score, total: r.total, items: r.items.map(function(it){ if (!it || !isInt(it.n, 1, 10000)) throw 0; return { n: it.n, mine: it.mine == null ? null : letter(it.mine), correct: letter(it.correct) }; }) };
+      if (m.rev != null) {                          // one case opened from the results, with its answer
+        if (typeof m.rev !== 'object' || !isInt(m.rev.qi, 0, 9999)) return null;
+        o.rev = { qi: m.rev.qi, q: caseOf(m.rev.q), reveal: revealOf(m.rev.reveal), final: answerOf(m.rev.final) };
+      }
     }
     return o;
   } catch(e){ return null; }
@@ -283,13 +300,19 @@ function onState(m){
   if (key !== selKey) { selKey = key; sel = null; if (pending && (pending.qi !== m.qi || pending.round !== m.round)) pending = null; }
   if (m.mine) pending = null;
   if (m.phase !== 'vote') pending = null;
-  deadline = (m.phase === 'vote' && typeof m.remaining === 'number') ? Date.now() + m.remaining*1000 : null;
-  var changedScreen = !st || st.phase !== m.phase || st.qi !== m.qi || st.round !== m.round;
+  deadline = ((m.phase === 'vote' || (m.pace && m.phase !== 'end')) && typeof m.remaining === 'number') ? Date.now() + m.remaining*1000 : null;
+  asked = null;                                      // the answer to a request is the next state
+  var changedScreen = !st || st.phase !== m.phase || st.qi !== m.qi || st.round !== m.round || (st.rev ? st.rev.qi : -1) !== (m.rev ? m.rev.qi : -1);
   st = m; render(changedScreen);
 }
 function sendAnswer(){
   if (!pending || !conn || !conn.open || !conn._ok) return;
   try { conn.send({ t:'answer', qi: pending.qi, round: pending.round, c: pending.c, sure: pending.sure }); } catch(e){}
+}
+var asked = null;                                     // a "next case" or "open this case" request on its way
+function ask(msg){
+  if (!conn || !conn.open || !conn._ok) return;
+  asked = msg.t; try { conn.send(msg); } catch(e){} render();
 }
 function submit(sure){
   if (!st || st.phase !== 'vote' || st.mine || !sel) return;
@@ -312,16 +335,20 @@ function figHtml(im){
 }
 function setDock(html){ if (html) { dock.innerHTML = '<div class="in">'+html+'</div>'; dock.hidden = false; } else { dock.hidden = true; dock.innerHTML = ''; } }
 function header(){
-  document.getElementById('ht').textContent = st && st.q ? ((st.review ? 'Review · ' : st.exam ? 'Exam · ' : '') + 'Case ' + (st.qi+1) + ' of ' + st.total) : (st && st.title ? st.title : 'Live quiz');
-  document.getElementById('labBtn').hidden = !(st && st.q);
-  if (labOpen && (!st || !st.q || st.qi !== labTag)) closeLab(false);      // the question changed or ended
+  var t = st && st.title ? st.title : 'Live quiz';
+  if (st && st.rev) t = 'Review · Case ' + (st.rev.qi+1);
+  else if (st && st.q && st.pace) t = (st.exam ? 'Exam · ' : '') + 'Case ' + st.pos + ' of ' + st.count;
+  else if (st && st.q) t = (st.review ? 'Review · ' : st.exam ? 'Exam · ' : '') + 'Case ' + (st.qi+1) + ' of ' + st.total;
+  document.getElementById('ht').textContent = t;
+  document.getElementById('labBtn').hidden = !(st && (st.q || st.rev));
+  if (labOpen && labTagFn() !== labTag) closeLab(false);      // the case changed or ended
 }
 
 /*__LABS__*/
-labTagFn = function(){ return st && st.q ? st.qi : -1; };
+labTagFn = function(){ return st && st.rev ? 10000 + st.rev.qi : st && st.q ? st.qi : -1; };
 function tick(){
   var tm = document.getElementById('tm');
-  if (deadline && st && st.phase === 'vote') { var s = Math.max(0, Math.ceil((deadline - Date.now())/1000)); tm.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); tm.classList.toggle('low', s <= 10); }
+  if (deadline && st && (st.phase === 'vote' || (st.pace && st.phase !== 'end'))) { var s = Math.max(0, Math.ceil((deadline - Date.now())/1000)); tm.textContent = Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); tm.classList.toggle('low', s <= 10); }
   else tm.textContent = '';
 }
 setInterval(tick, 500);
@@ -348,17 +375,20 @@ function render(scrollTop){
       '<p><b>'+esc(st.title)+'</b><br><span class="muted">session '+esc(CODE)+' · teacher’s screen verified</span></p>'+
       '<p class="muted">Check that this matches the screen. Wait for the teacher to start. Answers are anonymous.</p></div>';
   } else if (st.phase === 'end') {
-    renderEnd(offline);
+    if (st.rev) renderRev(offline); else renderEnd(offline);
+  } else if (st.phase === 'done') {
+    renderDone(offline);
   } else {
     renderQuestion(offline);
   }
   if (scrollTop === true) window.scrollTo(0, 0);
 }
 
-function optsHtml(mode){
-  var q = st.q, ans = st.reveal ? st.reveal.answer : null;
-  var mine = st.mine ? st.mine.c : (pending ? pending.c : null);
-  var fin = st.final ? st.final.c : null;
+function optsHtml(mode, x){                          // x: another case to show (one opened from the results)
+  x = x || st;
+  var q = x.q, ans = x.reveal ? x.reveal.answer : null;
+  var mine = x.mine ? x.mine.c : (pending ? pending.c : null);
+  var fin = x.final ? x.final.c : null;
   return '<div class="opts">' + q.options.map(function(o, i){
     var l = L[i], cls = 'opt', dis = mode !== 'pick';
     if (mode === 'pick' && sel === l) cls += ' sel';
@@ -387,19 +417,37 @@ function renderQuestion(offline){
     html += '<details><summary>Show the case</summary><div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image)+'<p class="lead">'+esc(q.lead)+'</p>'+optsHtml('locked')+'</details>';
     app.innerHTML = html;
   } else if (st.phase === 'reveal') {
-    setDock('');
-    var R = st.reveal, fin = st.final;
-    if (!fin) html += '<div class="banner info">You didn’t answer. The correct answer is <b>'+esc(R.answer)+'</b>.</div>';
-    else if (fin.c === R.answer) html += '<div class="banner good">Correct ✓ — '+esc(R.answer)+'</div>';
-    else html += '<div class="banner bad">You chose '+esc(fin.c)+'; the correct answer is <b>'+esc(R.answer)+'</b>.</div>';
-    html += optsHtml('reveal');
-    var why = R.why || {}, wl = L.slice(0, q.options.length).filter(function(l){ return l !== R.answer && why[l]; });
-    html += '<div class="card explain">' + (R.explain ? '<p style="margin-top:0">'+esc(R.explain)+'</p>' : '') + figHtml(R.image) +
-      (wl.length ? '<h3>Why not the others</h3><ul class="why">' + wl.map(function(l){ return '<li'+(fin && fin.c === l ? ' class="mine"' : '')+'><b>'+l+'</b>'+esc(why[l])+'</li>'; }).join('') + '</ul>' : '') +
-      (R.objective ? '<p class="obj"><b>Take-home:</b> '+esc(R.objective)+'</p>' : '') + '</div>';
-    html += '<details><summary>Show the case</summary><div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image)+'<p class="lead">'+esc(q.lead)+'</p></details>';
-    app.innerHTML = html;
+    app.innerHTML = html + revealHtml(st);
+    if (st.pace) setDock(asked === 'next' ? '<div class="msg">Loading…</div>' : '<button data-next id="nextBtn">'+(st.pos < st.count ? 'Next case ›' : 'Finish')+'</button>');
+    else setDock('');
   }
+}
+function revealHtml(x){                               // right or wrong, the options, the explanation; the case folded below
+  var q = x.q, R = x.reveal, fin = x.final, html = '';
+  if (!fin) html += '<div class="banner info">You didn’t answer. The correct answer is <b>'+esc(R.answer)+'</b>.</div>';
+  else if (fin.c === R.answer) html += '<div class="banner good">Correct ✓ — '+esc(R.answer)+'</div>';
+  else html += '<div class="banner bad">You chose '+esc(fin.c)+'; the correct answer is <b>'+esc(R.answer)+'</b>.</div>';
+  html += optsHtml('reveal', x);
+  var why = R.why || {}, wl = L.slice(0, q.options.length).filter(function(l){ return l !== R.answer && why[l]; });
+  html += '<div class="card explain">' + (R.explain ? '<p style="margin-top:0">'+esc(R.explain)+'</p>' : '') + figHtml(R.image) +
+    (wl.length ? '<h3>Why not the others</h3><ul class="why">' + wl.map(function(l){ return '<li'+(fin && fin.c === l ? ' class="mine"' : '')+'><b>'+l+'</b>'+esc(why[l])+'</li>'; }).join('') + '</ul>' : '') +
+    (R.objective ? '<p class="obj"><b>Take-home:</b> '+esc(R.objective)+'</p>' : '') + '</div>';
+  html += '<details><summary>Show the case</summary><div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image)+'<p class="lead">'+esc(q.lead)+'</p></details>';
+  return html;
+}
+function renderDone(offline){                         // self-paced: this student has finished, or the time is up
+  setDock('');
+  var d = st.done, n = st.count;
+  var head = d.finished ? 'Finished ✓' : d.timeUp ? 'Time is up' : 'Finished ✓';
+  app.innerHTML = offline + '<div class="card center" style="padding:28px 16px"><div class="big">'+head+'</div>'+
+    '<p>You answered <b>'+esc(d.answered)+'</b> of '+esc(n)+' case'+(n === 1 ? '' : 's')+'.</p>'+
+    (d.score != null ? '<div class="muted">Your score</div><div class="score">'+esc(d.score)+' / '+esc(n)+'</div><p class="muted">Only you can see this.</p>'
+      : '<p class="muted">Your answers are saved. The answers and your score come when your teacher ends the exam.</p>')+
+    '<p class="muted">'+(d.timeUp ? 'No more answers can be sent. ' : '')+'Keep this page open until your teacher ends the quiz.</p></div>';
+}
+function renderRev(offline){                          // after the end: one case opened from the results
+  app.innerHTML = offline + revealHtml(st.rev);
+  setDock(asked === 'rev' ? '<div class="msg">Loading…</div>' : '<button data-rev="-1" id="backBtn">‹ Back to the results</button>');
 }
 
 function renderEnd(offline){
@@ -407,9 +455,10 @@ function renderEnd(offline){
   var r = st.result || { score:0, total:0, items:[] };
   var pc = r.total ? Math.round(r.score*100/r.total) : 0;
   app.innerHTML = offline + '<div class="card center" style="padding:28px 16px"><div class="muted">Your score</div><div class="score">'+esc(r.score)+' / '+esc(r.total)+'</div><div class="big">'+esc(pc)+'%</div><p class="muted">Only you can see this.</p></div>' +
+    (r.items.length ? '<p class="muted small">Tap a case to see its answer and explanation.</p>' : '') +
     '<div class="card"><div class="res">' + r.items.map(function(it){
       var ok = it.mine === it.correct;
-      return '<span>'+esc(it.n)+'</span><span class="muted">'+(it.mine ? 'Your answer '+esc(it.mine) : 'No answer')+' · correct '+esc(it.correct)+'</span><span class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+'</span>';
+      return '<button class="rr" data-rev="'+(it.n - 1)+'"><span>'+esc(it.n)+'</span><span class="muted">'+(it.mine ? 'Your answer '+esc(it.mine) : 'No answer')+' · correct '+esc(it.correct)+'</span><span class="'+(ok?'ok':'no')+'">'+(ok?'✓':'✗')+' ›</span></button>';
     }).join('') + '</div></div>';
 }
 
@@ -421,10 +470,16 @@ app.addEventListener('click', function(e){
     o.addEventListener('click', function(ev){ if (ev.target.closest('.x') || ev.target === o) o.remove(); });
     document.body.appendChild(o); return;
   }
+  var rv = e.target.closest('[data-rev]');
+  if (rv && st && st.phase === 'end') { ask({ t:'rev', qi: +rv.getAttribute('data-rev') }); return; }
   var b = e.target.closest('.opt'); if (!b || b.disabled || !st || st.phase !== 'vote' || st.mine || pending) return;
   sel = b.getAttribute('data-l'); render();
 });
-dock.addEventListener('click', function(e){ var b = e.target.closest('button[data-sure]'); if (!b || b.disabled) return; submit(b.getAttribute('data-sure') === '1'); });
+dock.addEventListener('click', function(e){
+  if (e.target.closest('button[data-next]') && st && st.pace && st.phase === 'reveal' && !asked) { ask({ t:'next', qi: st.qi }); return; }
+  if (e.target.closest('button[data-rev]') && st && st.phase === 'end') { ask({ t:'rev', qi: -1 }); return; }
+  var b = e.target.closest('button[data-sure]'); if (!b || b.disabled) return; submit(b.getAttribute('data-sure') === '1');
+});
 
 /* Joining by typing: the session code AND the check code shown under the QR code on the teacher's screen. */
 function renderJoin(){

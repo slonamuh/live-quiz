@@ -45,6 +45,12 @@
 
 `settings.mode` (lobby: Practice or Exam) is copied into the session as `S.mode` when the quiz starts, so a resumed session keeps it. In Exam mode `closeVoting` still goes to `closed`, but the screen shows no bars or answer and the next step is `next()`; revote and reveal are off. After the last case, or **End exam**, `startReview()` sets `S.review` and walks `S.played` in `reveal` (the usual reveal screen and phone messages), then `finish()`. Phones get two optional flags in the state message, `exam` and `review`, used only for wording (older phone pages ignore them); answers still reach phones only in `reveal`. The projector window gets `mode` and `review` in `view.S`. `tests/exam.js` covers a full exam, the review, unanswered cases, and ending early.
 
+### Self-paced
+
+`settings.pace` (lobby: Together or Self-paced) becomes `S.pace` at the start. Self-paced runs in its own phase, `run`: `startRun()` sets `S.played` to the cases from *Start at case* on, `S.deadline` to one total time (`settings.tp` seconds per case × cases, or none) and gives every phone a seat in `S.seats[sid]`: `{order, i}`, the case order (`S.played`, or shuffled per student with `crypto.getRandomValues` when `settings.shuffle`) and the position. A phone that connects during the run gets a seat at once. `runStateFor()` sends each phone only the case at its position (`phase` `vote`, or `reveal` once answered in Practice), with `pace:'self'`, `pos` and `count`; after the last case, or when the time is up, `phase:'done'` with `{answered, timeUp, finished, score}` (`score` only in Practice). Answers are kept in `S.answers[qi][1]` as in the class mode, so tallies, results and the CSV need no changes. In Exam an answer moves the seat on at once; in Practice the phone sends `{t:'next', qi}` after reading the explanation. When the time is up (`runTimeUp`, also on resume) answers are refused; `addRunTime` (+5 min) reopens it. The screen draws `runSummary()`: finished students, completion, anonymous progress bars, and % correct per case (Practice, or the laptop while the projector window is open, which also gets the answer key); the projector window gets the summary in `view.run`, never the answers. **End** goes straight to the results in both modes (no class review). `tests/selfpaced.js` covers both modes, shuffling, the projector window, time up after a reload, +5 min, and the review after the end.
+
+After the end, in either pace, a phone may ask for one case from its results with `{t:'rev', qi}` (`qi: -1` = back); the state then carries `rev: {qi, q, reveal, final}`.
+
 ### Projector window (two screens)
 
 - **Open projector window** opens `./?audience=<id>` (the player's own path) as a pop-up named `livequiz-audience`. `<id>` (12 random characters) is kept in the tab's `sessionStorage`, so the laptop tab and its projector window still match after either reloads. Where `screen.isExtended` is true and `getScreenDetails()` is allowed, the pop-up is moved to the other screen (an external one if there is one).
@@ -85,12 +91,14 @@ Anyone can register `acsom-livequiz-<code>` on the public PeerJS server while th
 | phone → player | `{t:'hello', sid, nonce}` | Identify the phone (random id kept in the phone's localStorage per session code) and challenge the player. The player accepts one `hello` per connection. |
 | player → phone | `{t:'auth', pub, sig}` | The session's public key (raw, base64url) and its signature over `livequiz-auth|CODE|nonce` |
 | phone → player | `{t:'answer', qi, round, c, sure}` | Submit an answer once per question and round |
+| phone → player | `{t:'next', qi}` | Self-paced Practice: go on from the explanation of `qi` to the next case |
+| phone → player | `{t:'rev', qi}` | After the end: open case `qi` from the results (`-1` = back to the results) |
 | phone → player | `{t:'hb'}` every 5 s | Heartbeat; the player counts a phone as connected if heard from in the last 16 s |
 | player → phone | `{t:'pong'}` | Heartbeat reply; a phone that hears nothing for 17 s reconnects |
 | player → phone | `{t:'s', seq, body, sig}` | A signed screen update. `body` is the JSON text of `{t:'state', phase, qi, total, round, q, mine, first, remaining, reveal, final, result, …}`: the full screen for that phone, sent on every change and personalised (`mine`, `final`, `result`). `reveal` (answer and explanation) is only included in the reveal phase. Pictures are referenced as `{id, caption, hash}`. |
 | player → phone | `{t:'img', id, i, n, d}` | A picture in pieces of 15,000 characters (data channels limit message size); the phone reassembles them, checks the hash, and late joiners get them too. Sent only after `auth`. |
 
-Phases: `lobby → vote (round 1) → closed → [vote (round 2) → closed] → reveal → … → end`.
+Phases: `lobby → vote (round 1) → closed → [vote (round 2) → closed] → reveal → … → end`; self-paced: `lobby → run → end` on the screen, and per phone `vote → reveal (Practice) → … → done`.
 
 ### Where state lives
 
