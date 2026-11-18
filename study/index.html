@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Live Quiz — Self-study</title>
+<style>
+/* Shared look, built into every page by tools/build_pages.py: one palette, one font, one button.
+   The phone pages (join, study) also take theme-dark.css. Page-specific colours stay in each page. */
+:root{
+  --bg:#f4f3ef; --panel:#ffffff; --ink:#15171c; --muted:#5b616d; --line:#d9d6ce;
+  --soft:#eceae4;            /* letter circles, small tags */
+  --track:#efede8;           /* empty part of a bar */
+  --accent:#2350b8; --accent-soft:#dbe4f8;
+  --accent-ink:#ffffff;      /* text on a solid accent, green or red fill */
+  --good:#16804a; --good-soft:#d7efe0; --bad:#b93a27; --bad-soft:#f6ddd8;
+  --warn:#a86a10; --warn-soft:#fbe9c6; --warn-ink:#7a4a00;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:.5rem 1rem;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.primary:disabled{filter:none}
+.btn.danger{color:var(--bad)}
+.btn.armed{background:var(--bad);border-color:var(--bad);color:var(--accent-ink)}
+.btn.small{padding:.28rem .65rem;font-size:.85rem}
+a.btn{display:inline-block;text-decoration:none}
+/* the teacher pages' links in the top bar: Player · Editor · Self-study */
+.pagenav{display:inline-flex;gap:.15rem;align-items:center;margin-left:.3rem}
+.pagenav a{padding:.25rem .7rem;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:600;font-size:.9rem}
+.pagenav a[href]:hover{color:var(--ink);background:var(--soft)}
+.pagenav a[aria-current]{color:var(--accent);background:var(--accent-soft)}
+/* keyboard focus: one clear ring on every page (a mouse click or a tap does not show it) */
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* a file input kept reachable with Tab inside its button-like label */
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;opacity:0}
+label:has(> .vh:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
+
+/* Dark palette for the phone pages (join, study), when the phone is set to dark mode. Same names as theme.css. */
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14161a; --panel:#1d2026; --ink:#eceae5; --muted:#a3a8b3; --line:#343842; --soft:#2c3038; --track:#2a2e36;
+    --accent:#6f95f0; --accent-soft:#25335a; --accent-ink:#10131a;
+    --good:#4cc283; --good-soft:#173826; --bad:#f07a66; --bad-soft:#40211c;
+    --warn:#e0a643; --warn-soft:#3d3015; --warn-ink:#f2c46d; }
+}
+
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.45;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+.wrap{max-width:44rem;margin:0 auto;padding:0 16px calc(120px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+header .t{font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.homebtn{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;cursor:pointer}
+h1{font-size:1.5rem;margin:18px 0 6px}
+h2{font-size:1.1rem;margin:22px 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.center{text-align:center;padding:28px 8px}
+.score{font-size:3.2rem;font-weight:800;line-height:1;margin:.15em 0}
+.big{font-size:1.5rem;font-weight:800}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.banner{border-radius:12px;padding:12px 14px;margin:14px 0;font-weight:600}
+.banner.good{background:var(--good-soft);color:var(--good)}
+.banner.bad{background:var(--bad-soft);color:var(--bad)}
+.banner.info{background:var(--accent-soft)}
+.banner.warn{background:var(--warn-soft)}
+.stem{margin-top:14px}
+.stem p{margin:0 0 .6em}
+.stem ul{margin:.2em 0 .7em 1.1em;padding:0}
+.lead{font-weight:700;margin:.8em 0 0}
+.opts{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px 14px;min-height:56px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.opt .l{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--line)}
+.opt .x{padding-top:4px;min-width:0}
+.stem,.lead,.opt .x,figcaption,.explain,.banner,.setrow{overflow-wrap:anywhere}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt.sel .l{background:var(--accent);color:var(--accent-ink)}
+.opt:disabled{cursor:default}
+.opt.correct{border-color:var(--good);background:var(--good-soft)}
+.opt.correct .l{background:var(--good);color:var(--accent-ink)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .l{background:var(--bad);color:var(--accent-ink)}
+.opt.fade{opacity:.6}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.dock .in{max-width:44rem;margin:0 auto;display:flex;gap:10px}
+.dock button{flex:1;min-height:54px;border-radius:12px;border:0;font-weight:700;font-size:1.05rem;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+.dock button.alt{background:var(--panel);color:var(--ink);border:2px solid var(--accent)}
+.dock button:disabled{opacity:.4;cursor:default}
+.explain h3{margin:16px 0 6px;font-size:1rem}
+.why{list-style:none;margin:0;padding:0}
+.why li{padding:8px 10px;border-radius:10px;margin:4px 0}
+.why li.mine{background:var(--bad-soft)}
+.why b{display:inline-block;width:1.4em}
+.obj{border-top:1px dashed var(--line);margin-top:12px;padding-top:10px}
+figure.qimg{margin:10px 0 12px;text-align:center}
+figure.qimg img{max-width:100%;max-height:55vh;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:zoom-in}
+figure.qimg figcaption{color:var(--muted);font-size:.85rem;margin-top:4px}
+.zoom{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:12px}
+.zoom img{max-width:100%;max-height:100%;background:#fff;border-radius:6px}
+.zoom .x{position:absolute;top:10px;right:12px;background:#fff;color:#000;border:0;border-radius:50%;width:40px;height:40px;font-size:22px;font-weight:700;cursor:pointer}
+.sets{display:flex;flex-direction:column;gap:10px}
+.setrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer}
+.setrow .tx{flex:1;min-width:0}
+.setrow .st{font-weight:700}
+.setrow .sd{font-size:.88rem;margin:.15rem 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.setrow .sm{font-size:.8rem;color:var(--muted)}
+.setrow .go{color:var(--accent);font-weight:800}
+.forget{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;width:36px;height:36px;cursor:pointer;color:var(--muted)}
+.mine{display:flex;gap:8px;align-items:center}
+.mine .setrow{flex:1}
+.filebtn{display:block;text-align:center;border:2px dashed var(--line);border-radius:14px;padding:14px;margin-top:10px;font-weight:700;color:var(--accent);cursor:pointer;background:transparent}
+body.over .filebtn{border-color:var(--accent);background:var(--accent-soft)}
+fieldset.mode{border:1px solid var(--line);border-radius:14px;padding:10px 14px 12px;margin:14px 0;background:var(--panel)}
+fieldset.mode legend{font-weight:700;padding:0 6px}
+fieldset.mode label{display:flex;gap:10px;align-items:flex-start;padding:8px 0;cursor:pointer}
+fieldset.mode input{margin-top:4px;width:18px;height:18px;flex:none}
+.link{border:0;background:none;color:var(--accent);font-weight:600;padding:0;cursor:pointer;text-decoration:underline}
+.res{display:flex;flex-direction:column;gap:8px}
+.resrow{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+.resrow .n{flex:none;width:1.8rem;font-weight:800;color:var(--muted)}
+.resrow .mk{flex:none;width:1.6rem;height:1.6rem;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.9rem}
+.resrow .mk.ok{background:var(--good-soft);color:var(--good)}
+.resrow .mk.no{background:var(--bad-soft);color:var(--bad)}
+.resrow .mk.none{background:var(--line)}
+.resrow .rt{flex:1;min-width:0;display:flex;flex-direction:column}
+.resrow .rt small{color:var(--muted);font-size:.8rem}
+.err{white-space:pre-line}
+/* lab values sheet (NBME reference values), opened from the header during a question */
+.labbtn{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;cursor:pointer}
+.labbtn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.labsheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch}
+.labsheet .in{max-width:40rem;margin:0 auto;padding:10px 16px calc(24px + env(safe-area-inset-bottom))}
+.labsheet input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:16px}
+.labtabs{display:flex;gap:6px;margin:10px 0 4px;flex-wrap:wrap}
+.labtabs button{flex:1;min-width:4.5rem;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 6px;font-weight:600;font-size:.9rem;cursor:pointer}
+.labtabs button.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.labtabs.dim button{opacity:.45}
+.labg{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 4px}
+.labr{display:flex;gap:10px;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.labr .v{text-align:right;font-weight:700;white-space:nowrap}
+.labr .tab{font-size:.75rem;color:var(--muted);display:block}
+.labsrc{font-size:.75rem;color:var(--muted);margin-top:14px}
+
+</style>
+</head>
+<body>
+<header><button class="homebtn" id="homeBtn" type="button" hidden>☰ Sets</button><span class="t" id="ht">Self-study</span><button class="labbtn" id="labBtn" type="button" hidden aria-expanded="false">Labs</button></header>
+<div class="labsheet" id="lab" hidden role="dialog" aria-label="Laboratory reference values"></div>
+<main class="wrap" id="app"></main>
+<div class="dock" id="dock" hidden></div>
+<script>
+(function(){
+'use strict';
+/* Self-study: one student, one device, no teacher and no connection. Sets come from the course folder
+   (sets/ in this site, listed by sets/index.json and, on GitHub Pages, by GitHub's folder listing so that
+   a file uploaded there appears without a rebuild) or from a quiz file the student opens.
+   Practice: the answer and explanation after each case. Exam: nothing until the end, then the score and a review.
+   Sets are kept in IndexedDB ("livequiz-study"), progress in localStorage; nothing is sent anywhere. */
+var LET = 'ABCDEFGH'.split('');
+function letters(n){ return LET.slice(0, n); }
+function nOf(n, word){ n = +n || 0; return n + ' ' + word + (n === 1 ? '' : 's'); }   // 1 case, 2 cases
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function str(x){ return typeof x === 'string' ? x.trim() : ''; }
+var app = document.getElementById('app'), dock = document.getElementById('dock');
+/* Shared by the player and the self-study page: checks a quiz pack (format version 1).
+   Needs letters(n) from the page. */
+var IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
+/* Optional teacher-only fields: the quiz's description, and per case a First Aid topic path
+   (chapter › subtopic › entry, up to 3 levels) and the concept it tests. They are shown only on the
+   quiz-choosing page (and in the results); never sent to phones. A topic may be a list or "A › B › C". */
+function topicOf(q){
+  var t = q && q.topic;
+  if (typeof t === 'string') t = t.split(/\s*[›>]\s*/);
+  if (!Array.isArray(t)) return [];
+  return t.map(function(x){ return typeof x === 'string' ? x.trim() : ''; }).filter(Boolean).slice(0, 3);
+}
+function conceptOf(q){ return q && typeof q.concept === 'string' ? q.concept.trim() : ''; }
+function checkPack(p){
+  var errs = [], warns = [];
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return { errs: ['This file is not a quiz file.'], warns: [] };
+  if (!Array.isArray(p.questions) || !p.questions.length) return { errs: ['The file has no cases.'], warns: [] };
+  if (p.description != null && typeof p.description !== 'string') errs.push('The quiz description must be text.');
+  var images = (p.images && typeof p.images === 'object') ? p.images : {};
+  Object.keys(images).forEach(function(k){ if (typeof images[k] !== 'string' || !IMG_RE.test(images[k])) errs.push('Image “' + k + '” is not a valid embedded picture.'); });
+  p.questions.forEach(function(q, i){
+    var n = 'Case ' + (i+1) + ': ';
+    if (!q || typeof q !== 'object') { errs.push(n + 'is empty.'); return; }
+    if (typeof q.stem !== 'string' || !q.stem.trim()) errs.push(n + 'the case text is missing.');
+    if (typeof q.lead !== 'string' || !q.lead.trim()) errs.push(n + 'the question line is missing.');
+    if (!Array.isArray(q.options) || q.options.length < 2 || q.options.length > 8 || q.options.some(function(o){ return typeof o !== 'string' || !o.trim(); })) { errs.push(n + 'needs 2 to 8 answer options, none empty.'); return; }
+    var ls = letters(q.options.length);
+    if (ls.indexOf(q.answer) < 0) errs.push(n + 'the correct answer must be one of ' + ls.join(', ') + '.');
+    ['image', 'explainImage'].forEach(function(k){ if (q[k] && !images[q[k]]) errs.push(n + 'picture “' + q[k] + '” is missing from the pack.'); });
+    if (q.topic != null && typeof q.topic !== 'string' && !(Array.isArray(q.topic) && q.topic.length <= 3 && q.topic.every(function(t){ return typeof t === 'string'; }))) errs.push(n + 'the topic must be up to 3 names: chapter, subtopic, entry.');
+    if (q.concept != null && typeof q.concept !== 'string') errs.push(n + 'the concept must be text.');
+    if (!q.explain) warns.push('Case ' + (i+1) + ' has no explanation.');
+  });
+  return { errs: errs, warns: warns };
+}
+
+/* Shared by the phone page and the self-study page. Needs esc() and, in the page, a <header>
+   with <button id="labBtn">, and <div id="lab" class="labsheet" hidden>. */
+/* ---------- lab values: NBME laboratory reference values (December 2024), conventional units ----------
+   Opened from the header during a question, like the exam's Lab Values button. Below the header, so the
+   timer stays in view; the phone's Back button closes it. Built into the page: no network needed. */
+var LABS = [["Serum","Electrolytes and kidney","Sodium (Na⁺)","136–146 mEq/L","na"],["Serum","Electrolytes and kidney","Potassium (K⁺)","3.5–5.0 mEq/L","k"],["Serum","Electrolytes and kidney","Chloride (Cl⁻)","95–105 mEq/L","cl"],["Serum","Electrolytes and kidney","Bicarbonate (HCO₃⁻)","22–28 mEq/L","hco3 bicarb co2"],["Serum","Electrolytes and kidney","Urea nitrogen","7–18 mg/dL","bun urea"],["Serum","Electrolytes and kidney","Creatinine","0.6–1.2 mg/dL","cr"],["Serum","Electrolytes and kidney","Glucose, fasting","70–100 mg/dL","sugar"],["Serum","Electrolytes and kidney","Glucose, random, non-fasting","<140 mg/dL","sugar"],["Serum","Electrolytes and kidney","Calcium","8.4–10.2 mg/dL","ca"],["Serum","Electrolytes and kidney","Magnesium (Mg²⁺)","1.5–2.0 mg/dL","mg"],["Serum","Electrolytes and kidney","Phosphorus (inorganic)","3.0–4.5 mg/dL","phosphate po4"],["Serum","Liver and pancreas","Alanine aminotransferase (ALT)","10–40 U/L","alt sgpt"],["Serum","Liver and pancreas","Aspartate aminotransferase (AST)","12–38 U/L","ast sgot"],["Serum","Liver and pancreas","Alkaline phosphatase","25–100 U/L","alp alk phos"],["Serum","Liver and pancreas","Amylase","25–125 U/L",""],["Serum","Liver and pancreas","Bilirubin, total","0.1–1.0 mg/dL","bili"],["Serum","Liver and pancreas","Bilirubin, direct","0.0–0.3 mg/dL","bili conjugated"],["Serum","Liver and pancreas","Proteins, total","6.0–7.8 g/dL","protein"],["Serum","Liver and pancreas","Albumin","3.5–5.5 g/dL","alb"],["Serum","Liver and pancreas","Globulin","2.3–3.5 g/dL",""],["Serum","Lipids","Cholesterol, total, normal","<200 mg/dL","tc"],["Serum","Lipids","Cholesterol, total, high",">240 mg/dL","tc"],["Serum","Lipids","HDL","40–60 mg/dL","hdl cholesterol"],["Serum","Lipids","LDL","<160 mg/dL","ldl cholesterol"],["Serum","Lipids","Triglycerides, normal","<150 mg/dL","tg"],["Serum","Lipids","Triglycerides, borderline","151–199 mg/dL","tg"],["Serum","Iron studies","Ferritin, male","20–250 ng/mL",""],["Serum","Iron studies","Ferritin, female","10–120 ng/mL",""],["Serum","Iron studies","Iron, male","65–175 µg/dL","fe"],["Serum","Iron studies","Iron, female","50–170 µg/dL","fe"],["Serum","Iron studies","Total iron-binding capacity","250–400 µg/dL","tibc"],["Serum","Iron studies","Transferrin","200–360 mg/dL",""],["Serum","Endocrine","Follicle-stimulating hormone, male","4–25 mIU/mL","fsh"],["Serum","Endocrine","Follicle-stimulating hormone, female, premenopause","4–30 mIU/mL","fsh"],["Serum","Endocrine","Follicle-stimulating hormone, female, midcycle peak","10–90 mIU/mL","fsh"],["Serum","Endocrine","Follicle-stimulating hormone, female, postmenopause","40–250 mIU/mL","fsh"],["Serum","Endocrine","Luteinizing hormone, male","6–23 mIU/mL","lh"],["Serum","Endocrine","Luteinizing hormone, female, follicular phase","5–30 mIU/mL","lh"],["Serum","Endocrine","Luteinizing hormone, female, midcycle","75–150 mIU/mL","lh"],["Serum","Endocrine","Luteinizing hormone, female, postmenopause","30–200 mIU/mL","lh"],["Serum","Endocrine","Growth hormone (arginine stimulation), fasting","<5 ng/mL","gh"],["Serum","Endocrine","Growth hormone (arginine stimulation), provocative stimuli",">7 ng/mL","gh"],["Serum","Endocrine","Prolactin (hPRL), male","<17 ng/mL","prl"],["Serum","Endocrine","Prolactin (hPRL), female","<25 ng/mL","prl"],["Serum","Endocrine","Cortisol, 0800 h","5–23 µg/dL",""],["Serum","Endocrine","Cortisol, 1600 h","3–15 µg/dL",""],["Serum","Endocrine","Cortisol, 2000 h","<50% of 0800 h",""],["Serum","Endocrine","TSH","0.4–4.0 µU/mL","thyroid stimulating hormone thyrotropin"],["Serum","Endocrine","Triiodothyronine (T₃) (RIA)","100–200 ng/dL","t3"],["Serum","Endocrine","Triiodothyronine (T₃) resin uptake","25%–35%","t3 ru"],["Serum","Endocrine","Thyroxine (T₄)","5–12 µg/dL","t4"],["Serum","Endocrine","Free T₄","0.9–1.7 ng/dL","t4 ft4"],["Serum","Endocrine","Thyroidal iodine (¹²³I) uptake","8%–30% of administered dose/24 h","raiu radioactive"],["Serum","Endocrine","Intact PTH","10–60 pg/mL","parathyroid hormone"],["Serum","Endocrine","17-Hydroxycorticosteroids, male","3.0–10.0 mg/24 h","17-ohcs"],["Serum","Endocrine","17-Hydroxycorticosteroids, female","2.0–8.0 mg/24 h","17-ohcs"],["Serum","Endocrine","17-Ketosteroids, total, male","8–20 mg/24 h","17-ks"],["Serum","Endocrine","17-Ketosteroids, total, female","6–15 mg/24 h","17-ks"],["Serum","Immunoglobulins","IgA","76–390 mg/dL","immunoglobulin"],["Serum","Immunoglobulins","IgE","0–380 IU/mL","immunoglobulin"],["Serum","Immunoglobulins","IgG","650–1500 mg/dL","immunoglobulin"],["Serum","Immunoglobulins","IgM","50–300 mg/dL","immunoglobulin"],["Serum","Other","Creatinine clearance, male","97–137 mL/min","crcl gfr"],["Serum","Other","Creatinine clearance, female","88–128 mL/min","crcl gfr"],["Serum","Other","Creatine kinase, male","25–90 U/L","ck cpk"],["Serum","Other","Creatine kinase, female","10–70 U/L","ck cpk"],["Serum","Other","Lactate dehydrogenase","45–200 U/L","ldh"],["Serum","Other","Osmolality","275–295 mOsmol/kg H₂O","osm"],["Serum","Other","Uric acid","3.0–8.2 mg/dL","urate"],["Serum","Arterial blood gases (room air)","PO₂","75–105 mm Hg","po2 pao2 oxygen abg"],["Serum","Arterial blood gases (room air)","PCO₂","33–45 mm Hg","pco2 paco2 carbon dioxide abg"],["Serum","Arterial blood gases (room air)","pH","7.35–7.45","abg"],["CSF","Cerebrospinal fluid","Cell count","0–5/mm³","wbc cells"],["CSF","Cerebrospinal fluid","Chloride","118–132 mEq/L","cl"],["CSF","Cerebrospinal fluid","Gamma globulin","3%–12% of total proteins","igg"],["CSF","Cerebrospinal fluid","Glucose","40–70 mg/dL","sugar"],["CSF","Cerebrospinal fluid","Pressure","70–180 mm H₂O","opening"],["CSF","Cerebrospinal fluid","Proteins, total","<40 mg/dL","protein"],["Blood","Complete blood count","Hematocrit, male","41%–53%","hct"],["Blood","Complete blood count","Hematocrit, female","36%–46%","hct"],["Blood","Complete blood count","Hemoglobin, male","13.5–17.5 g/dL","hb hgb"],["Blood","Complete blood count","Hemoglobin, female","12.0–16.0 g/dL","hb hgb"],["Blood","Complete blood count","Erythrocyte count (RBC), male","4.3–5.9 million/mm³","rbc red cells"],["Blood","Complete blood count","Erythrocyte count (RBC), female","3.5–5.5 million/mm³","rbc red cells"],["Blood","Complete blood count","Mean corpuscular hemoglobin (MCH)","25–35 pg/cell","mch"],["Blood","Complete blood count","Mean corpuscular hemoglobin concentration (MCHC)","31%–36% Hb/cell","mchc"],["Blood","Complete blood count","Mean corpuscular volume (MCV)","80–100 µm³","mcv"],["Blood","Complete blood count","Reticulocyte count","0.5%–1.5%","retic"],["Blood","Complete blood count","Leukocyte count (WBC)","4500–11,000/mm³","wbc white cells"],["Blood","Complete blood count","Neutrophils, segmented","54%–62%","differential polys"],["Blood","Complete blood count","Neutrophils, bands","3%–5%","differential"],["Blood","Complete blood count","Lymphocytes","25%–33%","differential"],["Blood","Complete blood count","Monocytes","3%–7%","differential"],["Blood","Complete blood count","Eosinophils","1%–3%","differential eos"],["Blood","Complete blood count","Basophils","0%–0.75%","differential"],["Blood","Complete blood count","Platelet count","150,000–400,000/mm³","plt platelets"],["Blood","Complete blood count","CD4⁺ T-lymphocyte count","≥500/mm³","cd4"],["Blood","Coagulation","Partial thromboplastin time (PTT), activated","25–40 seconds","ptt aptt"],["Blood","Coagulation","Prothrombin time (PT)","11–15 seconds","pt inr"],["Blood","Coagulation","D-dimer","≤250 ng/mL","d dimer"],["Blood","Other","Erythrocyte sedimentation rate (Westergren), male","0–15 mm/h","esr sed rate"],["Blood","Other","Erythrocyte sedimentation rate (Westergren), female","0–20 mm/h","esr sed rate"],["Blood","Other","Hemoglobin A1c","≤6%","hba1c a1c glycated"],["Blood","Other","Troponin I","≤0.04 ng/mL","trop"],["Blood","Other","Plasma volume, male","25–43 mL/kg",""],["Blood","Other","Plasma volume, female","28–45 mL/kg",""],["Blood","Other","Red cell volume, male","20–36 mL/kg",""],["Blood","Other","Red cell volume, female","19–31 mL/kg",""],["Urine & BMI","Urine","Calcium","100–300 mg/24 h","ca"],["Urine & BMI","Urine","Osmolality","50–1200 mOsmol/kg H₂O","osm"],["Urine & BMI","Urine","Oxalate","8–40 µg/mL",""],["Urine & BMI","Urine","Proteins, total","<150 mg/24 h","protein proteinuria"],["Urine & BMI","Body mass index","BMI, adult","19–25 kg/m²","bmi body mass index"]];
+var labOpen = false, labTag = -1, labTab = 'Serum';
+var labTagFn = function(){ return -1; };   // the page says what the sheet belongs to (e.g. the question number); it closes when that changes
+var labPopHandled = false;                   // a Back press that only closed the sheet: pages with their own Back handling ignore it
+var LAB_TABS = ['Serum', 'CSF', 'Blood', 'Urine & BMI'];
+function labRows(){
+  var el = document.getElementById('labList'), q = (document.getElementById('labQ').value || '').trim().toLowerCase(), html = '', last = '';
+  var hits = LABS.filter(function(r){ return q ? (r[2] + ' ' + r[4] + ' ' + r[1]).toLowerCase().indexOf(q) >= 0 : r[0] === labTab; });
+  hits.forEach(function(r){
+    var gh = q ? '' : r[1];
+    if (gh && gh !== last) { html += '<div class="labg">' + esc(gh) + '</div>'; last = gh; }
+    html += '<div class="labr"><span>' + esc(r[2]) + (q ? '<span class="tab">' + esc(r[0] === 'Serum' && r[1].indexOf('blood gases') >= 0 ? 'Arterial blood gases' : r[0]) + '</span>' : '') + '</span><span class="v">' + esc(r[3]) + '</span></div>';
+  });
+  el.innerHTML = html || '<p class="muted">No test matches “' + esc(q) + '”.</p>';
+  document.getElementById('labTabs').classList.toggle('dim', !!q);
+  Array.prototype.forEach.call(document.querySelectorAll('#labTabs button'), function(b){ b.classList.toggle('sel', b.getAttribute('data-tab') === labTab); });
+}
+function openLab(){
+  var sh = document.getElementById('lab');
+  if (!sh.firstChild) {
+    sh.innerHTML = '<div class="in"><input id="labQ" type="search" placeholder="Search, e.g. potassium, BUN, TSH" aria-label="Search lab tests" autocomplete="off">' +
+      '<div class="labtabs" id="labTabs">' + LAB_TABS.map(function(t){ return '<button type="button" data-tab="' + esc(t) + '">' + esc(t) + '</button>'; }).join('') + '</div>' +
+      '<div id="labList"></div><p class="labsrc">Reference ranges: NBME Laboratory Reference Values (December 2024), the table shown on USMLE exams. Conventional units.</p></div>';
+    document.getElementById('labQ').addEventListener('input', labRows);
+    document.getElementById('labTabs').addEventListener('click', function(e){ var b = e.target.closest('button'); if (!b) return; labTab = b.getAttribute('data-tab'); document.getElementById('labQ').value = ''; labRows(); sh.scrollTop = 0; });
+  }
+  sh.style.top = document.querySelector('header').offsetHeight + 'px';
+  labRows(); sh.hidden = false; labOpen = true; labTag = labTagFn();
+  document.body.style.overflow = 'hidden';
+  var b = document.getElementById('labBtn'); b.textContent = '✕ Labs'; b.classList.add('on'); b.setAttribute('aria-expanded', 'true');
+  try { history.pushState({ lab: 1 }, ''); } catch(e){}
+}
+function closeLab(fromBack){
+  if (!labOpen) return;
+  labOpen = false; document.getElementById('lab').hidden = true; document.body.style.overflow = '';
+  var b = document.getElementById('labBtn'); b.textContent = 'Labs'; b.classList.remove('on'); b.setAttribute('aria-expanded', 'false');
+  if (!fromBack && history.state && history.state.lab) try { labPopHandled = true; history.back(); } catch(e){}
+}
+document.getElementById('labBtn').addEventListener('click', function(){ if (labOpen) closeLab(false); else openLab(); });
+window.addEventListener('popstate', function(){ if (labOpen) { closeLab(true); labPopHandled = true; } });
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && labOpen) closeLab(false); });
+
+
+/* ---------- storage ---------- */
+var store = {
+  get: function(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set: function(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+var PROG = 'livequiz-study-progress-v1', MODE = 'livequiz-study-mode', LISTING = 'livequiz-study-listing-v1';
+function progAll(){ return store.get(PROG) || {}; }
+function progOf(rec){ var p = rec && progAll()[rec.key]; return p && p.ver === rec.ver ? p : null; }
+function progSave(rec, p){ var a = progAll(); if (p) a[rec.key] = p; else delete a[rec.key]; store.set(PROG, a); }
+var idb = (function(){
+  var dbp = null;
+  function open(){
+    if (!dbp) dbp = new Promise(function(res, rej){
+      var r = indexedDB.open('livequiz-study', 1);
+      r.onupgradeneeded = function(){ r.result.createObjectStore('sets', { keyPath: 'key' }); };
+      r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); };
+    });
+    return dbp;
+  }
+  function tx(mode, fn){ return open().then(function(db){ return new Promise(function(res, rej){
+    var t = db.transaction('sets', mode), q = fn(t.objectStore('sets'));
+    t.oncomplete = function(){ res(q && q.result); }; t.onerror = t.onabort = function(){ rej(t.error); };
+  }); }); }
+  return {
+    get: function(k){ return tx('readonly', function(s){ return s.get(k); }).catch(function(){ return null; }); },
+    all: function(){ return tx('readonly', function(s){ return s.getAll(); }).catch(function(){ return []; }); },
+    put: function(v){ return tx('readwrite', function(s){ return s.put(v); }); },
+    del: function(k){ return tx('readwrite', function(s){ return s.delete(k); }).catch(function(){}); }
+  };
+})();
+function hash(s){ var h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (var i=0, ch; i<s.length; i++){ ch = s.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909); h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(36); }
+function verOf(p){ return hash(JSON.stringify(p.questions) + JSON.stringify(Object.keys(p.images || {}))); }
+function pretty(f){ var s = String(f).replace(/\.quiz\.json$/i, '').replace(/\.json$/i, '').replace(/[-_]+/g, ' ').trim(); return s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Untitled set'; }
+function modeName(m){ return m === 'exam' ? 'Exam' : 'Practice'; }
+
+/* ---------- sets ---------- */
+var SETS = new URL('../sets/', location.href);
+var FILE_RE = /^[A-Za-z0-9_.-]+\.quiz\.json$/;
+function ghRepo(){                                  // "owner/repo" on GitHub Pages (or ?gh=owner/repo)
+  var o = new URLSearchParams(location.search).get('gh');
+  if (o && /^[\w.-]+\/[\w.-]+$/.test(o)) return o;
+  var m = location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i), seg = location.pathname.split('/').filter(Boolean)[0];
+  return m && seg ? m[1] + '/' + seg : '';
+}
+function ghListing(){                               // file names in sets/ (cached 20 minutes; GitHub allows 60 requests an hour per address)
+  var repo = ghRepo(); if (!repo) return Promise.resolve(null);
+  var c = store.get(LISTING), fresh = c && c.repo === repo && Date.now() - c.at < 20*60*1000;
+  if (fresh) return Promise.resolve(c.files);
+  return fetch('https://api.github.com/repos/' + repo + '/contents/sets', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function(r){ if (r.status === 404) return []; if (!r.ok) throw new Error('listing'); return r.json(); })
+    .then(function(a){
+      var files = (Array.isArray(a) ? a : []).filter(function(f){ return f && f.type === 'file' && FILE_RE.test(f.name); }).map(function(f){ return f.name; });
+      store.set(LISTING, { repo: repo, at: Date.now(), files: files }); return files;
+    })
+    .catch(function(){ return c && c.repo === repo ? c.files : null; });
+}
+function courseSets(){
+  var idx = fetch(new URL('index.json', SETS), { cache: 'no-cache' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){ return j && Array.isArray(j.sets) ? j.sets : null; }).catch(function(){ return null; });
+  return Promise.all([idx, ghListing()]).then(function(v){
+    var index = v[0], files = v[1], by = {};
+    if (index === null && files === null) return null;
+    (index || []).forEach(function(s){ if (s && FILE_RE.test(s.file)) by[s.file] = s; });
+    var names = files || Object.keys(by);
+    return names.filter(function(f){ return FILE_RE.test(f); }).map(function(f){
+      var s = by[f] || {};
+      return { file: f, title: str(s.title), description: str(s.description), n: s.n };
+    }).sort(function(a, b){ return (a.title || pretty(a.file)).localeCompare(b.title || pretty(b.file)); });
+  });
+}
+function keep(key, source, file, p){                // validate, then remember the set on this device
+  var c = checkPack(p);
+  if (c.errs.length) { var e = new Error('This quiz file has problems:\n• ' + c.errs.slice(0, 5).join('\n• ')); e.bad = true; throw e; }
+  var rec = { key: key || ('file:' + verOf(p)), source: source, file: file || '', title: str(p.title) || pretty(file || 'Untitled set'), description: str(p.description), n: p.questions.length, ver: verOf(p), pack: p, usedAt: Date.now() };
+  return idb.put(rec).then(function(){ return rec; }, function(){ return rec; });
+}
+function openCourse(file){
+  var key = 'course:' + file;
+  return fetch(new URL(encodeURIComponent(file), SETS), { cache: 'no-cache' })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(p){ return keep(key, 'course', file, p); })
+    .catch(function(e){
+      if (e && e.bad) throw e;
+      return idb.get(key).then(function(rec){ if (rec) return rec; throw new Error('This set could not be loaded. Check the internet connection and try again.'); });
+    });
+}
+function openFile(f){
+  if (!f) return;
+  f.text().then(function(t){
+    var p; try { p = JSON.parse(t); } catch(e){ throw new Error('“' + f.name + '” is not a quiz file (.quiz.json).'); }
+    return keep('', 'file', f.name, p);
+  }).then(function(rec){ showSet(rec); }, function(e){ homeMsg(e.message); });
+}
+
+/* ---------- screens ---------- */
+var cur = null, sel = null, armed = '';
+function setHead(t, labs){
+  document.getElementById('ht').textContent = t;
+  document.getElementById('homeBtn').hidden = !cur;
+  document.getElementById('labBtn').hidden = !labs;
+  if (labOpen && (!labs || labTag !== labTagFn())) closeLab(false);
+}
+labTagFn = function(){ return cur && cur.view ? cur.view + ':' + cur.qi : -1; };
+function setDock(buttons){
+  if (!buttons) { dock.hidden = true; dock.innerHTML = ''; return; }
+  dock.innerHTML = '<div class="in">' + buttons + '</div>'; dock.hidden = false;
+}
+function stemHtml(stem){
+  var html = '', list = [];
+  function flush(){ if (list.length) { html += '<ul>' + list.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('') + '</ul>'; list = []; } }
+  String(stem).split('\n').forEach(function(ln){ if (ln.indexOf('• ') === 0) list.push(ln.slice(2)); else { flush(); if (ln.trim()) html += '<p>'+esc(ln)+'</p>'; } });
+  flush(); return html;
+}
+function fig(id, cap){
+  var im = cur && cur.rec.pack.images || {}; if (!id || typeof im[id] !== 'string') return '';
+  return '<figure class="qimg"><img src="' + esc(im[id]) + '" alt="' + esc(cap || 'Picture') + '" data-zoom>' + (cap ? '<figcaption>' + esc(cap) + '</figcaption>' : '') + '</figure>';
+}
+function caseHtml(q){ return '<div class="stem">' + stemHtml(q.stem) + '</div>' + fig(q.image, q.imageCaption) + '<p class="lead">' + esc(q.lead) + '</p>'; }
+function answerHtml(q, mine){                     // the answer, the options marked, the explanation
+  var ls = letters(q.options.length), why = q.why || {};
+  var banner = !mine ? '<div class="banner info" id="verdict">You didn’t answer. The correct answer is <b>' + esc(q.answer) + '</b>.</div>'
+    : mine === q.answer ? '<div class="banner good" id="verdict">Correct ✓ — ' + esc(q.answer) + '</div>'
+    : '<div class="banner bad" id="verdict">You chose ' + esc(mine) + '; the correct answer is <b>' + esc(q.answer) + '</b>.</div>';
+  var opts = '<div class="opts">' + q.options.map(function(o, i){ var l = ls[i];
+    return '<button class="opt ' + (l === q.answer ? 'correct' : l === mine ? 'wrong' : 'fade') + '" disabled data-l="' + l + '"><span class="l">' + l + '</span><span class="x">' + esc(o) + '</span></button>'; }).join('') + '</div>';
+  var wl = ls.filter(function(l){ return l !== q.answer && why[l]; });
+  return banner + opts + '<div class="card explain">' + (q.explain ? '<p style="margin-top:0">' + esc(q.explain) + '</p>' : '<p class="muted" style="margin-top:0">No explanation in this set.</p>') + fig(q.explainImage, q.explainCaption) +
+    (wl.length ? '<h3>Why not the others</h3><ul class="why">' + wl.map(function(l){ return '<li' + (l === mine ? ' class="mine"' : '') + '><b>' + l + '</b>' + esc(why[l]) + '</li>'; }).join('') + '</ul>' : '') +
+    (q.objective ? '<p class="obj"><b>Take-home:</b> ' + esc(q.objective) + '</p>' : '') + '</div>';
+}
+function statusOf(rec){
+  var p = progOf(rec); if (!p) return '';
+  return p.done ? 'Last score ' + p.score + ' / ' + rec.n + ' (' + Math.round(p.score * 100 / rec.n) + '%) · ' + modeName(p.mode)
+    : 'In progress: case ' + (p.i + 1) + ' of ' + rec.n + ' · ' + modeName(p.mode);
+}
+function rowHtml(attr, title, desc, meta){
+  return '<button class="setrow" ' + attr + '><span class="tx"><span class="st">' + esc(title) + '</span>' + (desc ? '<span class="sd">' + esc(desc) + '</span>' : '') +
+    '<span class="sm">' + esc(meta) + '</span></span><span class="go">›</span></button>';
+}
+
+function home(msg){
+  cur = null; sel = null; armed = '';
+  setHead('Self-study', false); setDock('');
+  app.innerHTML = '<h1>Self-study</h1><p class="muted">Practise cases on your own, at your own pace. Your answers stay on this device; nothing is sent anywhere.</p>' +
+    '<h2>Course sets</h2><div class="sets" id="course"><p class="muted">Loading…</p></div>' +
+    '<h2>My sets</h2><div class="sets" id="mine"></div>' +
+    '<label class="filebtn" id="fileBtn">Open a quiz file…<input type="file" id="file" class="vh" accept=".json,application/json"></label>' +
+    '<p class="muted small">For quiz files (.quiz.json) your teacher sends you. They are kept on this device.</p><div id="homemsg"></div>';
+  if (msg) homeMsg(msg);
+  window.scrollTo(0, 0);
+  Promise.all([courseSets(), idb.all()]).then(function(v){
+    var list = v[0], recs = v[1] || [], byKey = {};
+    recs.forEach(function(r){ byKey[r.key] = r; });
+    var el = document.getElementById('course'); if (!el) return;
+    var offline = list === null;
+    if (offline) list = recs.filter(function(r){ return r.source === 'course'; }).map(function(r){ return { file: r.file, title: r.title, description: r.description, n: r.n, cached: true }; });
+    el.innerHTML = list.length ? list.map(function(s){
+      var r = byKey['course:' + s.file], n = s.n || (r && r.n), st = r ? statusOf(r) : '';
+      return rowHtml('data-course="' + esc(s.file) + '"', s.title || (r && r.title) || pretty(s.file), s.description || (r && r.description), (n ? nOf(n, 'case') : 'Course set') + (st ? ' · ' + st : ''));
+    }).join('') + (offline ? '<p class="muted small">Couldn’t check for new course sets (no connection?). These are the ones opened on this device before.</p>' : '')
+      : offline ? '<p class="muted">Couldn’t load the course sets. Check the connection and open this page again.</p>'
+      : '<p class="muted">No course sets yet. Your teacher adds them here.</p>';
+    var mine = recs.filter(function(r){ return r.source === 'file'; }).sort(function(a, b){ return b.usedAt - a.usedAt; });
+    document.getElementById('mine').innerHTML = mine.length ? mine.map(function(r){
+      var st = statusOf(r);
+      return '<div class="mine">' + rowHtml('data-set="' + esc(r.key) + '"', r.title, r.description, nOf(r.n, 'case') + (st ? ' · ' + st : '')) +
+        '<button class="forget" data-forget="' + esc(r.key) + '" title="Remove from this device" aria-label="Remove ' + esc(r.title) + '">✕</button></div>';
+    }).join('') : '<p class="muted small">None yet: open a quiz file your teacher sends you.</p>';
+  });
+}
+function homeMsg(m){ var el = document.getElementById('homemsg'); if (el) el.innerHTML = '<div class="banner bad err">' + esc(m) + '</div>'; else home(m); }
+
+function showSet(rec){
+  if (!(history.state && history.state.study)) try { history.pushState({ study: 1 }, ''); } catch(e){}
+  cur = { rec: rec, view: 'set', qi: -1 }; sel = null; armed = '';
+  var p = progOf(rec), mode = store.get(MODE) === 'exam' ? 'exam' : 'practice';
+  setHead(rec.title, false);
+  app.innerHTML = '<h1>' + esc(rec.title) + '</h1>' + (rec.description ? '<p>' + esc(rec.description) + '</p>' : '') +
+    '<p class="muted">' + nOf(rec.n, 'case') + ' · ' + (rec.source === 'course' ? 'course set' : 'from a file') + '</p>' +
+    (p && !p.done ? '<div class="card" id="inprog"><b>In progress:</b> case ' + (p.i + 1) + ' of ' + rec.n + ' · ' + modeName(p.mode) + '</div>' : '') +
+    (p && p.done ? '<div class="card" id="last">Last score <b>' + p.score + ' / ' + rec.n + '</b> (' + Math.round(p.score * 100 / rec.n) + '%) · ' + modeName(p.mode) + ' · <button class="link" data-do="results">See results</button></div>' : '') +
+    '<fieldset class="mode"><legend>Mode</legend>' +
+      '<label><input type="radio" name="mode" value="practice"' + (mode === 'practice' ? ' checked' : '') + '><span><b>Practice</b><br><span class="muted small">The answer and explanation after each case</span></span></label>' +
+      '<label><input type="radio" name="mode" value="exam" id="modeExam"' + (mode === 'exam' ? ' checked' : '') + '><span><b>Exam</b><br><span class="muted small">No answers until the end; then your score and a review of every case</span></span></label></fieldset>';
+  setDock(p && !p.done ? '<button class="alt" data-do="restart" id="restartBtn">Start over</button><button data-do="continue" id="goBtn">Continue</button>'
+    : '<button data-do="start" id="goBtn">Start</button>');
+  window.scrollTo(0, 0);
+}
+function chosenMode(){ var r = document.querySelector('input[name="mode"]:checked'); return r && r.value === 'exam' ? 'exam' : 'practice'; }
+function startRun(){
+  var mode = chosenMode(); store.set(MODE, mode);
+  var p = { ver: cur.rec.ver, mode: mode, i: 0, answers: {}, done: false, startedAt: Date.now() };
+  progSave(cur.rec, p); cur.rec.usedAt = Date.now(); idb.put(cur.rec).catch(function(){});
+  showCase();
+}
+function showCase(){
+  var rec = cur.rec, p = progOf(rec); if (!p) return showSet(rec);
+  var qs = rec.pack.questions, q = qs[p.i], mine = p.answers[p.i];
+  cur.view = 'case'; cur.qi = p.i; sel = null;
+  setHead(modeName(p.mode) + ' · Case ' + (p.i + 1) + ' of ' + qs.length, true);
+  var h = caseHtml(q);
+  if (p.mode === 'practice' && mine) {
+    h += answerHtml(q, mine);
+    setDock('<button data-do="next" id="nextBtn">' + (p.i < qs.length - 1 ? 'Next case' : 'See results') + '</button>');
+  } else {
+    var ls = letters(q.options.length);
+    h += '<div class="opts" id="opts">' + q.options.map(function(o, i){ return '<button class="opt" data-pick="' + ls[i] + '" data-l="' + ls[i] + '"><span class="l">' + ls[i] + '</span><span class="x">' + esc(o) + '</span></button>'; }).join('') + '</div>';
+    setDock('<button data-do="submit" id="submitBtn" disabled>' + (p.mode === 'exam' ? (p.i < qs.length - 1 ? 'Submit & next case' : 'Submit & finish') : 'Submit answer') + '</button>');
+  }
+  app.innerHTML = h;
+}
+function pick(l){
+  sel = l;
+  Array.prototype.forEach.call(document.querySelectorAll('#opts .opt'), function(b){ b.classList.toggle('sel', b.getAttribute('data-pick') === l); });
+  var s = document.getElementById('submitBtn'); if (s) s.disabled = false;
+}
+function submit(){
+  var rec = cur.rec, p = progOf(rec); if (!p || !sel || p.answers[p.i]) return;
+  p.answers[p.i] = sel; progSave(rec, p);
+  if (p.mode === 'exam') return nextCase();
+  showCase();
+  var v = document.getElementById('verdict'); if (v && v.scrollIntoView) v.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+function nextCase(){
+  var rec = cur.rec, p = progOf(rec), n = rec.pack.questions.length; if (!p) return;
+  if (p.i < n - 1) { p.i++; progSave(rec, p); showCase(); window.scrollTo(0, 0); return; }
+  var s = 0; rec.pack.questions.forEach(function(q, i){ if (p.answers[i] === q.answer) s++; });
+  p.done = true; p.score = s; p.finishedAt = Date.now(); progSave(rec, p);
+  showResults();
+}
+function showResults(){
+  var rec = cur.rec, p = progOf(rec); if (!p || !p.done) return showSet(rec);
+  var qs = rec.pack.questions, n = qs.length, pc = Math.round(p.score * 100 / n);
+  cur.view = 'results'; cur.qi = -1;
+  setHead('Results · ' + rec.title, false);
+  app.innerHTML = '<div class="card center"><div class="muted">Your score · ' + modeName(p.mode) + '</div><div class="score" id="score">' + p.score + ' / ' + n + '</div><div class="big">' + pc + '%</div></div>' +
+    '<p class="muted small">Tap a case to see its answer and explanation.</p><div class="res">' + qs.map(function(q, i){
+      var mine = p.answers[i], ok = mine === q.answer, t = topicOf(q), c = conceptOf(q);
+      return '<button class="resrow" data-rev="' + i + '"><span class="n">' + (i + 1) + '</span><span class="mk ' + (ok ? 'ok' : mine ? 'no' : 'none') + '">' + (ok ? '✓' : mine ? '✗' : '–') + '</span>' +
+        '<span class="rt">' + (c ? '<b>' + esc(c) + '</b>' : '<b>Case ' + (i + 1) + '</b>') + (t.length ? '<small>' + t.map(esc).join(' › ') + '</small>' : '') +
+        '<small>Your answer ' + esc(mine || '—') + ' · correct ' + esc(q.answer) + '</small></span></button>';
+    }).join('') + '</div>';
+  setDock((p.mode === 'exam' ? '<button data-do="review" id="reviewBtn">Review answers</button>' : '') + '<button class="alt" data-do="again" id="againBtn">Try again</button>');
+  window.scrollTo(0, 0);
+}
+function showReview(i){
+  var rec = cur.rec, p = progOf(rec), qs = rec.pack.questions; if (!p) return showSet(rec);
+  i = Math.max(0, Math.min(qs.length - 1, i));
+  cur.view = 'review'; cur.qi = i;
+  setHead('Review · Case ' + (i + 1) + ' of ' + qs.length, true);
+  app.innerHTML = caseHtml(qs[i]) + answerHtml(qs[i], p.answers[i]);
+  setDock('<button class="alt" data-do="prev"' + (i === 0 ? ' disabled' : '') + '>‹ Previous</button><button class="alt" data-do="results">Results</button>' +
+    (i < qs.length - 1 ? '<button data-do="nextrev" id="nextRevBtn">Next ›</button>' : ''));
+  window.scrollTo(0, 0);
+}
+
+/* ---------- input ---------- */
+function act(a){
+  if (!cur) return;
+  if (a === 'start') startRun();
+  else if (a === 'continue') showCase();
+  else if (a === 'restart') { if (armed === 'restart') { armed = ''; startRun(); } else { armed = 'restart'; var b = document.getElementById('restartBtn'); if (b) b.textContent = 'Tap again to start over'; } }
+  else if (a === 'submit') submit();
+  else if (a === 'next') nextCase();
+  else if (a === 'results') showResults();
+  else if (a === 'review') showReview(0);
+  else if (a === 'prev') showReview(cur.qi - 1);
+  else if (a === 'nextrev') showReview(cur.qi + 1);
+  else if (a === 'again') showSet(cur.rec);
+}
+document.addEventListener('click', function(e){
+  var t = e.target;
+  var z = t.closest('img[data-zoom]');
+  if (z) { var o = document.createElement('div'); o.className = 'zoom'; o.innerHTML = '<img alt="" src="' + esc(z.getAttribute('src')) + '"><button class="x" aria-label="Close">✕</button>'; o.addEventListener('click', function(){ o.remove(); }); document.body.appendChild(o); return; }
+  var b = t.closest('[data-pick],[data-do],[data-course],[data-set],[data-forget],[data-rev]'); if (!b) return;
+  if (b.hasAttribute('data-pick')) pick(b.getAttribute('data-pick'));
+  else if (b.hasAttribute('data-do')) act(b.getAttribute('data-do'));
+  else if (b.hasAttribute('data-rev')) showReview(+b.getAttribute('data-rev'));
+  else if (b.hasAttribute('data-course')) { b.disabled = true; openCourse(b.getAttribute('data-course')).then(showSet, function(err){ homeMsg(err.message); }); }
+  else if (b.hasAttribute('data-set')) idb.get(b.getAttribute('data-set')).then(function(r){ if (r) showSet(r); });
+  else if (b.hasAttribute('data-forget')) { var k = b.getAttribute('data-forget'); idb.del(k).then(function(){ var a = progAll(); delete a[k]; store.set(PROG, a); home(); }); }
+});
+document.addEventListener('change', function(e){ if (e.target.id === 'file') { openFile(e.target.files[0]); e.target.value = ''; } });
+document.getElementById('homeBtn').addEventListener('click', function(){ if (labOpen) closeLab(true); home(); });
+window.addEventListener('popstate', function(){
+  if (labPopHandled) { labPopHandled = false; return; }             // Back only closed the lab values
+  if (!(history.state && history.state.study) && cur) home();
+});
+document.addEventListener('keydown', function(e){                 // laptop: letters choose, Enter goes on
+  if (labOpen || !cur || e.target.matches('input,textarea') || document.querySelector('.zoom')) return;
+  var k = e.key;
+  if (/^[a-hA-H]$/.test(k) && cur.view === 'case') { var b = document.querySelector('#opts [data-pick="' + k.toUpperCase() + '"]'); if (b) { e.preventDefault(); pick(k.toUpperCase()); } }
+  else if (k === 'Enter') { var d = dock.querySelector('button:not(.alt):not(:disabled)'); if (d) { e.preventDefault(); d.click(); } }
+});
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { var z = document.querySelector('.zoom'); if (z) z.remove(); } });
+['dragover', 'dragenter'].forEach(function(ev){ document.addEventListener(ev, function(e){ if (!cur && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) { e.preventDefault(); document.body.classList.add('over'); } }); });
+document.addEventListener('dragleave', function(e){ if (!e.relatedTarget) document.body.classList.remove('over'); });
+document.addEventListener('drop', function(e){ document.body.classList.remove('over'); if (!cur && e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); openFile(e.dataTransfer.files[0]); } });
+
+home();
+})();
+</script>
+</body>
+</html>

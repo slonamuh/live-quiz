@@ -79,7 +79,10 @@ const WHY = {
   log('A new quiz, written from scratch');
   await E.goto(`${BASE}/editor.html?${PQ}`);
   await E.screenshot({ path: `${OUT}/20-editor-start.png` });
+  assert((await E.textContent('.pagenav [aria-current]')) === 'Editor' && (await E.getAttribute('#navPlayer', 'href')).startsWith('./?') && (await E.getAttribute('#navStudy', 'href')) === 'study/', 'the top bar links the teacher pages: Player · Editor · Self-study');
   await E.click('#newBtn');
+  await E.waitForSelector('#homeBtn');
+  assert(!!(await E.$('header .pagenav #navPlayer')), '… on the editing screen too');
   assert((await E.textContent('#checks')).includes('case text is missing'), 'an empty case shows what is missing');
   await E.fill('#titleIn', 'Editor Test Quiz');
   await E.fill('#stemIn', STEM);

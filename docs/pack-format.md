@@ -45,9 +45,9 @@ A quiz pack is one UTF-8 JSON file, by convention named `<topic>-<NN>.quiz.json`
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `format`, `version` | recommended | `"acsom-live-quiz"`, `1` |
-| `id` | recommended | Short name; together with the content it identifies the pack in "Recent quizzes" |
+| `id` | recommended | Short name; together with the content it identifies the pack in "Recent sets" |
 | `title` | recommended | Shown on the screens and in the CSV (defaults to the file name) |
-| `description` | optional | One or two sentences on what the set covers; shown with the quiz in "Recent quizzes" and its Cases list |
+| `description` | optional | One or two sentences on what the set covers; shown with the set in "Recent sets" and in its Contents list |
 | `created` | optional | Date, for your records |
 | `images` | optional | Map of picture id → embedded picture (`data:image/png|jpeg|gif|webp|svg+xml;base64,...`) |
 | `questions` | **required** | List of questions, shown in this order |
@@ -66,7 +66,7 @@ A quiz pack is one UTF-8 JSON file, by convention named `<topic>-<NN>.quiz.json`
 | `topic` | optional | First Aid topic path, up to 3 names: chapter, subtopic, entry, e.g. `["Hematology and Oncology", "Lymphomas", "Hodgkin lymphoma"]`. A string `"A › B › C"` is accepted too (the editor saves it as a list). |
 | `concept` | optional | The fact tested, in a few words, e.g. `"Reed–Sternberg cells: CD15/CD30"`. |
 
-`description`, `topic` and `concept` are for the teacher. The player shows them on the quiz-choosing page (the **Cases** button in "Recent quizzes") and, once the quiz is over, under each question in the results list and as the last columns of the results CSV. They are never sent to phones and never shown on the screens during the quiz, so `concept` may name the answer.
+`description`, `topic` and `concept` are for the teacher. The player shows them on the set-choosing page (the **Contents** button in "Recent sets" and in the lobby) and, once the quiz is over, under each question in the results list and as the last columns of the results CSV. They are never sent to phones and never shown on the screens during the quiz, so `concept` may name the answer.
 | `image`, `imageCaption` | optional | Picture id (from `images`) shown under the case, and its caption. |
 | `explainImage`, `explainCaption` | optional | Picture shown with the explanation at reveal. |
 

@@ -12,26 +12,53 @@
 } catch(e){} })();
 </script>
 <style>
+/* Shared look, built into every page by tools/build_pages.py: one palette, one font, one button.
+   The phone pages (join, study) also take theme-dark.css. Page-specific colours stay in each page. */
 :root{
   --bg:#f4f3ef; --panel:#ffffff; --ink:#15171c; --muted:#5b616d; --line:#d9d6ce;
-  --accent:#2350b8; --accent-ink:#ffffff; --accent-soft:#dbe4f8;
-  --sure:#2350b8; --guess:#9db1e6; --ghost:#c9c6bd;
-  --good:#16804a; --good-soft:#d7efe0; --bad:#b93a27; --bad-soft:#f6ddd8; --warn:#a86a10;
-  font-size:clamp(16px,1.3vw,28px);
+  --soft:#eceae4;            /* letter circles, small tags */
+  --track:#efede8;           /* empty part of a bar */
+  --accent:#2350b8; --accent-soft:#dbe4f8;
+  --accent-ink:#ffffff;      /* text on a solid accent, green or red fill */
+  --good:#16804a; --good-soft:#d7efe0; --bad:#b93a27; --bad-soft:#f6ddd8;
+  --warn:#a86a10; --warn-soft:#fbe9c6; --warn-ink:#7a4a00;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.4}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:10px;padding:.5rem 1rem;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.primary:disabled{filter:none}
+.btn.danger{color:var(--bad)}
+.btn.armed{background:var(--bad);border-color:var(--bad);color:var(--accent-ink)}
+.btn.small{padding:.28rem .65rem;font-size:.85rem}
+a.btn{display:inline-block;text-decoration:none}
+/* the teacher pages' links in the top bar: Player · Editor · Self-study */
+.pagenav{display:inline-flex;gap:.15rem;align-items:center;margin-left:.3rem}
+.pagenav a{padding:.25rem .7rem;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:600;font-size:.9rem}
+.pagenav a[href]:hover{color:var(--ink);background:var(--soft)}
+.pagenav a[aria-current]{color:var(--accent);background:var(--accent-soft)}
+/* keyboard focus: one clear ring on every page (a mouse click or a tap does not show it) */
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* a file input kept reachable with Tab inside its button-like label */
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;opacity:0}
+label:has(> .vh:focus-visible){outline:3px solid var(--accent);outline-offset:2px}
+
+:root{ --sure:var(--accent); --guess:#9db1e6; --ghost:#c9c6bd; font-size:calc(clamp(16px,1.3vw,28px) * var(--scale, 1)); }
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.4}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 .screen{height:100vh;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
-.top{display:flex;align-items:center;gap:.8rem;padding:.7rem 1.4rem;border-bottom:1px solid var(--line);background:var(--panel)}
+.top{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem .8rem;padding:.7rem 1.4rem;border-bottom:1px solid var(--line);background:var(--panel)}
+.top .chip,.top .badge,.qnum,.net{white-space:nowrap}
 .top .title{font-weight:700;font-size:1.15rem}
 .spacer{flex:1}
 .qnum{font-weight:800;font-size:1.35rem;letter-spacing:-.01em}
 .qnum span{font-weight:500;color:var(--muted);margin-left:.3rem;font-size:1rem}
 .badge{padding:.25rem .7rem;border-radius:999px;font-weight:700;font-size:.85rem}
-.badge.r2{background:#fbe9c6;color:#7a4a00}
+.badge.r2{background:var(--warn-soft);color:var(--warn-ink)}
 .chip{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .8rem;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:.95rem}
 button.chip:hover{border-color:var(--accent)}
 .net{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--muted)}
@@ -57,7 +84,7 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .status .count b{font-size:1.7rem}
 .status .timer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:800;font-size:1.7rem}
 .status .timer.low{color:var(--bad)}
-.tbar{flex-basis:100%;height:.4rem;background:#ebe9e3;border-radius:99px;overflow:hidden}
+.tbar{flex-basis:100%;height:.4rem;background:var(--track);border-radius:99px;overflow:hidden}
 .tbar span{display:block;height:100%;background:var(--accent);transition:width .25s linear}
 .status .note{flex-basis:100%;color:var(--muted);font-size:.85rem}
 .legend{display:inline-flex;gap:.9rem;font-size:.85rem;color:var(--muted);margin-left:auto}
@@ -65,20 +92,20 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .legend span.g::before{background:repeating-linear-gradient(45deg,var(--guess) 0 4px,#c3d0f1 4px 7px)}
 .opts{display:flex;flex-direction:column;gap:.45rem}
 .opt{display:grid;grid-template-columns:2.1rem 1fr auto;gap:.7rem;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:.45rem .8rem}
-.opt .letter{width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;background:#eceae4}
+.opt .letter{width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--soft)}
 .opt .otext{min-width:0}
-.opt .bar{position:relative;height:.75rem;margin-top:.3rem;background:#efede8;border-radius:99px;overflow:hidden;display:flex}
+.opt .bar{position:relative;height:.75rem;margin-top:.3rem;background:var(--track);border-radius:99px;overflow:hidden;display:flex}
 .opt .bar span{height:100%}
 .opt .bar .s{background:var(--sure)}
 .opt .bar .g{background:repeating-linear-gradient(45deg,var(--guess) 0 4px,#c3d0f1 4px 7px)}
-.opt .ghost{height:.3rem;margin-top:.25rem;background:#f1efea;border-radius:99px;overflow:hidden}
+.opt .ghost{height:.3rem;margin-top:.25rem;background:var(--track);border-radius:99px;overflow:hidden}
 .opt .ghost span{display:block;height:100%;background:var(--ghost)}
 .opt .ocount{text-align:right;font-variant-numeric:tabular-nums;min-width:3.6rem}
 .opt .ocount b{font-size:1.25rem;display:block;line-height:1.05}
 .opt .ocount small{color:var(--muted);font-size:.75rem}
 .opt .r1{font-size:.75rem;color:var(--muted)}
 .opt.correct{border-color:var(--good);background:var(--good-soft)}
-.opt.correct .letter{background:var(--good);color:#fff}
+.opt.correct .letter{background:var(--good);color:var(--accent-ink)}
 .opt.correct .bar .s{background:var(--good)}
 .opt.correct .bar .g{background:repeating-linear-gradient(45deg,#7cc39b 0 4px,#b5dfc6 4px 7px)}
 .opt.dim{opacity:.62}
@@ -93,13 +120,6 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .obj{margin-top:1rem;padding-top:.7rem;border-top:1px dashed var(--line)}
 .link{background:none;border:0;color:var(--accent);text-decoration:underline;padding:0;margin-top:.8rem;font-size:.9rem}
 .controls{display:flex;align-items:center;gap:.7rem;padding:.7rem 1.4rem;border-top:1px solid var(--line);background:var(--panel)}
-.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:.6rem 1.1rem;font-weight:600}
-a.btn{display:inline-block;text-decoration:none;color:inherit}
-.btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn.danger{color:var(--bad)}
-.btn.small{padding:.3rem .7rem;font-size:.85rem}
 .btn kbd{font:inherit;font-size:.72rem;opacity:.75;margin-left:.45rem;border:1px solid currentColor;border-radius:4px;padding:0 .3rem}
 
 /* library + lobby */
@@ -112,7 +132,12 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .loaderr{max-width:34rem;text-align:left}
 .loaderr ul{margin:.3rem 0 0 1rem;padding:0}
 .recent{display:flex;flex-direction:column;gap:.5rem}
-.rrow{display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
+/* library: the page stays one screen tall, so "Load a set" stays centred; a long quiz list scrolls inside its card */
+.libgrid{grid-template-rows:minmax(0,1fr);overflow:hidden}
+.libside{display:flex;flex-direction:column;min-height:0}
+.libside .recent{flex:1 1 auto;min-height:0;overflow:auto;padding-right:.2rem}
+.rrow{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
+.rrow>div:first-child{flex:1 1 13rem;min-width:0}
 .rrow .rt{font-weight:600}
 .rrow .rm{color:var(--muted);font-size:.8rem}
 .rrow .rd{font-size:.85rem;margin:.1rem 0 .15rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -122,6 +147,12 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .chead>div{flex:1;min-width:0}
 .chead h2{margin:0 0 .2rem}
 .chead .cdesc{margin:.2rem 0 .3rem}
+.chead .warn{margin:.3rem 0 0;font-size:.85rem}
+.settings fieldset.mode{border:1px solid var(--line);border-radius:10px;padding:.5rem .8rem .6rem;margin:.6rem 0 .4rem}
+.settings fieldset.mode legend{font-weight:700;padding:0 .3rem}
+.settings fieldset.mode label{display:block;font-weight:400;margin:.25rem 0}
+.settings label .sub{font-weight:400;color:var(--muted);font-size:.85em}
+.badge.exam{background:#3a3f8f;color:#fff}
 .cpanel>.hint{margin:.6rem 1.3rem 0}
 .clist{list-style:none;margin:0;padding:.4rem 1.3rem;overflow:auto;flex:1}
 .clist li{display:flex;gap:.8rem;padding:.55rem 0;border-bottom:1px solid var(--line)}
@@ -168,7 +199,7 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .avg{font-size:5rem;font-weight:800;line-height:1}
 .hard{display:grid;grid-template-columns:3.2rem 1fr 6.5rem;gap:.4rem .8rem;align-items:center}
 .hard .lbl{font-weight:700}
-.hard .hb{height:.9rem;background:#efede8;border-radius:99px;overflow:hidden}
+.hard .hb{height:.9rem;background:var(--track);border-radius:99px;overflow:hidden}
 .hard .hb span{display:block;height:100%;background:var(--good)}
 .hard .hb span.low{background:var(--bad)}
 .hard .hb span.mid{background:var(--warn)}
@@ -181,14 +212,20 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .center .card{max-width:38rem}
 .center h1{margin-top:0}
 .settings details.adv{margin-top:1rem;border-top:1px solid var(--line);padding-top:.6rem}
+.settings details.adv summary .sub{display:block;font-weight:400;font-size:.8rem;margin:.15rem 0 0 1rem}
+.settings details.adv[open] summary .sub{display:none}
 .settings details.adv summary{cursor:pointer;color:var(--muted);font-size:.9rem;font-weight:600}
-@media (max-width:760px){ .libgrid,.lobbygrid{grid-template-columns:1fr} .top{flex-wrap:wrap} }
+@media (max-width:760px){ .libgrid,.lobbygrid{grid-template-columns:1fr} .top{flex-wrap:wrap} .libgrid{grid-template-rows:none;overflow:auto} .libside .recent{overflow:visible} }
 
 /* projector window: lobby setting + header chip on the laptop */
 .settings .proj{margin:.8rem 0 .2rem;padding:.7rem .8rem;border:1px dashed var(--line);border-radius:10px}
 .settings .proj .btn{margin:0 .4rem .3rem 0}
 .settings .proj .on{font-weight:700;color:var(--good);margin-right:.5rem}
 .chip.on{border-color:var(--accent);background:var(--accent-soft)}
+.xbtn{font-size:1rem;line-height:1;padding:.35rem .6rem}
+.tsize{display:inline-flex;align-items:center;gap:.2rem;font-size:.85rem;color:var(--muted);white-space:nowrap}
+.tsize .chip{padding:.2rem .55rem;font-weight:700;font-size:.85rem}
+.tsize output{min-width:2.9rem;text-align:center}
 .chip.proj{background:var(--good-soft);border-color:#a9d8bb}
 .mirror{margin:.6rem 1.2rem 0;padding:.5rem .8rem;border-radius:10px;background:var(--bad-soft);color:#6b1d11;font-size:.85rem}
 .mirror:empty{margin:0;padding:0}
@@ -203,7 +240,7 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .ccase figure.qimg img{max-height:26vh}
 .ccase .lead{margin-top:.6rem;font-size:.95rem}
 .opt.key{border-color:var(--good)}
-.opt.key .letter{background:var(--good);color:#fff}
+.opt.key .letter{background:var(--good);color:var(--accent-ink)}
 .opt .keytag{font-size:.72rem;font-weight:700;color:var(--good);margin-left:.4rem;white-space:nowrap}
 .cright{display:flex;flex-direction:column;gap:.6rem}
 .notes{font-size:.88rem;padding:.9rem 1.1rem}
@@ -2555,6 +2592,7 @@ var APP_VERSION = '4';
 var LET = 'ABCDEFGH'.split('');
 function letters(n){ return LET.slice(0, n); }
 var app = document.getElementById('app');
+function nOf(n, word){ n = +n || 0; return n + ' ' + word + (n === 1 ? '' : 's'); }   // 1 case, 2 cases
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 var store = {
   get: function(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
@@ -2655,6 +2693,8 @@ function hash(str){ var h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (var i=0, ch; i<st
   return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(36); }
 
 /* ---------- pack checking ---------- */
+/* Shared by the player and the self-study page: checks a quiz pack (format version 1).
+   Needs letters(n) from the page. */
 var IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
 /* Optional teacher-only fields: the quiz's description, and per case a First Aid topic path
    (chapter › subtopic › entry, up to 3 levels) and the concept it tests. They are shown only on the
@@ -2668,13 +2708,13 @@ function topicOf(q){
 function conceptOf(q){ return q && typeof q.concept === 'string' ? q.concept.trim() : ''; }
 function checkPack(p){
   var errs = [], warns = [];
-  if (!p || typeof p !== 'object' || Array.isArray(p)) return { errs: ['This file is not a quiz pack.'], warns: [] };
-  if (!Array.isArray(p.questions) || !p.questions.length) return { errs: ['The file has no questions.'], warns: [] };
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return { errs: ['This file is not a quiz file.'], warns: [] };
+  if (!Array.isArray(p.questions) || !p.questions.length) return { errs: ['The file has no cases.'], warns: [] };
   if (p.description != null && typeof p.description !== 'string') errs.push('The quiz description must be text.');
   var images = (p.images && typeof p.images === 'object') ? p.images : {};
   Object.keys(images).forEach(function(k){ if (typeof images[k] !== 'string' || !IMG_RE.test(images[k])) errs.push('Image “' + k + '” is not a valid embedded picture.'); });
   p.questions.forEach(function(q, i){
-    var n = 'Question ' + (i+1) + ': ';
+    var n = 'Case ' + (i+1) + ': ';
     if (!q || typeof q !== 'object') { errs.push(n + 'is empty.'); return; }
     if (typeof q.stem !== 'string' || !q.stem.trim()) errs.push(n + 'the case text is missing.');
     if (typeof q.lead !== 'string' || !q.lead.trim()) errs.push(n + 'the question line is missing.');
@@ -2684,10 +2724,11 @@ function checkPack(p){
     ['image', 'explainImage'].forEach(function(k){ if (q[k] && !images[q[k]]) errs.push(n + 'picture “' + q[k] + '” is missing from the pack.'); });
     if (q.topic != null && typeof q.topic !== 'string' && !(Array.isArray(q.topic) && q.topic.length <= 3 && q.topic.every(function(t){ return typeof t === 'string'; }))) errs.push(n + 'the topic must be up to 3 names: chapter, subtopic, entry.');
     if (q.concept != null && typeof q.concept !== 'string') errs.push(n + 'the concept must be text.');
-    if (!q.explain) warns.push('Question ' + (i+1) + ' has no explanation.');
+    if (!q.explain) warns.push('Case ' + (i+1) + ' has no explanation.');
   });
   return { errs: errs, warns: warns };
 }
+
 function packKey(p){ var base = String(p.id || p.title || 'quiz').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'quiz'; return base + '-' + hash(JSON.stringify(p.questions) + JSON.stringify(Object.keys(p.images || {}))); }
 
 /* ---------- the editor page (same folder): write, fix and open quiz packs ---------- */
@@ -2699,17 +2740,21 @@ function editorUrl(key){
 }
 
 /* ---------- library: choose a quiz pack ---------- */
+function pageNav(){                                // the teacher pages, the same in the player and the editor
+  return '<nav class="pagenav" aria-label="Pages"><a aria-current="page">Player</a><a href="'+esc(editorUrl())+'" id="navEditor">Editor</a><a href="study/" id="navStudy">Self-study</a></nav>';
+}
 function library(msgHtml){
+  document.documentElement.style.removeProperty('--scale');
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">Live quiz · player</div><div class="spacer"></div><span class="hint">v'+APP_VERSION+'</span></header>'+
+    '<div class="screen"><header class="top"><div class="title">Live quiz</div>'+pageNav()+'<div class="spacer"></div><span class="hint">v'+APP_VERSION+'</span></header>'+
     '<main class="libgrid">'+
-      '<section class="card drop" id="drop"><h1>Load a quiz</h1>'+
-        '<p>Choose a quiz pack file (<b>.quiz.json</b>), for example from your Google Drive folder, or drag it onto this box.</p>'+
-        '<label class="btn primary big filebtn">Choose quiz file…<input type="file" id="file" accept=".json,application/json" hidden></label>'+
+      '<section class="card drop" id="drop"><h1>Load a set</h1>'+
+        '<p>Choose a quiz file (<b>.quiz.json</b>), for example from your Google Drive folder, or drag it onto this box.</p>'+
+        '<label class="btn primary big filebtn">Choose quiz file…<input type="file" id="file" class="vh" accept=".json,application/json"></label>'+
         '<div class="loaderr" id="loaderr">'+(msgHtml || '')+'</div></section>'+
-      '<section class="card"><h2 style="margin-top:0">Recent quizzes</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>'+
-        '<p class="hint">Quizzes you load are remembered in this browser on this computer.</p>'+
-        '<p><a class="btn" id="editorLink" href="'+esc(editorUrl())+'">Write or edit a quiz in the editor</a></p></section>'+
+      '<section class="card libside"><h2 style="margin-top:0">Recent sets</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>'+
+        '<p class="hint">Sets you load are remembered in this browser on this computer.</p>'+
+        '<p><a class="btn" id="editorLink" href="'+esc(editorUrl())+'">Write or edit a set in the editor</a></p></section>'+
     '</main><footer></footer></div>';
   var drop = document.getElementById('drop'), inp = document.getElementById('file');
   inp.addEventListener('change', function(){ if (inp.files && inp.files[0]) readFile(inp.files[0]); inp.value = ''; });
@@ -2725,35 +2770,37 @@ function renderRecent(){
     if (!list.length) { el.innerHTML = '<p class="hint">None yet.</p>'; return; }
     el.innerHTML = list.map(function(r){
       var d = r.pack && typeof r.pack.description === 'string' ? r.pack.description.trim() : '';
-      return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div>'+(d ? '<div class="rd">'+esc(d)+'</div>' : '')+'<div class="rm">'+r.n+' questions · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
-      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><button class="btn small" data-cases="'+esc(r.key)+'" title="What each case is about (only on this screen)">Cases</button>'+
-      '<a class="btn small" href="'+esc(editorUrl(r.key))+'" title="Open this quiz in the editor">Edit</a><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
+      return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div>'+(d ? '<div class="rd">'+esc(d)+'</div>' : '')+'<div class="rm">'+nOf(r.n, 'case')+' · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
+      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><button class="btn small" data-cases="'+esc(r.key)+'" title="The set description and what each case tests">Contents</button>'+
+      '<a class="btn small" href="'+esc(editorUrl(r.key))+'" title="Open this set in the editor">Edit</a><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
     el.onclick = function(e){
       var u = e.target.closest('[data-use]'), f = e.target.closest('[data-forget]'), c = e.target.closest('[data-cases]');
       if (u) useRecent(u.getAttribute('data-use'));
       if (c) idb.get(c.getAttribute('data-cases')).then(function(r){ if (r) casesDialog(r); });
       if (f) idb.del(f.getAttribute('data-forget')).then(renderRecent, renderRecent);
     };
-  }, function(){ el.innerHTML = '<p class="hint">This browser can’t remember quizzes here — just choose the file each time.</p>'; });
+  }, function(){ el.innerHTML = '<p class="hint">This browser can’t remember sets here — just choose the file each time.</p>'; });
 }
 function useRecent(key){ idb.get(key).then(function(r){ if (r) { r.loadedAt = Date.now(); idb.put(r).catch(function(){}); start(r.pack, r.key, 'new'); } }); }
 /* The list of cases with their topic and concept: for the teacher choosing a quiz. It names what each case
    tests, so it exists only on this page, never in the lobby, the quiz screens or the projector window. */
-function casesDialog(r){
+function casesDialog(r, opt){
+  opt = opt || {};
   var p = r.pack, qs = p.questions || [], d = typeof p.description === 'string' ? p.description.trim() : '';
   var any = qs.some(function(q){ return conceptOf(q) || topicOf(q).length; });
   var o = document.createElement('div'); o.className = 'casesover'; o.id = 'casesover';
   o.innerHTML = '<div class="cpanel" role="dialog" aria-modal="true" aria-labelledby="casesTitle">'+
     '<div class="chead"><div><h2 id="casesTitle">'+esc(r.title)+'</h2>'+(d ? '<p class="cdesc">'+esc(d)+'</p>' : '')+
-      '<p class="rm">'+qs.length+' cases · the concepts give the answers away, so this list is only shown here, never during the quiz</p></div>'+
-      '<button class="btn small" data-close>Close</button></div>'+
-    (any ? '' : '<p class="hint">This quiz has no topics or concepts yet; each case shows its first words. Add them in the editor (Edit).</p>')+
+      '<p class="rm">'+nOf(qs.length, 'case')+' · the concepts give the answers away, so this list is never shown during the quiz</p>'+
+      (opt.oneScreen ? '<p class="warn" id="casesWarn">If this screen is on the projector, students can see this list now.</p>' : '')+'</div>'+
+      '<button class="btn small xbtn" data-close aria-label="Close" title="Close (Esc)">✕</button></div>'+
+    (any ? '' : '<p class="hint">This set has no topics or concepts yet; each case shows its first words. Add them in the editor (Edit).</p>')+
     '<ol class="clist">'+qs.map(function(q, i){
       var t = topicOf(q), c = conceptOf(q), s = String(q.stem || '').replace(/\n• /g, '; ').replace(/\s+/g, ' ').trim();
       return '<li><span class="cn">'+(i+1)+'</span><div>'+(t.length ? '<div class="ctopic">'+t.map(esc).join(' › ')+'</div>' : '')+
         (c ? '<div class="cconcept">'+esc(c)+'</div>' : '<div class="cstem">'+esc(s.length > 120 ? s.slice(0, 118) + '…' : s)+'</div>')+'</div></li>';
     }).join('')+'</ol>'+
-    '<div class="cfoot"><button class="btn" data-close>Close</button><button class="btn primary" data-usecase>Use this quiz</button></div></div>';
+    '<div class="cfoot"><button class="btn" data-close>Close</button>'+(opt.lobby ? '' : '<button class="btn primary" data-usecase>Use this set</button>')+'</div></div>';
   function close(){ document.removeEventListener('keydown', onKey); o.remove(); }
   function onKey(e){ if (e.key === 'Escape') close(); }
   o.addEventListener('click', function(e){
@@ -2771,7 +2818,7 @@ function showLoadError(lines){
 function readFile(file){
   var fr = new FileReader();
   fr.onload = function(){
-    var p; try { p = JSON.parse(fr.result); } catch(e){ showLoadError(['It is not a quiz pack (the file could not be read as JSON).']); return; }
+    var p; try { p = JSON.parse(fr.result); } catch(e){ showLoadError(['It is not a quiz file (it could not be read as JSON).']); return; }
     var c = checkPack(p); if (c.errs.length) { showLoadError(c.errs); return; }
     var key = packKey(p), rec = { key: key, title: p.title || file.name.replace(/\.quiz\.json$|\.json$/i, ''), n: p.questions.length, loadedAt: Date.now(), pack: p };
     p.title = rec.title;
@@ -2797,7 +2844,7 @@ function start(pack, key, mode, warns){
   if (openKey) {
     try { var u = new URL(location.href); u.searchParams.delete('open'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch(e){}
     idb.get(openKey).then(function(rec){
-      if (!rec || !rec.pack) { library('<p class="warn">That quiz is no longer in this browser. Choose the file instead.</p>'); return; }
+      if (!rec || !rec.pack) { library('<p class="warn">That set is no longer in this browser. Choose the file instead.</p>'); return; }
       rec.loadedAt = Date.now(); idb.put(rec).catch(function(){});
       store.del(SESSION_KEY); start(rec.pack, rec.key, 'new');
     }, function(){ library(); });
@@ -2806,12 +2853,12 @@ function start(pack, key, mode, warns){
   var saved = store.get(SESSION_KEY);
   if (saved && saved.packKey && saved.savedAt && Date.now() - saved.savedAt < 12*3600*1000 && (saved.played || []).length) {
     idb.get(saved.packKey).then(function(rec){
-      if (!rec || !rec.pack) { library('<p class="hint">Your last session used “'+esc(saved.packTitle || 'a quiz')+'”. Load that file again to continue it, or choose another quiz.</p>'); return; }
-      var where = saved.phase === 'end' ? 'finished' : 'at question ' + (saved.qi+1) + ' of ' + rec.n;
+      if (!rec || !rec.pack) { library('<p class="hint">Your last session used “'+esc(saved.packTitle || 'a set')+'”. Load that file again to continue it, or choose another set.</p>'); return; }
+      var where = saved.phase === 'end' ? 'finished' : 'at case ' + (saved.qi+1) + ' of ' + rec.n;
       app.innerHTML = '<div class="screen"><header class="top"><div class="title">Live quiz · player</div></header><main class="center"><div class="card">'+
-        '<h1>Continue the last session?</h1><p><b>'+esc(rec.title)+'</b> — session <b>'+esc(saved.code)+'</b> was '+where+', with '+Object.keys(saved.everyone||{}).length+' students. Phones reconnect by themselves if you continue.</p>'+
+        '<h1>Continue the last session?</h1><p><b>'+esc(rec.title)+'</b> — session <b>'+esc(saved.code)+'</b> was '+where+', with '+nOf(Object.keys(saved.everyone||{}).length, 'student')+'. Phones reconnect by themselves if you continue.</p>'+
         '<p><button class="btn primary big" id="resumeBtn">Continue session '+esc(saved.code)+'</button></p>'+
-        '<p><button class="btn" id="freshBtn">Choose a quiz instead</button></p></div></main><footer></footer></div>';
+        '<p><button class="btn" id="freshBtn">Choose a set instead</button></p></div></main><footer></footer></div>';
       document.getElementById('resumeBtn').onclick = function(){ start(rec.pack, rec.key, 'resume'); };
       document.getElementById('freshBtn').onclick = function(){ store.del(SESSION_KEY); library(); };
     }, function(){ library(); });
@@ -2862,7 +2909,9 @@ function checkPretty(){ if (VIEW) return V ? String(V.check || '') : ''; return 
 function hashImages(){ return Promise.all(Object.keys(IMAGES).map(function(id){ return sha256(IMAGES[id]).then(function(h){ IMG_HASH[id] = b64u(h); }); })); }
 function signText(text){ return crypto.subtle.sign({ name:'ECDSA', hash:'SHA-256' }, KEYPAIR.privateKey, new TextEncoder().encode(text)).then(b64u); }
 
-var settings = Object.assign({ studentUrl:'', t1:90, t2:60, autoClose:true, confidence:true, startAt:1 }, store.get(SETTINGS_KEY) || {});
+var settings = Object.assign({ studentUrl:'', t1:90, t2:60, autoClose:true, confidence:true, startAt:1, scale:1 }, store.get(SETTINGS_KEY) || {});
+var SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.4];     // text size on the room's screen (A− / A+)
+if (SCALES.indexOf(+settings.scale) < 0) settings.scale = 1;
 if (/^https?:$/.test(location.protocol)) {
   // The phone page used to be this folder itself; the folder now opens the player and the phone page is join/.
   var SITE = new URL('./', location.href).href;
@@ -2981,6 +3030,7 @@ function maybeAutoClose(){
 function imgRef(id, cap){ return id && IMAGES[id] ? { id: PACK_KEY + ':' + id, caption: cap || '', hash: IMG_HASH[id] || '' } : null; }
 function stateFor(sid){
   var st = { t:'state', v: 2, title: QUIZ.title, phase: S.phase, qi: S.qi, total: TOTAL, round: S.round, confidence: !!settings.confidence };
+  if (isExam()) { st.exam = true; if (S.review) st.review = true; }
   if (S.phase === 'vote' || S.phase === 'closed' || S.phase === 'reveal') {
     var q = QUESTIONS[S.qi];
     st.q = { stem: q.stem, lead: q.lead, options: q.options, image: imgRef(q.image, q.imageCaption) };
@@ -3025,7 +3075,11 @@ function send(sid){
 function broadcast(){ for (var sid in conns) send(sid); }
 
 /* ---------- flow ---------- */
-function startQuiz(){ var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)); S.qi = s-1; startVote(1); }
+/* Practice: results and the answer after each case. Exam: cases one after another with no results or answers;
+   at the end a review steps through every case asked (class results, answer, explanation), then the results. */
+function isExam(){ return !!S && S.mode === 'exam'; }
+function startQuiz(){ var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)); S.mode = settings.mode === 'exam' ? 'exam' : 'practice'; S.review = false; S.qi = s-1; startVote(1); }
+function startReview(){ if (!S.played.length) return finish(); S.review = true; S.round = 1; S.qi = S.played[0]; reveal(); }
 function startVote(round){
   S.phase = 'vote'; S.round = round; showStem = false;
   if (S.played.indexOf(S.qi) < 0) S.played.push(S.qi);
@@ -3035,7 +3089,11 @@ function startVote(round){
 }
 function closeVoting(){ if (S.phase !== 'vote') return; S.phase = 'closed'; S.deadline = null; save(); broadcast(); render(true); }
 function reveal(){ S.phase = 'reveal'; showStem = false; save(); broadcast(); render(true); }
-function next(){ if (S.qi < TOTAL-1) { S.qi++; startVote(1); } else finish(); }
+function next(){
+  if (isExam() && S.review) { var i = S.played.indexOf(S.qi); if (i >= 0 && i < S.played.length - 1) { S.qi = S.played[i+1]; reveal(); } else finish(); return; }
+  if (S.qi < TOTAL-1) { S.qi++; startVote(1); } else if (isExam()) startReview(); else finish();
+}
+function lastReview(){ return S.played.indexOf(S.qi) === S.played.length - 1; }
 function finish(){ S.phase = 'end'; S.deadline = null; save(); broadcast(); render(true); }
 function addTime(){ if (S.phase !== 'vote') return; S.deadline = Math.max(S.deadline || Date.now(), Date.now()) + 30000; S.dur = (S.dur || 0) + 30; save(); broadcast(); updateScreen(); }
 function leaveToLibrary(){ store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.reload(); }
@@ -3043,22 +3101,25 @@ function leaveToLibrary(){ store.del(SESSION_KEY); try { if (peer) peer.destroy(
 var actions = {
   start: startQuiz,
   close: closeVoting,
-  revote: function(){ if (S.phase === 'closed' && S.round === 1) startVote(2); },
-  reveal: function(){ if (S.phase === 'closed') reveal(); },
-  next: function(){ if (S.phase === 'reveal') next(); },
+  revote: function(){ if (S.phase === 'closed' && S.round === 1 && !isExam()) startVote(2); },
+  reveal: function(){ if (S.phase === 'closed' && !isExam()) reveal(); },
+  next: function(){ if (S.phase === 'reveal' || (S.phase === 'closed' && isExam() && !S.review)) next(); },
   more: addTime,
   qr: function(){ qrOpen = !qrOpen; var o = document.querySelector('.qrover'); if (o) o.classList.toggle('open', qrOpen); renderProjChip(); pushView(); },
   unzoom: function(){ setZoom(null); },
   togglestem: function(){ showStem = !showStem; if (consoleOn()) { updateControls(); renderProjChip(); } else renderLeft(); pushView(); },
   peek: function(){ peek = !ansShown(); notesKey = ''; updateConsole(); },
+  contents: function(){ if (S.phase === 'lobby') casesDialog({ key: PACK_KEY, title: QUIZ.title, pack: QUIZ }, { lobby: true, oneScreen: !audienceOn() }); },
   audience: openAudience,
   closeaud: function(){ vsend({ t:'close' }); try { if (aud.win && !aud.win.closed) aud.win.close(); } catch(e){} aud.win = null; aud.beat = 0; audCheck(); },
-  end: function(){ if (isArmed('end')) { armed.k = ''; finish(); } else arm('end', updateControls); },
+  end: function(){ if (isArmed('end')) { armed.k = ''; if (isExam() && !S.review && S.phase !== 'lobby') startReview(); else finish(); } else arm('end', updateControls); },
   csv: downloadCsv,
   newsession: function(){ if (isArmed('new')) { armed.k = ''; store.del(SESSION_KEY); conns = {}; try { peer && peer.destroy(); } catch(e){} peer = null; newSession(); } else arm('new', function(){ render(true); }); },
   change: function(){ if (S.phase === 'lobby' || isArmed('change')) leaveToLibrary(); else arm('change', function(){ render(true); }); },
   edit: function(){ if (S.phase !== 'lobby') return; store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.href = editorUrl(PACK_KEY); },
   newcode: function(){ newCode(); },
+  smaller: function(){ stepScale(-1); },
+  bigger: function(){ stepScale(1); },
   copylink: function(){
     var u = joinUrl(), b = document.getElementById('copyBtn'); if (!u) return;
     var done = function(){ if (b) { b.textContent = 'Link copied ✓'; setTimeout(function(){ if (b.isConnected) b.textContent = 'Copy link'; }, 2500); } };
@@ -3085,14 +3146,14 @@ function handleKey(k){
   if (k === 'q' || k === 'Q') { actions.qr(); return; }
   if (STEP_KEYS.indexOf(k) >= 0) {
     if (zo) actions.unzoom();
-    if (S.phase === 'lobby') startQuiz(); else if (S.phase === 'vote') closeVoting(); else if (S.phase === 'closed') reveal(); else if (S.phase === 'reveal') next();
+    if (S.phase === 'lobby') startQuiz(); else if (S.phase === 'vote') closeVoting(); else if (S.phase === 'closed') { if (isExam()) next(); else reveal(); } else if (S.phase === 'reveal') next();
     return;
   }
-  if ((k === 'd' || k === 'D') && S.phase === 'closed' && S.round === 1) startVote(2);
+  if ((k === 'd' || k === 'D') && S.phase === 'closed' && S.round === 1 && !isExam()) startVote(2);
   if (k === '+' && S.phase === 'vote') addTime();
 }
 on('keydown', function(e){
-  if (!S || e.target.matches('input,select,textarea')) return;
+  if (!S || e.target.matches('input,select,textarea') || document.getElementById('casesover')) return;
   var k = e.key, step = STEP_KEYS.indexOf(k) >= 0;
   if (VIEW) { if (step || /^(Escape|q|Q|d|D|\+)$/.test(k)) { if (step) e.preventDefault(); vsend({ t:'key', key: k }); } return; }
   if (step) e.preventDefault();
@@ -3101,7 +3162,9 @@ on('keydown', function(e){
 on('change', function(e){
   var el = e.target, key = el.getAttribute('data-set'); if (!key) return;
   settings[key] = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.tagName === 'SELECT') ? +el.value : el.value.trim();
-  saveSettings(); if (key === 'studentUrl') updateLobby(); pushView();
+  saveSettings(); if (key === 'studentUrl') updateLobby();
+  var sum = document.getElementById('advsum'); if (sum) sum.innerHTML = advSummary();
+  pushView();
 });
 on('input', function(e){ if (e.target.getAttribute('data-set') === 'studentUrl') { settings.studentUrl = e.target.value.trim(); saveSettings(); updateLobby(); pushView(); } });
 
@@ -3134,7 +3197,7 @@ function audienceOn(){ if (VIEW || !VIEW_CH) return false; if (aud.win && aud.wi
 function consoleOn(){ return !!S && audienceOn() && ['vote','closed','reveal'].indexOf(S.phase) >= 0; }
 function audCheck(){
   var now = audienceOn(); if (now === audWas) return;
-  audWas = now;
+  audWas = now; applyScale();
   if (S && ['vote','closed','reveal'].indexOf(S.phase) >= 0) render(true); else renderProj();
 }
 function audienceUrl(){ return location.pathname + '?audience=' + VIEW_ID; }
@@ -3176,9 +3239,9 @@ function viewState(){
   var ans = {};
   if (S.phase === 'end') ans = S.answers; else if (S.qi >= 0 && S.answers[S.qi]) ans[S.qi] = S.answers[S.qi];
   return { t:'view', key: PACK_KEY,
-    S: { code: S.code, phase: S.phase, qi: S.qi, round: S.round, deadline: S.deadline, dur: S.dur, played: S.played.slice(), answers: ans, n: Object.keys(S.everyone).length },
+    S: { code: S.code, phase: S.phase, qi: S.qi, round: S.round, deadline: S.deadline, dur: S.dur, played: S.played.slice(), answers: ans, n: Object.keys(S.everyone).length, mode: S.mode, review: !!S.review },
     online: onlineSids().length, net: { st: peerStatus, stuck: !!netStuck(), err: lastErr }, join: joinUrl(), check: checkPretty(),
-    confidence: !!settings.confidence, qr: qrOpen, stem: showStem, zoom: zoomId && onProjector(zoomId) ? zoomId : null };
+    confidence: !!settings.confidence, qr: qrOpen, stem: showStem, zoom: zoomId && onProjector(zoomId) ? zoomId : null, scale: settings.scale };
 }
 var lastPush = 0, pushTimer = null;
 function pushView(){
@@ -3203,7 +3266,7 @@ function projShows(){
   if (!S) return '';
   if (zoomId && onProjector(zoomId)) return 'enlarged picture';
   if (qrOpen && ['vote','closed','reveal'].indexOf(S.phase) >= 0) return 'QR code';
-  return { lobby:'join screen', vote:'question · results hidden', closed:'question · results', end:'class results' }[S.phase] || (showStem ? 'question · results' : 'answer & explanation');
+  return { lobby:'join screen', vote:'case · results hidden', closed: isExam() ? 'case · answers saved' : 'case · results', end:'class results' }[S.phase] || (showStem ? 'case · results' : 'answer & explanation');
 }
 function renderProjChip(){
   var c = document.getElementById('projchip'); if (c) c.innerHTML = '🖥 Projector: <b>'+esc(projShows())+'</b>';
@@ -3220,7 +3283,7 @@ function renderProj(){                              // the "Projector window" bo
       '<small>The projector shows the join screen now and, during the quiz, only what students should see. This laptop shows the answer, live results and your notes.</small>'+
       (screen.isExtended === false ? '<small class="warn">Only one screen in use: set the display to Extend (not mirror) before you start.</small>' : '')
     : '<button class="btn" data-act="audience" id="audBtn">🖥 Open projector window</button>'+
-      '<small>Two screens: the projector shows the questions; this laptop keeps a presenter view with the answer, live results and notes. Set the display to Extend, not mirror.</small>'+
+      '<small>Two screens: the projector shows the cases; this laptop keeps a presenter view with the answer, live results and notes. Set the display to Extend, not mirror.</small>'+
       (aud.msg ? '<small class="warn">'+esc(aud.msg)+'</small>' : '');
 }
 function onScreenChange(){ renderProj(); var el = document.getElementById('mirror'); if (el) el.innerHTML = mirrorHtml(); if (consoleOn() && peek === null) { notesKey = ''; updateConsole(); } }
@@ -3240,7 +3303,7 @@ function qrSvg(text){
 }
 function qrOverlay(){
   var u = joinUrl();
-  return '<div class="qrover'+(qrOpen?' open':'')+'" data-act="qr"><div class="box">'+(u ? '<div class="qr">'+qrSvg(u)+'</div>' : '<p class="warn">Add the phone page address under Advanced in the lobby to show a QR code.</p>')+
+  return '<div class="qrover'+(qrOpen?' open':'')+'" data-act="qr"><div class="box">'+(u ? '<div class="qr">'+qrSvg(u)+'</div>' : '<p class="warn">Add the phone page address under More options in the lobby to show a QR code.</p>')+
     '<div>Scan to join · or enter code</div><div class="code">'+esc(S.code)+'</div><div class="check">check code <b>'+esc(checkPretty())+'</b></div><div class="url">'+esc(u)+'</div><div class="hint">Click anywhere or press Q to close</div></div></div>';
 }
 
@@ -3253,9 +3316,32 @@ function netHtml(){
   return '<span class="net '+m[0]+'" id="net" title="'+esc(err || '')+'"><i></i>'+(stuck ? 'Another device is holding this session’s code' + (VIEW ? '' : ' <button class="btn small primary" data-act="newcode" id="newCodeBtn">Move to a new code</button>') : esc(m[1]))+'</span>';
 }
 function renderNet(){ var el = document.getElementById('net'); if (el) el.outerHTML = netHtml(); }
+/* Text size for the room: A− / A+ in the top bar. With a projector window open it sizes the projector and this laptop stays as it is;
+   with one screen it sizes this screen. Ctrl + / Ctrl − still zooms whichever window has the focus. */
+function scaleNow(){
+  if (VIEW) return V && SCALES.indexOf(+V.scale) >= 0 ? +V.scale : 1;
+  return audienceOn() ? 1 : settings.scale;
+}
+function tsizeTitle(){ return 'Text size on ' + (audienceOn() ? 'the projector' : 'this screen'); }
+function applyScale(){
+  document.documentElement.style.setProperty('--scale', String(scaleNow()));
+  var o = document.getElementById('tsizeval'); if (o) o.textContent = Math.round(settings.scale * 100) + '%';
+  var t = document.getElementById('tsize'); if (t) t.title = tsizeTitle();
+}
+function stepScale(d){
+  var i = SCALES.indexOf(+settings.scale); if (i < 0) i = SCALES.indexOf(1);
+  i = Math.max(0, Math.min(SCALES.length - 1, i + d));
+  settings.scale = SCALES[i]; saveSettings(); applyScale(); pushView();
+}
+function tsizeHtml(){
+  if (VIEW) return '';
+  return '<span class="tsize" id="tsize" role="group" aria-label="Text size" title="'+tsizeTitle()+'"><button class="chip" data-act="smaller" aria-label="Smaller text">A−</button>'+
+    '<output id="tsizeval">'+Math.round(settings.scale * 100)+'%</output><button class="chip" data-act="bigger" aria-label="Bigger text">A+</button></span>';
+}
 var screenBase = '';
 function render(full){                              // returns true when the whole screen was rebuilt
   if (!S) return false;
+  applyScale();
   var base = S.phase + ':' + S.qi + ':' + S.round, key = base + (consoleOn() ? ':console' : '');
   if (!full && key === screenKey) { updateScreen(); return false; }
   if (!VIEW && base !== screenBase && zoomId) { zoomId = null; showZoom(null); }   // a new step closes an enlarged picture
@@ -3270,32 +3356,45 @@ function updateScreen(){
 }
 function refreshCounts(){ updateScreen(); }
 
+function advSummary(){                            // one line under "More options": what is set there
+  var a = [];
+  if (settings.mode !== 'exam') a.push('revote ' + (+settings.t2 ? settings.t2 + ' s' : 'no limit'));
+  a.push(settings.autoClose ? 'closes when all have answered' : 'you close voting');
+  a.push('“sure or guessing?” ' + (settings.confidence ? 'on' : 'off'));
+  var sa = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt, 10) || 1));
+  if (sa > 1) a.push('<b>starts at case ' + sa + '</b>');
+  return a.join(' · ');
+}
 function buildLobby(){
   if (VIEW) {                                       // projector: a big join screen
-    app.innerHTML = '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div><span class="chip">'+TOTAL+' questions</span>'+netHtml()+'</header>'+
+    app.innerHTML = '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div><span class="chip">'+nOf(TOTAL, 'case')+'</span>'+netHtml()+'</header>'+
       '<main class="audjoin" id="join"></main><footer></footer></div>';
     updateLobby(); return;
   }
   var tOpts = function(sel, list){ return list.map(function(v){ return '<option value="'+v+'"'+(+sel===v?' selected':'')+'>'+(v ? (v+' seconds') : 'No time limit')+'</option>'; }).join(''); };
   app.innerHTML =
     '<div class="screen">'+
-      '<header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div>'+netHtml()+'</header>'+
+      '<header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div>'+tsizeHtml()+netHtml()+'</header>'+
       '<main class="lobbygrid">'+
         '<section class="card join" id="join"></section>'+
         '<section class="card settings">'+
-          '<div class="pack"><b>'+esc(QUIZ.title)+'</b><span>'+TOTAL+' questions</span><button class="btn small" data-act="edit" id="editBtn">Edit</button><button class="btn small" data-act="change" id="changeBtn">Change quiz</button></div>'+
+          '<div class="pack"><b>'+esc(QUIZ.title)+'</b><span>'+nOf(TOTAL, 'case')+'</span><button class="btn small" data-act="contents" id="contentsBtn" title="The set description and what each case tests">Contents</button><button class="btn small" data-act="edit" id="editBtn">Edit</button><button class="btn small" data-act="change" id="changeBtn">Change set</button></div>'+
           (WARNS && WARNS.length ? '<small class="warn">'+esc(WARNS.slice(0,3).join(' '))+(WARNS.length>3?' …':'')+'</small>' : '')+
           '<div class="proj" id="projrow"></div>'+
-          '<div class="row"><div><label for="t1">Time per question</label><select id="t1" data-set="t1">'+tOpts(settings.t1,[30,45,60,90,120,180,0])+'</select></div>'+
-          '<div><label for="t2">Revote time</label><select id="t2" data-set="t2">'+tOpts(settings.t2,[30,45,60,90,0])+'</select></div></div>'+
-          '<label class="check"><input type="checkbox" data-set="autoClose"'+(settings.autoClose?' checked':'')+'> Close voting automatically when every connected student has answered</label>'+
-          '<label class="check"><input type="checkbox" data-set="confidence"'+(settings.confidence?' checked':'')+'> Ask “sure or guessing?” with each answer</label>'+
-          '<label for="sa">Start at question</label><input id="sa" type="number" min="1" max="'+TOTAL+'" data-set="startAt" value="'+Math.min(TOTAL, settings.startAt||1)+'">'+
+          '<fieldset class="mode" id="modeSet"><legend>Mode</legend>'+
+            '<label><input type="radio" name="mode" data-set="mode" value="practice"'+(settings.mode === 'exam' ? '' : ' checked')+'> <b>Practice</b> · answers after each case</label>'+
+            '<label><input type="radio" name="mode" data-set="mode" value="exam" id="modeExam"'+(settings.mode === 'exam' ? ' checked' : '')+'> <b>Exam</b> · answers at the end</label></fieldset>'+
+          '<label for="t1">Time per case</label><select id="t1" data-set="t1">'+tOpts(settings.t1,[30,45,60,90,120,180,0])+'</select>'+
           '<button class="btn primary big" data-act="start" id="startBtn">Start quiz ▶</button>'+
-          '<details class="adv" id="adv"'+(joinUrl() ? '' : ' open')+'><summary>Advanced</summary>'+
+          '<details class="adv" id="adv"'+(joinUrl() ? '' : ' open')+'><summary>More options<span class="sub" id="advsum">'+advSummary()+'</span></summary>'+
+            '<label for="t2">Revote time <span class="sub">(Practice: the second vote after the discussion)</span></label><select id="t2" data-set="t2">'+tOpts(settings.t2,[30,45,60,90,0])+'</select>'+
+            '<label class="check"><input type="checkbox" data-set="autoClose"'+(settings.autoClose?' checked':'')+'> Close voting automatically when every connected student has answered</label>'+
+            '<label class="check"><input type="checkbox" data-set="confidence"'+(settings.confidence?' checked':'')+'> Ask “sure or guessing?” with each answer</label>'+
+            '<label for="sa">Start at case <span class="sub">(to continue a long set in the next lecture)</span></label><input id="sa" type="number" min="1" max="'+TOTAL+'" data-set="startAt" value="'+Math.min(TOTAL, settings.startAt||1)+'">'+
             '<label for="su">Phone page address</label><input id="su" type="url" data-set="studentUrl" placeholder="https://your-name.github.io/live-quiz/join/" value="'+esc(settings.studentUrl)+'">'+
-            '<small>Where the phone page is online; the QR code and the link open it. It fills itself in (this site’s join/ address), so there is normally nothing to change.</small></details>'+
-          '<p class="hint">Keep this tab open and the computer awake until the end. Keys: Enter, Space, → or a clicker’s Next = next step, D = revote, + = 30 more seconds, Q = show QR. Ctrl + / Ctrl − changes text size.</p>'+
+            '<small>Where the phone page is online; the QR code and the link open it. It fills itself in (this site’s join/ address), so there is normally nothing to change.</small>'+
+            '<p class="hint">Keys: Enter, Space, → or a clicker’s Next = next step, D = revote, + = 30 more seconds, Q = show QR. A− / A+ at the top sets the text size on the room’s screen.</p></details>'+
+          '<p class="hint">Keep this tab open and the computer awake until the end.</p>'+
         '</section>'+
       '</main>'+
     '</div>';
@@ -3310,14 +3409,14 @@ function updateLobby(){
     el.setAttribute('data-u', u + '|' + S.code);
     el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + '<div class="info">'+
       (u ? '<div class="big">Scan the QR code with your phone camera to join</div><div>or open the link below and enter the code</div>'
-         : '<p class="warn">The phone page address is missing. Add it under Advanced in the lobby on the laptop.</p><div>Code</div>')+
+         : '<p class="warn">The phone page address is missing. Add it under More options in the lobby on the laptop.</p><div>Code</div>')+
       '<div class="code" id="code">'+esc(S.code)+'</div>'+
       '<div class="check">check code <b id="check">'+esc(checkPretty())+'</b></div>'+
       (u ? '<div class="url">'+esc(u)+'</div>' : '')+
       '<div class="joined" id="joined">'+joined+'</div></div>';
     return;
   }
-  if (!u) warn = '<p class="warn">Add the phone page address under Advanced (right) to show the QR code.</p>';
+  if (!u) warn = '<p class="warn">Add the phone page address under More options (right) to show the QR code.</p>';
   else if (peerStatus === 'unreachable') warn = '<p class="warn" id="neterr">Can’t reach the PeerJS server ('+esc(lastErr)+'). Retrying… If this doesn’t clear, open this page from its https address in Chrome, or check that the network allows it.</p>';
   else if (peerStatus !== 'online') warn = '<p class="hint">Connecting to the PeerJS server… phones can join once the corner shows “Live”.</p>';
   el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + warn +
@@ -3337,18 +3436,19 @@ function figHtml(id, cap){ if (!hasImg(id)) return ''; return '<figure class="qi
 function buildQuestion(){                           // the projector screen (one window, or the projector window)
   app.innerHTML =
     '<div class="screen">'+
-      '<header class="top"><div class="qnum">Question '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
-      (S.round === 2 ? '<div class="badge r2">Round 2 · revote after discussion</div>' : '')+
+      '<header class="top"><div class="qnum">Case '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
+      (S.round === 2 ? '<div class="badge r2">Round 2 · revote after discussion</div>' : '')+examBadge()+
       '<div class="spacer"></div>'+
       (!VIEW && VIEW_CH ? '<button class="chip" data-act="audience" id="audChip" title="Open a second window for the projector; this laptop then shows a presenter view">🖥 Projector window</button>' : '')+
       '<button class="chip" data-act="qr" title="Show QR code (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
-      '<span class="chip" id="online"></span>'+netHtml()+'</header>'+
+      '<span class="chip" id="online"></span>'+tsizeHtml()+netHtml()+'</header>'+
       '<main class="grid"><section class="left" id="left"></section>'+
       '<section class="right"><div class="status" id="status"></div><div class="opts" id="opts"></div></section></main>'+
       (VIEW ? '<footer></footer>' : '<footer class="controls" id="controls"></footer>')+
     '</div>' + qrOverlay();
   renderLeft(); updateQuestion();
 }
+function examBadge(){ return isExam() ? '<div class="badge exam">'+(S.review ? 'Exam · review of answers' : 'Exam')+'</div>' : ''; }
 function topWrong(qi){
   var q = QUESTIONS[qi], ls = LQ(qi), t = tallyOf(finalBucket(qi), qi), best = null, max = 0;
   t.opts.forEach(function(o,i){ if (ls[i] !== q.answer && o.all > max) { max = o.all; best = ls[i]; } });
@@ -3367,7 +3467,7 @@ function renderLeft(){
   var el = document.getElementById('left'); if (!el) return;
   var q = QUESTIONS[S.qi];
   if (S.phase === 'reveal' && !showStem) {
-    el.innerHTML = '<div class="explain">'+explainHtml()+(VIEW ? '' : '<button class="link" data-act="togglestem">Show the question again</button>')+'</div>';
+    el.innerHTML = '<div class="explain">'+explainHtml()+(VIEW ? '' : '<button class="link" data-act="togglestem">Show the case again</button>')+'</div>';
   } else {
     el.innerHTML = '<div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image, q.imageCaption)+'<p class="lead">'+esc(q.lead)+'</p>'+
       (S.phase === 'reveal' && !VIEW ? '<button class="link" data-act="togglestem">Back to the explanation</button>' : '');
@@ -3383,6 +3483,7 @@ function statusHtml(con){                           // con: the laptop's present
       (S.deadline ? '<div class="timer" id="timer">'+fmt(S.deadline - Date.now())+'</div><div class="tbar"><span id="tfill"></span></div>' : '<div class="timer">no limit</div>') +
       (con ? '<div class="live">Live results below are only on this laptop. The projector keeps them hidden until you close voting.</div>' : '<div class="note">Results stay hidden until voting closes.</div>');
   }
+  if (S.phase === 'closed' && isExam()) return '<div class="count">Answers saved · <b>'+n+'</b> answer'+(n===1?'':'s')+'</div><div class="note">Exam: the answers and explanations come at the end.</div>';
   if (S.phase === 'closed') return '<div class="count">Voting closed · <b>'+n+'</b> answer'+(n===1?'':'s')+'</div>'+legend;
   var fb = finalBucket(S.qi), t = tallyOf(fb, S.qi), k = t.opts[ls.indexOf(q.answer)].all, cw = 0;
   for (var sid in fb) if (fb[sid].c !== q.answer && fb[sid].sure === true) cw++;
@@ -3411,16 +3512,16 @@ function updateQuestion(){
   var onEl = document.getElementById('online'); if (onEl) onEl.innerHTML = '👥 <b>'+onlineN()+'</b> connected';
   var st = document.getElementById('status'), op = document.getElementById('opts'); if (!st || !op) return;
   st.innerHTML = statusHtml(false); tickTimer(true);
-  op.innerHTML = optsHtml(S.phase !== 'vote', S.phase === 'reveal' ? 'reveal' : '');
+  op.innerHTML = optsHtml(S.phase === 'reveal' || (S.phase === 'closed' && !isExam()), S.phase === 'reveal' ? 'reveal' : '');
   updateControls();
 }
 
 /* ---------- presenter view on the laptop (while the projector window is open) ---------- */
 function ansShown(){ return S.phase === 'reveal' || (peek === null ? (window.screen && screen.isExtended === true) : peek); }
 function nextHtml(){
-  if (S.qi >= TOTAL-1) return '<b>Last question.</b> Next comes the class results screen.';
+  if (S.qi >= TOTAL-1) return '<b>Last case.</b> Next comes the class results screen.';
   var s = String(QUESTIONS[S.qi+1].stem).replace(/\n• /g, '; ').replace(/\s+/g, ' ').trim();
-  return '<b>Next · Question '+(S.qi+2)+':</b> '+esc(s.length > 170 ? s.slice(0, 168) + '…' : s);
+  return '<b>Next · Case '+(S.qi+2)+':</b> '+esc(s.length > 170 ? s.slice(0, 168) + '…' : s);
 }
 function notesHtml(){
   var head = '<div class="nh"><h2>Answer and teaching notes</h2>' + (S.phase === 'reveal' ? '' : '<button class="btn small" data-act="peek" id="peekBtn">'+(ansShown() ? 'Hide answer' : 'Show answer')+'</button>') + '</div>';
@@ -3433,11 +3534,11 @@ function buildConsole(){
   var notes = '<div class="card notes" id="notes"></div>';
   app.innerHTML =
     '<div class="screen console">'+
-      '<header class="top"><div class="qnum">Question '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
-      (S.round === 2 ? '<div class="badge r2">Round 2</div>' : '')+
+      '<header class="top"><div class="qnum">Case '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
+      (S.round === 2 ? '<div class="badge r2">Round 2</div>' : '')+examBadge()+
       '<span class="chip proj" id="projchip"></span><div class="spacer"></div>'+
       '<button class="chip'+(qrOpen ? ' on' : '')+'" data-act="qr" id="qrchip" title="Show or hide the QR code on the projector (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
-      '<span class="chip" id="online"></span>'+netHtml()+'</header>'+
+      '<span class="chip" id="online"></span>'+tsizeHtml()+netHtml()+'</header>'+
       '<div class="mirror" id="mirror">'+mirrorHtml()+'</div>'+
       // left: what is happening now (live results, the answer marked); right: the case and the notes,
       // the case first while students vote and the notes first after the reveal
@@ -3460,13 +3561,16 @@ function updateConsole(){
 function updateControls(){
   var el = document.getElementById('controls'); if (!el) return;
   var con = consoleOn();
-  var left = '<button class="btn danger" data-act="end">'+(isArmed('end') ? 'Click again to end the quiz' : 'End quiz')+'</button>'+
+  var exam = isExam(), endTxt = !exam ? (isArmed('end') ? 'Click again to end the quiz' : 'End quiz')
+    : S.review ? (isArmed('end') ? 'Click again for the results' : 'Skip to the results') : (isArmed('end') ? 'Click again to end and review the answers' : 'End exam');
+  var left = '<button class="btn danger" data-act="end">'+endTxt+'</button>'+
     (con ? '<button class="btn" data-act="closeaud" id="closeAudBtn">Close projector window</button>' : '')+'<div class="spacer"></div>';
   var right = '';
   if (S.phase === 'vote') right = (S.deadline ? '<button class="btn" data-act="more">+30 s<kbd>+</kbd></button>' : '') + '<button class="btn primary" data-act="close">Close voting<kbd>Enter</kbd></button>';
+  else if (S.phase === 'closed' && exam) right = '<button class="btn primary" data-act="next">'+(S.qi < TOTAL-1 ? 'Next case' : 'Finish &amp; review the answers')+'<kbd>Enter</kbd></button>';
   else if (S.phase === 'closed') right = (S.round === 1 ? '<button class="btn" data-act="revote">Discuss &amp; revote<kbd>D</kbd></button>' : '') + '<button class="btn primary" data-act="reveal">Reveal answer<kbd>Enter</kbd></button>';
-  else if (S.phase === 'reveal') right = (con ? '<button class="btn" data-act="togglestem" id="stemBtn">'+(showStem ? 'Projector: back to the explanation' : 'Projector: show the question again')+'</button>' : '') +
-    '<button class="btn primary" data-act="next">'+(S.qi < TOTAL-1 ? 'Next question' : 'Finish &amp; show results')+'<kbd>Enter</kbd></button>';
+  else if (S.phase === 'reveal') right = (con ? '<button class="btn" data-act="togglestem" id="stemBtn">'+(showStem ? 'Projector: back to the explanation' : 'Projector: show the case again')+'</button>' : '') +
+    '<button class="btn primary" data-act="next">'+(exam && S.review ? (lastReview() ? 'Show the results' : 'Next answer') : S.qi < TOTAL-1 ? 'Next case' : exam ? 'Finish &amp; review the answers' : 'Finish &amp; show results')+'<kbd>Enter</kbd></button>';
   el.innerHTML = left + right;
 }
 function tickTimer(displayOnly){
@@ -3484,25 +3588,25 @@ function buildEnd(){
   var rows = S.played.map(function(qi){ var t = tallyOf(finalBucket(qi), qi), k = t.opts[LQ(qi).indexOf(QUESTIONS[qi].answer)].all; return { qi: qi, n: t.n, pc: t.n ? k*100/t.n : 0 }; });
   var withVotes = rows.filter(function(r){ return r.n; });
   var avg = withVotes.length ? withVotes.reduce(function(a,r){ return a + r.pc; }, 0) / withVotes.length : 0;
-  rows.sort(function(a,b){ return a.pc - b.pc; });
+  rows.sort(function(a,b){ return (!a.n - !b.n) || (a.pc - b.pc); });   // hardest first; cases nobody answered at the end
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+' · results</div><div class="spacer"></div>'+netHtml()+'</header>'+
-    '<main class="endgrid"><section class="card"><div class="avg">'+Math.round(avg)+'%</div><p>class average · '+everyoneN()+' students · '+S.played.length+' questions</p>'+
-    '<p class="hint">Each student now sees their own score on their phone. Nobody else sees it.</p>'+
+    '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+' · results</div><div class="spacer"></div>'+tsizeHtml()+netHtml()+'</header>'+
+    '<main class="endgrid"><section class="card"><div class="avg">'+(withVotes.length ? Math.round(avg)+'%' : '—')+'</div><p>'+(withVotes.length ? 'class average' : 'no answers were recorded')+' · '+nOf(everyoneN(), 'student')+' · '+nOf(S.played.length, 'case')+'</p>'+
+    (withVotes.length ? '<p class="hint">Each student now sees their own score on their phone. Nobody else sees it.</p>' : '')+
     (VIEW ? '' :
     '<p><button class="btn primary" data-act="csv">Download results (CSV)</button></p>'+
-    '<p><button class="btn" data-act="newsession">'+(isArmed('new') ? 'Click again — this clears these results' : 'Run this quiz again (new session)')+'</button></p>'+
-    '<p><button class="btn" data-act="change">'+(isArmed('change') ? 'Click again — this clears these results' : 'Load another quiz')+'</button></p>')+'</section>'+
-    '<section class="card"><h2 style="margin-top:0">Questions by % correct (hardest first)</h2><div class="hard">'+
+    '<p><button class="btn" data-act="newsession">'+(isArmed('new') ? 'Click again to clear these results and start again' : 'Run this set again (new session)')+'</button></p>'+
+    '<p><button class="btn" data-act="change">'+(isArmed('change') ? 'Click again to clear these results and load another set' : 'Load another set')+'</button></p>')+'</section>'+
+    '<section class="card"><h2 style="margin-top:0">Cases by % correct (hardest first)</h2><div class="hard">'+
     rows.map(function(r){ var c = r.pc < 50 ? 'low' : r.pc < 70 ? 'mid' : '', t = topicOf(QUESTIONS[r.qi]), k = conceptOf(QUESTIONS[r.qi]);
       // the case's First Aid topic and concept (teacher-written), shown only here at the end and in the quiz-choosing page
-      return '<div class="lbl">Q'+(r.qi+1)+'</div><div class="hb"><span class="'+c+'" style="width:'+r.pc+'%"></span></div><div class="pc">'+Math.round(r.pc)+'% <small>('+r.n+')</small></div>'+
+      return '<div class="lbl">'+(r.qi+1)+'</div><div class="hb"><span class="'+c+'" style="width:'+r.pc+'%"></span></div><div class="pc">'+(r.n ? Math.round(r.pc)+'% <small>('+r.n+')</small>' : '<small>no answers</small>')+'</div>'+
         (t.length || k ? '<div class="hmeta">'+(t.length ? '<span class="ht">'+t.map(esc).join(' › ')+'</span>' : '')+(k ? '<span class="hk">'+esc(k)+'</span>' : '')+'</div>' : ''); }).join('')+
     '</div></section></main>'+(VIEW ? '<footer></footer>' : '<footer class="controls"></footer>')+'</div>';
 }
 function downloadCsv(){
   var maxN = S.played.reduce(function(m, qi){ return Math.max(m, QUESTIONS[qi].options.length); }, 0), LS = letters(maxN);
-  var head = ['Question','Correct','R1 answered','R1 % correct'].concat(LS.map(function(l){ return 'R1 '+l; }), ['R2 answered','R2 % correct'], LS.map(function(l){ return 'R2 '+l; }), ['Final answered','Final % correct','Sure but wrong']);
+  var head = ['Case','Correct','R1 answered','R1 % correct'].concat(LS.map(function(l){ return 'R1 '+l; }), ['R2 answered','R2 % correct'], LS.map(function(l){ return 'R2 '+l; }), ['Final answered','Final % correct','Sure but wrong']);
   var withTopics = S.played.some(function(qi){ return topicOf(QUESTIONS[qi]).length || conceptOf(QUESTIONS[qi]); });
   if (withTopics) head = head.concat(['Chapter', 'Subtopic', 'Entry', 'Concept']);
   function cell(x){ x = String(x || ''); if (/^[=+\-@]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g, '""') + '"'; }   // quoted; no spreadsheet formulas

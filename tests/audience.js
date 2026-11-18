@@ -59,6 +59,12 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   assert((await A.textContent('.audjoin .url')).trim() === url, '… and the same join link');
   assert((await A.title()).includes('Projector'), 'the projector window is titled as such');
   await P.waitForSelector('#projrow .on');
+  { const sc = pg => pg.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--scale').trim());
+    await P.click('[data-act="bigger"]');
+    await A.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue('--scale').trim() === '1.1', null, { timeout: 5000 });
+    assert((await sc(P)) === '1' && (await P.getAttribute('#tsize', 'title')).includes('projector'), 'with a projector window, A+ sizes the projector’s text and the laptop stays as it is');
+    await P.click('[data-act="smaller"]');
+    await A.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue('--scale').trim() === '1', null, { timeout: 5000 }); }
   assert((await A.$$('.settings, #startBtn, [data-act="edit"]')).length === 0, 'no settings or buttons on the projector');
   await A.screenshot({ path: `${OUT}/20-projector-join.png` });
   await P.screenshot({ path: `${OUT}/21-laptop-lobby.png` });
@@ -84,7 +90,7 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   }
   await P.waitForSelector('#copts .opt.key[data-l="C"]');
   assert((await P.textContent('#notes')).includes('Correct answer C'), 'the laptop shows the answer and teaching notes');
-  assert((await P.textContent('#nextq')).includes('Question 2'), 'the laptop previews the next question');
+  assert((await P.textContent('#nextq')).includes('Case 2'), 'the laptop previews the next case');
   assert((await P.textContent('#projchip')).includes('results hidden'), 'the laptop says what the projector shows');
 
   await answer(T[0], 'A', true);
@@ -115,7 +121,7 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   await A.waitForSelector('#left .explain');
   assert(!!(await A.$('.opt.correct[data-l="C"]')) && (await A.$$('[data-act="togglestem"]')).length === 0, 'reveal: the projector shows the answer and explanation, without links');
   await P.click('#stemBtn'); await A.waitForSelector('#left .stem');
-  assert((await P.textContent('#projchip')).includes('question'), 'the laptop can put the question back on the projector');
+  assert((await P.textContent('#projchip')).includes('case ·'), 'the laptop can put the case back on the projector');
   await P.click('#stemBtn'); await A.waitForSelector('#left .explain');
   { const all = (await P.innerText('body')) + (await A.innerText('body')) + (await T[0].innerText('body'));
     assert(!/Placeholder concept|Placeholder entry|Placeholder subtopic/.test(all), 'topics and concepts appear on neither screen nor the phones, even after the reveal'); }
@@ -128,7 +134,7 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   await P.waitForSelector('.console', { timeout: 15000 });
   assert(true, 'a projector window that reloads comes back on the same screen');
   await A.keyboard.press('Enter');
-  await A.waitForFunction(() => document.querySelector('.qnum') && document.querySelector('.qnum').textContent.startsWith('Question 2'), null, { timeout: 10000 });
+  await A.waitForFunction(() => document.querySelector('.qnum') && document.querySelector('.qnum').textContent.startsWith('Case 2'), null, { timeout: 10000 });
   await P.waitForSelector('.console #notes');
   assert(true, 'Enter on the projector window moves to the next question');
   if (!(await P.$('#notes .explain'))) await P.click('#peekBtn');
@@ -140,7 +146,7 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   assert(true, 'while the laptop reloads, the projector shows a waiting screen (no stale answers)');
   await P.click('#resumeBtn');
   await P.waitForSelector('.console', { timeout: 20000 });
-  await A.waitForFunction(() => document.querySelector('.qnum') && document.querySelector('.qnum').textContent.startsWith('Question 2'), null, { timeout: 20000 });
+  await A.waitForFunction(() => document.querySelector('.qnum') && document.querySelector('.qnum').textContent.startsWith('Case 2'), null, { timeout: 20000 });
   assert(true, 'after “Continue”, laptop and projector find each other again');
 
   log('Back to one screen');
@@ -161,6 +167,8 @@ const gone = (page, sel) => page.waitForFunction(s => !document.querySelector(s)
   await A3.waitForSelector('.avg', { timeout: 10000 });
   assert((await A3.$$('[data-act="csv"], [data-act="newsession"], [data-act="change"]')).length === 0 && !!(await P.$('[data-act="csv"]')), 'results: the projector shows the class results; the buttons stay on the laptop');
   assert((await A3.innerText('.hard')).includes('Placeholder concept one'), 'the projector’s results show the topic and concept too');
+  { const lbls = await P.$$eval('.hard .lbl', ls => ls.map(l => l.textContent)), pcs = await P.$$eval('.hard .pc', ps => ps.map(p => p.textContent));
+    assert(lbls.join() === '1,2' && pcs[1] === 'no answers' && /%/.test(await P.textContent('.avg')), 'a case nobody answered says “no answers” and goes last, not first as the “hardest”'); }
   await A3.screenshot({ path: `${OUT}/26-projector-results.png` });
 
   assert(errors === 0, 'no script errors in any window or on any phone');

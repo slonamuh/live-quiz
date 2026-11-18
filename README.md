@@ -5,6 +5,7 @@ A live classroom quiz for board-style (USMLE Step 1) cases. Students join on the
 - **Player (teacher's screen):** https://slonamuh.github.io/live-quiz/
 - **Phone page (opened by the QR code and the link):** https://slonamuh.github.io/live-quiz/join/
 - **Editor (write and fix quizzes):** https://slonamuh.github.io/live-quiz/editor.html
+- **Self-study (students, alone, on one device):** https://slonamuh.github.io/live-quiz/study/
 
 The old player address, `…/live-quiz/presenter.html`, still works and forwards to the new one, and so do older student links.
 
@@ -14,7 +15,7 @@ No accounts, no installation and no server to maintain. The pages are plain HTML
 
 ## How a session works
 
-1. **Open the player** and load a quiz pack (a `.quiz.json` file, for example from your Google Drive).
+1. **Open the player** and load a set of cases (a `.quiz.json` quiz file, for example from your Google Drive).
 2. **Students join** in one of three ways, and see the full case and the options on their phone:
    - **scan the QR code** on the screen;
    - **open the link** you shared (press **Copy link** in the lobby and paste it into the class chat or LMS);
@@ -23,9 +24,23 @@ No accounts, no installation and no server to maintain. The pages are plain HTML
 4. **Voting closes** when everyone has answered, when the time runs out, or when you press **Enter**. The A–E bars appear (solid = sure, striped = guessing).
 5. **Optional discussion round (D):** students argue with a neighbour for 1–2 minutes and vote again; round 1 stays visible as a thin grey line.
 6. **Reveal (Enter):** the correct answer turns green and the explanation appears, with the most common wrong answer highlighted. Each phone privately shows whether that student was right, plus the explanation.
-7. **Next question (Enter)**. At the end the screen shows the class average and the questions sorted hardest first; every student sees their own score, which nobody else can see. **Download results (CSV)** saves the anonymous statistics.
+7. **Next case (Enter)**. At the end the screen shows the class average and the cases sorted hardest first; every student sees their own score, which nobody else can see. **Download results (CSV)** saves the anonymous statistics.
 
 **Teaching tip (peer instruction):** after round 1, if fewer than ~30% are correct, reveal and teach; if more than ~70%, reveal and move on; in between, use the discussion round. The second vote usually improves a lot.
+
+### Self-study
+
+Students can work through a set alone, on a phone or a laptop, with no teacher and no connection: **https://slonamuh.github.io/live-quiz/study/**
+- **Course sets:** every `.quiz.json` in the repository's `sets/` folder. To add one, open `sets/` on GitHub, *Add file → Upload files*, commit; students see it within about 20 minutes. **That folder is public, answers included:** put only sets meant for open practice there, never one you will use as a graded test (see `sets/README.md`).
+- **My sets:** a quiz file you send students (e.g. in a shared Drive folder); they open it once with **Open a quiz file…** and it stays on their device.
+- **Practice** (the answer and explanation after each case) or **Exam** (no answers until the end, then the score and **Review answers**). One case after another; the Labs button and picture zoom work as on the class phones.
+- Progress is kept on the device: closing the page and coming back offers **Continue**. At the end: the score and every case with ✓ / ✗, its topic and concept; tapping one shows its answer and explanation. Nothing is sent anywhere.
+
+### Practice and Exam modes
+
+Choose the mode in the lobby, before you start:
+- **Practice** (the default): after each case the class sees the results, then you reveal the answer and explanation, with an optional discussion round.
+- **Exam**: cases follow one another with no results and no answers. When voting closes the screen shows only how many answered, phones say "Answer saved", and **Next** (Enter) goes on. After the last case (or **End exam**), a review steps through every case asked: the class results, the correct answer and the explanation on the screen, and on each phone that student's own answer, right or wrong. Then the results and each student's private score.
 
 ### Two screens: presenter view on the laptop, questions on the projector
 
@@ -46,27 +61,31 @@ Like PowerPoint's presenter view. In the lobby press **🖥 Open projector windo
 | Q | Show the QR code full screen, with the link and both codes (again: close) |
 | Esc | Close an enlarged picture or the QR code |
 | F (projector window) | Full screen on / off |
-| Ctrl + / Ctrl − | Bigger / smaller text for the room |
+| A− / A+ (top bar) | Smaller / bigger text on the room's screen: the projector window when it is open (the laptop stays as it is), otherwise this screen. 80–140 %, remembered |
 
 ### Settings (in the lobby, remembered on that computer)
 
-- **Advanced → Phone page address**: fills itself in as `https://slonamuh.github.io/live-quiz/join/`; there is normally nothing to change. (A player that remembered the old address, the site's main address, moves it to `join/` by itself.)
-- **Time per question** (default 90 s) and **revote time** (default 60 s), or no limit.
+In view: **Mode** (Practice or Exam), **Time per case** (default 90 s, or no limit) and **Start quiz**. The rest is under **More options**, whose closed line says what is set there (and shows when the quiz will not start at case 1):
+
+- **Revote time** (default 60 s, or no limit): the second vote after the discussion, in Practice.
 - **Close voting automatically** when every connected student has answered.
 - **Ask "sure or guessing?"**: shows "sure but wrong", the most dangerous misconception.
-- **Start at question N**: to continue a long pack in the next lecture.
+- **Start at case N**: to continue a long set in the next lecture.
+- **Phone page address**: fills itself in as `https://slonamuh.github.io/live-quiz/join/`; there is normally nothing to change. (A player that remembered the old address, the site's main address, moves it to `join/` by itself.)
+
+The top bar of the player's first page and of the editor links the teacher pages: **Player · Editor · Self-study**.
 
 ---
 
 ## Before the first class (one time)
 
 1. **GitHub Pages is on**: repository *Settings → Pages → Deploy from a branch → main → / (root)*.
-2. **Google Drive for desktop** (optional but convenient): create a folder such as *Quiz packs*. It appears in the file picker, so loading a pack is two clicks.
+2. **Google Drive for desktop** (optional but convenient): create a folder such as *Quiz files*. It appears in the file picker, so loading a set is two clicks.
 3. **Test on the real network**: open the player, scan with two phones, one on the school Wi-Fi and one on mobile data, and answer one question. Some campus networks block direct phone-to-laptop connections; see Troubleshooting.
 
 ## Before each class
 
-1. Open the **player** in Chrome, choose **Choose quiz file** (or **Use** next to a recent quiz). **Cases** next to a recent quiz lists each case's topic and concept, so you can check what a set covers before you pick it; it is shown only there.
+1. Open the **player** in Chrome, choose **Choose quiz file** (or **Use** next to a recent quiz). **Contents** (next to a recent quiz, and in the lobby next to the quiz's name) shows the quiz's description and each case's topic and concept, so you can check which set you opened; it is never shown during the quiz. With one screen the lobby is on the projector, so open it there only if students may see it.
 2. Check the corner says **Live** (green).
 3. Keep the laptop **plugged in and awake**, and keep the player tab open until the end.
 
@@ -76,15 +95,15 @@ If the player tab is reloaded or closed by accident, open it again: it offers **
 
 ## Making quiz packs
 
-A quiz pack is one file per topic, e.g. `immunology-01.quiz.json`. It contains the questions, answers, explanations and pictures.
+A set of cases is saved as one quiz file per topic, e.g. `immunology-01.quiz.json`. It contains the cases, answers, explanations and pictures.
 
-**The quiz file is the master copy.** Make every change in that file (in the editor below) and keep it in the Quiz packs folder on Google Drive. Docs, AI chats and printouts are only ways to draft or share a quiz; once a quiz file exists, don't edit the doc it came from and rebuild the file, or changes made in the editor are lost.
+**The quiz file is the master copy.** Make every change in that file (in the editor below) and keep it in your quiz files folder on Google Drive. Docs, AI chats and printouts are only ways to draft or share a quiz; once a quiz file exists, don't edit the doc it came from and rebuild the file, or changes made in the editor are lost.
 
-**In the editor.** Open https://slonamuh.github.io/live-quiz/editor.html (or press **Edit** next to a quiz in the player). You can:
+**In the editor.** Open https://slonamuh.github.io/live-quiz/editor.html (or press **Edit** next to a set in the player). You can:
 
-- start a **new quiz**, **open a file**, **paste an AI assistant's reply** (the whole reply: the editor finds the quiz in it), or pick one of the **Recent quizzes**;
+- start a **new set**, **open a file**, **paste an AI assistant's reply** (the whole reply: the editor finds the set in it), or pick one of the **Recent sets**;
 - write or fix each case: case text, question line, options (tick the correct one), a "why not" line under each wrong option, the explanation and the take-home point; add, duplicate, move or delete cases and options; drag cases in the list to reorder them;
-- give the quiz a short **description**, and each case a **topic** in First Aid terms (chapter › subtopic › entry, with the First Aid chapter names and the names already used in the quiz suggested) and the **concept** it tests ("Reed–Sternberg cells: CD15/CD30"). These are for you: the player shows them when you choose a quiz (**Cases** in "Recent quizzes") and in the results at the end (and the results CSV), never during the quiz;
+- give the set a short **description**, and each case a **topic** in First Aid terms (chapter › subtopic › entry, with the First Aid chapter names and the names already used in the set suggested) and the **concept** it tests ("Reed–Sternberg cells: CD15/CD30"). These are for you: the player shows them when you choose a set (**Contents** in "Recent sets" and in the lobby) and in the results at the end (and the results CSV), never during the quiz;
 - add **pictures**: paste, drop or choose a file in a case's two picture boxes (shown with the case, or at the reveal). Pictures are resized to at most 1400 px and kept under about 400 KB: PNG for diagrams, JPEG for photos;
 - **balance the answer letters**: the editor shows how often each letter is correct and can even them out by swapping each moved answer with another option (with a preview and Undo); one case's answer can also be moved to a chosen letter;
 - see **checks** as you type: what stops the player from loading the quiz (red) and common giveaways (amber: the correct answer is the longest option, a word from the case repeated only in the correct answer, an option named by its letter, letters left at the start of options, unbalanced answer letters);
@@ -102,12 +121,12 @@ Unsaved changes are kept in the browser, so closing the tab by accident loses no
 
 Claude can also lay the cases out in a doc with three tabs (Questions, Answer key, Explanations) for reading or printing. That doc is a copy: change the quiz file, not the doc.
 
-**With any other AI assistant (ChatGPT, Gemini, …)**: give it [docs/llm-instructions.md](docs/llm-instructions.md), the complete instructions for writing cases to our standards and returning a ready-to-load pack. Fill in the REQUEST section at the end.
+**With any other AI assistant (ChatGPT, Gemini, …)**: give it [docs/llm-instructions.md](docs/llm-instructions.md), the complete instructions for writing cases to our standards and returning a ready-to-load quiz file. Fill in the REQUEST section at the end.
 
-**By hand or with your own tools**: see [docs/pack-format.md](docs/pack-format.md), and check a pack with
+**By hand or with your own tools**: see [docs/pack-format.md](docs/pack-format.md), and check a quiz file with
 `python3 tools/make_pack.py check my-quiz.quiz.json`.
 
-> **Never put quiz packs in this repository.** It is public, and packs contain the answers. Keep them in your Google Drive. The `.gitignore` here blocks `*.quiz.json` files (except the placeholder test fixtures).
+> **Never put quiz files in this repository.** It is public, and quiz files contain the answers. Keep them in your Google Drive. The `.gitignore` here blocks `*.quiz.json` files (except the placeholder test fixtures).
 
 ---
 
@@ -134,8 +153,8 @@ Claude can also lay the cases out in a doc with three tabs (Questions, Answer ke
 | **Open projector window** does nothing, or a pop-up message appears | Chrome blocked the new window. | Click the blocked pop-up icon at the right end of the address bar → *Always allow pop-ups* for this site, then press the button again. |
 | The projector shows the laptop's presenter view | The display is mirrored. | Win + P → **Extend** (Mac: Displays → turn mirroring off), then drag the projector window to the projector and press **F**. |
 | A phone shows **Reconnecting…** | The phone slept or lost signal. | Nothing; it reconnects by itself and keeps its answers. |
-| The file is rejected | The pack has a problem. | The message names the question and the problem; ask Claude to fix the pack. |
-| Text is small on the projector | | Ctrl + (zoom in). |
+| The file is rejected | The quiz file has a problem. | The message names the case and the problem; ask Claude to fix the file. |
+| Text is small on the projector | | **A+** in the top bar (up to 140 %), or Ctrl + in the projector window. |
 
 ---
 
@@ -147,6 +166,9 @@ Claude can also lay the cases out in a doc with three tabs (Questions, Answer ke
 | `join/index.html` | Phone page (built from `src/join.src.html`) |
 | `presenter.html` | The player's old address: forwards to `./` |
 | `editor.html` | Quiz editor (built from `src/editor.src.html`) |
+| `study/index.html` | Self-study page (built from `src/study.src.html`) |
+| `sets/` | Course sets for self-study (public); `index.json` is written by the build |
+| `src/shared/` | Parts built into several pages: the shared look (colours, font, buttons), the pack checker and the lab values sheet |
 | `src/` | Page sources |
 | `tools/build_pages.py` | Builds the pages (inlines PeerJS and the QR library) |
 | `tools/make_pack.py` | Checks quiz packs and embeds pictures |
