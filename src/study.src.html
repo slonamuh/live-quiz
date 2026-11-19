@@ -10,8 +10,7 @@
 /*__THEMEDARK__*/
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.45;-webkit-text-size-adjust:100%}
 button,input{font:inherit;color:inherit}
-body{--col:44rem}
-.wrap{max-width:var(--col);margin:0 auto;padding:0 16px calc(120px + env(safe-area-inset-bottom))}
+.wrap{max-width:44rem;margin:0 auto;padding:0 16px calc(120px + env(safe-area-inset-bottom))}
 header{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
 header .t{font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .homebtn{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;cursor:pointer}
@@ -47,17 +46,6 @@ h2{font-size:1.1rem;margin:22px 0 8px}
 .opt.fade{opacity:.6}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
 .dock .in{max-width:44rem;margin:0 auto;display:flex;gap:10px}
-/* a laptop or desktop: text grows with the window; the column is wider; a case sits beside its options and answer */
-@media (min-width: 1000px){
-  html,body{font-size:clamp(17px, 1.25vw, 21px)}
-  body{--col:50rem}
-  body.wide{--col:72rem}
-  header{padding-left:max(16px, calc((100% - var(--col)) / 2 + 16px));padding-right:max(16px, calc((100% - var(--col)) / 2 + 16px))}
-  .case{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:0 2.4rem;align-items:start}
-  .case .caseR{position:sticky;top:4.5rem}
-  .case .caseR .opts:first-child,.case .caseR .banner:first-child{margin-top:14px}
-  .dock .in{max-width:min(var(--col), 46rem)}
-}
 .dock button{flex:1;min-height:54px;border-radius:12px;border:0;font-weight:700;font-size:1.05rem;background:var(--accent);color:var(--accent-ink);cursor:pointer}
 .dock button.alt{background:var(--panel);color:var(--ink);border:2px solid var(--accent)}
 .dock button:disabled{opacity:.4;cursor:default}
@@ -228,7 +216,6 @@ function setHead(t, labs){
   document.getElementById('ht').textContent = t;
   document.getElementById('homeBtn').hidden = !cur;
   document.getElementById('labBtn').hidden = !labs;
-  document.body.classList.toggle('wide', !!labs);       // a case on screen: two columns on a laptop
   if (labOpen && (!labs || labTag !== labTagFn())) closeLab(false);
 }
 labTagFn = function(){ return cur && cur.view ? cur.view + ':' + cur.qi : -1; };
@@ -329,7 +316,7 @@ function showCase(){
   var qs = rec.pack.questions, q = qs[p.i], mine = p.answers[p.i];
   cur.view = 'case'; cur.qi = p.i; sel = null;
   setHead(modeName(p.mode) + ' · Case ' + (p.i + 1) + ' of ' + qs.length, true);
-  var h = '';
+  var h = caseHtml(q);
   if (p.mode === 'practice' && mine) {
     h += answerHtml(q, mine);
     setDock('<button data-do="next" id="nextBtn">' + (p.i < qs.length - 1 ? 'Next case' : 'See results') + '</button>');
@@ -338,7 +325,7 @@ function showCase(){
     h += '<div class="opts" id="opts">' + q.options.map(function(o, i){ return '<button class="opt" data-pick="' + ls[i] + '" data-l="' + ls[i] + '"><span class="l">' + ls[i] + '</span><span class="x">' + esc(o) + '</span></button>'; }).join('') + '</div>';
     setDock('<button data-do="submit" id="submitBtn" disabled>' + (p.mode === 'exam' ? (p.i < qs.length - 1 ? 'Submit & next case' : 'Submit & finish') : 'Submit answer') + '</button>');
   }
-  app.innerHTML = '<div class="case"><div class="caseL">' + caseHtml(q) + '</div><div class="caseR">' + h + '</div></div>';
+  app.innerHTML = h;
 }
 function pick(l){
   sel = l;
@@ -379,7 +366,7 @@ function showReview(i){
   i = Math.max(0, Math.min(qs.length - 1, i));
   cur.view = 'review'; cur.qi = i;
   setHead('Review · Case ' + (i + 1) + ' of ' + qs.length, true);
-  app.innerHTML = '<div class="case"><div class="caseL">' + caseHtml(qs[i]) + '</div><div class="caseR">' + answerHtml(qs[i], p.answers[i]) + '</div></div>';
+  app.innerHTML = caseHtml(qs[i]) + answerHtml(qs[i], p.answers[i]);
   setDock('<button class="alt" data-do="prev"' + (i === 0 ? ' disabled' : '') + '>‹ Previous</button><button class="alt" data-do="results">Results</button>' +
     (i < qs.length - 1 ? '<button data-do="nextrev" id="nextRevBtn">Next ›</button>' : ''));
   window.scrollTo(0, 0);

@@ -6,7 +6,7 @@
 <title>Live Quiz — Editor</title>
 <style>
 /*__THEME__*/
-:root{ font-size:clamp(15px, 1.15vw, 20px); }   /* grows with a laptop or desktop window */
+:root{ font-size:16px; }
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.45}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -39,7 +39,7 @@ a{color:var(--accent)}
 .loaderr{margin-top:.6rem}
 
 /* editor */
-.ed{display:grid;grid-template-columns:minmax(16rem, 22%) minmax(0,1fr);min-height:0}
+.ed{display:grid;grid-template-columns:20rem minmax(0,1fr);min-height:0}
 .side{border-right:1px solid var(--line);background:#faf9f6;display:flex;flex-direction:column;min-height:0}
 .meta{padding:.8rem 1rem;border-bottom:1px solid var(--line)}
 .meta label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.2rem}

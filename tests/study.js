@@ -141,21 +141,6 @@ const waitHead = (p, s) => p.waitForFunction(t => document.getElementById('ht').
   await O.goto(`${BASE}/study/`);
   await O.waitForSelector('#course .setrow');
   assert((await O.textContent('#course')).includes('Test pack with pictures') && (await O.textContent('#course')).includes('Couldn’t check for new course sets'), 'offline: the course sets opened before are still listed, with a note');
-  log('On a laptop');
-  const lctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  await lctx.route('**/sets/index.json', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ sets: [{ file: 'demo-course.quiz.json', title: 'Demo course set', n: 3 }] }) }));
-  await lctx.route('**/sets/demo-course.quiz.json', r => r.fulfill({ contentType: 'application/json', body: pics }));
-  const L = await lctx.newPage();
-  L.on('pageerror', e => { errors++; log('[study laptop pageerror]', e.message); });
-  await L.goto(`${BASE}/study/`);
-  await L.click('#course [data-course]'); await L.waitForSelector('#goBtn'); await L.click('#goBtn');
-  await L.waitForSelector('#opts .opt');
-  const lay = await L.evaluate(() => { const a = document.querySelector('.caseL').getBoundingClientRect(), b = document.querySelector('.caseR').getBoundingClientRect();
-    return { side: b.left >= a.right && Math.abs(a.top - b.top) < 40, font: parseFloat(getComputedStyle(document.documentElement).fontSize), over: document.documentElement.scrollWidth > innerWidth }; });
-  assert(lay.side && lay.font > 17 && !lay.over, 'on a laptop the text grows with the window and the case sits beside its options');
-  await L.screenshot({ path: `${OUT}/53-study-laptop.png` });
-  await lctx.close();
-
   assert(errors === 0, 'no script errors');
   await browser.close(); stopAll();
   log('ALL PASSED');
