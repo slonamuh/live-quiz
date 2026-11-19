@@ -1,0 +1,15 @@
+/* lab values sheet (NBME reference values), opened from the header during a question */
+.labbtn{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;cursor:pointer}
+.labbtn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.labsheet{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch}
+.labsheet .in{max-width:40rem;margin:0 auto;padding:10px 16px calc(24px + env(safe-area-inset-bottom))}
+.labsheet input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:16px}
+.labtabs{display:flex;gap:6px;margin:10px 0 4px;flex-wrap:wrap}
+.labtabs button{flex:1;min-width:4.5rem;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 6px;font-weight:600;font-size:.9rem;cursor:pointer}
+.labtabs button.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.labtabs.dim button{opacity:.45}
+.labg{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:14px 0 4px}
+.labr{display:flex;gap:10px;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.labr .v{text-align:right;font-weight:700;white-space:nowrap}
+.labr .tab{font-size:.75rem;color:var(--muted);display:block}
+.labsrc{font-size:.75rem;color:var(--muted);margin-top:14px}

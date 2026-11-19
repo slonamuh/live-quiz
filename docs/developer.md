@@ -1,5 +1,7 @@
 # Developer notes
 
+**Words on the screens:** a **set** of **cases**, saved as a **quiz file** (`.quiz.json`); "quiz" alone means the live activity (Start quiz, End quiz). In the code and in these notes a quiz file is a *pack* (`QUIZ`, `checkPack`, `make_pack.py`), and a case is one entry of `questions`. New texts on the pages should use the screen words.
+
 ## How it works
 
 ```
@@ -14,21 +16,40 @@
 
 - The **player** registers on the PeerJS server under the id `acsom-livequiz-<code>` (5-character session code) and accepts a data connection from each phone. It is the single source of truth: it holds the pack, the session state and all answers.
 - The **phone page** reads the code from `?s=CODE`, connects to that id, and shows only what a verified player sends (see *Verifying the teacher's screen*). It never contains questions or answers, so it can be public.
-- **Teacher-only fields.** A pack's `description` and each case's `topic` and `concept` are shown only in the library's **Cases** list (`casesDialog`), in the results list at the end (`buildEnd`, also in the projector window) with matching CSV columns, and in the editor. `stateFor` builds the phone messages from an explicit list of fields, so they never reach phones; no screen of a running session renders them (the classroom and two-screen tests check the screens and phones for them).
+- **Teacher-only fields.** A pack's `description` and each case's `topic` and `concept` are shown only in the **Contents** list (`casesDialog`, opened from the library or the lobby; it takes the keyboard while open so Enter cannot start the quiz behind it), in the results list at the end (`buildEnd`, also in the projector window) with matching CSV columns, and in the editor. `stateFor` builds the phone messages from an explicit list of fields, so they never reach phones; no screen of a running session renders them (the classroom and two-screen tests check the screens and phones for them).
 - The **player** contains no quiz content either; packs are loaded from the teacher's computer. Both pages are therefore safe on public GitHub Pages.
 - **Addresses.** The player is the site's own address (`index.html`), because teachers type and bookmark it; students reach the phone page (`join/`) through the QR code or link. Two forwarders keep older addresses working: `presenter.html` (the player's old address) replaces itself with `./` plus its query and fragment, and the player, when opened with `?s=` (an old student link), replaces itself with `join/` plus query and fragment, before anything else runs. A remembered *Phone page address* equal to the old default (the folder itself, or its `index.html`) is moved to `join/` when the player starts.
-- The **editor** (`editor.html`) runs only on the teacher's computer and never talks to the network. It opens a pack (file, pasted AI reply, or a "Recent quizzes" entry), edits it, and saves a `.quiz.json` file.
+- The **editor** (`editor.html`) runs only on the teacher's computer and never talks to the network. It opens a pack (file, pasted AI reply, or a "Recent sets" entry), edits it, and saves a `.quiz.json` file.
 
 ### Editor and player
 
 - They share the player's IndexedDB `livequiz` (version 2, stores `packs` and `keys`); the editor opens it with the same version and upgrade code, so neither page can lock the other out. Its own draft lives in a separate database, `livequiz-editor` → `drafts` (key `current`), saved 0.6 s after each change, with the Chrome file handle when the browser allows it.
-- **Edit** in the player links to `editor.html?pack=<key>`; the editor opens that "Recent quizzes" entry (or offers the unsaved draft first). **Play now** in the editor stores the pack under the player's own key formula (`packKey`, copied from the player), removes the entry it was opened from unless a saved session still uses it, and opens `./?open=<key>` (the player). The player removes `open` from the address at once, so a reload offers *Continue session* as usual.
+- **Edit** in the player links to `editor.html?pack=<key>`; the editor opens that "Recent sets" entry (or offers the unsaved draft first). **Play now** in the editor stores the pack under the player's own key formula (`packKey`, copied from the player), removes the entry it was opened from unless a saved session still uses it, and opens `./?open=<key>` (the player). The player removes `open` from the address at once, so a reload offers *Continue session* as usual.
 - The editor keeps every field it does not edit (pictures, captions, unknown keys) and writes `format`, `version`, `id`, `title`, `created` first. Inside the editor, options carry their own "why not" line, so moving or removing an option keeps the explanations with it; the answer letter and the `why` keys are worked out on saving.
 - Pasted replies: the first code block containing `"questions"` (or the whole text) is cut from the first `{` to the last `}`, and parsed; if that fails, once more with trailing commas removed.
 - Saving: the File System Access API (`showOpenFilePicker` / `showSaveFilePicker`, Chrome) writes back to the opened file; elsewhere the file is downloaded.
 - Pictures: decoded with `createImageBitmap` (or an `Image` for SVG), drawn on a canvas at most 1400 px on the long side, encoded as PNG and as JPEG (quality 0.82, on white); JPEG is kept only when the PNG is more than 1.25× larger. If the result is over 400 KB as a data URI, quality drops to 0.75 and 0.68, then the size shrinks by 15% at a time. Each picture gets a new random id (`q-…` with the case, `x-…` at the reveal); a picture no case uses any more is removed from `images`.
 - Balancing: among the cases with the most common option count, the correct option of the most frequent letter is swapped with the option at the least frequent letter, latest case first and avoiding three equal answers in a row, until no letter is more than one ahead. The plan is shown before it is applied; Undo restores the cases.
 - Printing: the chosen sheet is built into `#printView`, the only element shown under `@media print`, then `window.print()` runs.
+
+### Self-study page
+
+`study/index.html` (from `src/study.src.html`) runs on its own: no PeerJS, no teacher. It shares the pack checker (`src/shared/pack.js`, also in the player) and the lab values sheet (`src/shared/labs.js` and `labs.css`, also on the phone page); the build inlines them (`/*__PACK__*/`, `/*__LABS__*/`, `/*__LABSCSS__*/`).
+- **Course sets** are the `.quiz.json` files in `sets/`. The build writes `sets/index.json` (`{"sets": [{file, title, description, n}]}`) and checks every set with `tools/make_pack.py`, failing on errors. On GitHub Pages the page also asks GitHub's API for the folder listing (`repos/<owner>/<repo>/contents/sets`, owner and repo taken from the address, or `?gh=owner/repo`), cached for 20 minutes per device because unauthenticated requests are limited to 60 an hour per address; files missing from the index are listed under their file name. Without either list, sets already opened on the device are shown.
+- **My sets:** a file the student opens. Both kinds are validated with `checkPack` and kept in IndexedDB `livequiz-study` (store `sets`, key `course:<file>` or `file:<hash>`), so they work offline afterwards.
+- **Progress** is in `localStorage['livequiz-study-progress-v1']` per set: mode, current case, answers, done and score, plus the set's content hash; a changed set starts again.
+- Navigation: entering a set pushes one history entry so the phone's Back returns to the list; the lab sheet's own Back is recognised through `labPopHandled`.
+- `tests/study.js` covers the list, Practice, progress after a reload, Labs, results and review, Exam, a student's own file, bad files, removal, and the GitHub listing (simulated).
+
+### Exam mode
+
+`settings.mode` (lobby: Practice or Exam) is copied into the session as `S.mode` when the quiz starts, so a resumed session keeps it. In Exam mode `closeVoting` still goes to `closed`, but the screen shows no bars or answer and the next step is `next()`; revote and reveal are off. After the last case, or **End exam**, `startReview()` sets `S.review` and walks `S.played` in `reveal` (the usual reveal screen and phone messages), then `finish()`. Phones get two optional flags in the state message, `exam` and `review`, used only for wording (older phone pages ignore them); answers still reach phones only in `reveal`. The projector window gets `mode` and `review` in `view.S`. `tests/exam.js` covers a full exam, the review, unanswered cases, and ending early.
+
+### Self-paced
+
+Self-paced is always an exam: `selfPaced()` is true only when `settings.mode` is `exam` and `settings.pace` is `self` (Practice always runs together; the lobby shows Pace only for an exam). Self-paced runs in its own phase, `run`: `startRun()` sets `S.played` to the cases from *Start at case* on, `S.deadline` to one total time (`settings.tp` seconds per case × cases, or none) and gives every phone a seat in `S.seats[sid]`: `{order, i}`, the case order (`S.played`, or shuffled per student with `crypto.getRandomValues` when `settings.order` is `shuffle`) and the position. A phone that connects during the run gets a seat at once. `runStateFor()` sends each phone only the case at its position (`phase` `vote`), with `pace:'self'`, `pos` and `count`; after the last case, or when the time is up, `phase:'done'` with `{answered, timeUp, finished}`. Answers are kept in `S.answers[qi][1]` as in the class mode, so tallies, results and the CSV need no changes. An answer moves the seat on at once. When the time is up (`runTimeUp`, also on resume) answers are refused; `addRunTime` (+5 min) reopens it. The screen draws `runSummary()`: finished students, completion, anonymous progress bars, and, only on the laptop while the projector window is open, % correct per case with the answer key; the projector window gets the summary in `view.run`, never the answers. **End** goes straight to the results (no class review). `tests/selfpaced.js` covers the lobby choices, the same order and shuffling, the projector window, time up after a reload, +5 min, and the review after the end.
+
+After the end, in either pace, a phone may ask for one case from its results with `{t:'rev', qi}` (`qi: -1` = back); the state then carries `rev: {qi, q, reveal, final}`.
 
 ### Projector window (two screens)
 
@@ -40,7 +61,7 @@
 | --- | --- | --- |
 | projector → laptop | `{t:'beat', id, has}` every second | "I am open, and I have pack `has`". The laptop treats the projector as open while beats arrive (15 s grace) and the pop-up it opened is not closed. A beat with a different `has` gets the pack. |
 | laptop → projector | `{t:'pack', id, key, quiz}` | The whole pack (checked again with `checkPack` on arrival); a new key replaces the view instance without reloading, so full screen is kept. |
-| laptop → projector | `{t:'view', id, key, S, online, net, join, check, confidence, qr, stem, zoom}` | The screen state: the session without phone ids (`answers` only for the current question, all of them at the end; `n` = students), the join link and check code, QR / question-or-explanation / enlarged-picture state. Sent after every change (at most every 80 ms) and on every beat. |
+| laptop → projector | `{t:'view', id, key, S, online, net, join, check, confidence, qr, stem, zoom, scale}` | The screen state: the session without phone ids (`answers` only for the current question, all of them at the end; `n` = students), the join link and check code, QR / question-or-explanation / enlarged-picture state, and the text size chosen with A− / A+ (`scale`, 0.8–1.4; the projector sets `--scale` on its root, and the laptop keeps 1 while a projector window is open). Sent after every change (at most every 80 ms) and on every beat. |
 | projector → laptop | `{t:'key', id, key}` · `{t:'act', id, act}` · `{t:'zoom', id, img}` | Keys (Enter, Space, →, Page Down, D, +, Q, Esc), the clicks it allows (`qr`, `unzoom`, `togglestem`), and a picture to enlarge (accepted only if that picture is on the projector). |
 | laptop → projector | `{t:'bye', id}` · `{t:'close', id}` | The laptop window is leaving (reload, other quiz, editor): show the waiting screen. / Close yourself. |
 | projector → laptop | `{t:'gone', id}` | The projector window is closing or reloading. |
@@ -70,17 +91,18 @@ Anyone can register `acsom-livequiz-<code>` on the public PeerJS server while th
 | phone → player | `{t:'hello', sid, nonce}` | Identify the phone (random id kept in the phone's localStorage per session code) and challenge the player. The player accepts one `hello` per connection. |
 | player → phone | `{t:'auth', pub, sig}` | The session's public key (raw, base64url) and its signature over `livequiz-auth|CODE|nonce` |
 | phone → player | `{t:'answer', qi, round, c, sure}` | Submit an answer once per question and round |
+| phone → player | `{t:'rev', qi}` | After the end: open case `qi` from the results (`-1` = back to the results) |
 | phone → player | `{t:'hb'}` every 5 s | Heartbeat; the player counts a phone as connected if heard from in the last 16 s |
 | player → phone | `{t:'pong'}` | Heartbeat reply; a phone that hears nothing for 17 s reconnects |
 | player → phone | `{t:'s', seq, body, sig}` | A signed screen update. `body` is the JSON text of `{t:'state', phase, qi, total, round, q, mine, first, remaining, reveal, final, result, …}`: the full screen for that phone, sent on every change and personalised (`mine`, `final`, `result`). `reveal` (answer and explanation) is only included in the reveal phase. Pictures are referenced as `{id, caption, hash}`. |
 | player → phone | `{t:'img', id, i, n, d}` | A picture in pieces of 15,000 characters (data channels limit message size); the phone reassembles them, checks the hash, and late joiners get them too. Sent only after `auth`. |
 
-Phases: `lobby → vote (round 1) → closed → [vote (round 2) → closed] → reveal → … → end`.
+Phases: `lobby → vote (round 1) → closed → [vote (round 2) → closed] → reveal → … → end`; self-paced: `lobby → run → end` on the screen, and per phone `vote → … → done`.
 
 ### Where state lives
 
 - **Projector window:** nothing; it gets everything from the laptop window. The laptop tab keeps the link id in `sessionStorage['livequiz-view-id']`.
-- **Player:** the session (code, phase, answers) in `localStorage['livequiz-session-v2']`, so a reload offers *Continue session*. Loaded packs are stored in IndexedDB (`livequiz` → `packs`) for the "Recent quizzes" list, and the session key in `livequiz` → `keys`. Packs from storage are checked again every time they are opened. Settings are in `localStorage['livequiz-settings-v1']`.
+- **Player:** the session (code, phase, answers) in `localStorage['livequiz-session-v2']`, so a reload offers *Continue session*. Loaded packs are stored in IndexedDB (`livequiz` → `packs`) for the "Recent sets" list, and the session key in `livequiz` → `keys`. Packs from storage are checked again every time they are opened. Settings are in `localStorage['livequiz-settings-v1']`.
 - **Phone:** only its random id per session code; the key fingerprint lives in the page address.
 - **Editor:** the unsaved draft in IndexedDB `livequiz-editor`; quizzes handed to the player in `livequiz` → `packs`.
 
@@ -88,10 +110,12 @@ Phases: `lobby → vote (round 1) → closed → [vote (round 2) → closed] →
 
 ```bash
 npm install                    # PeerJS, qrcode-generator (+ the local relay and Playwright for tests)
-python3 tools/build_pages.py   # src/player → index.html, src/join → join/index.html, src/editor → editor.html, + presenter.html forwarder
+python3 tools/build_pages.py   # src/player → index.html, src/join → join/index.html, src/editor → editor.html, src/study → study/index.html, + presenter.html forwarder and sets/index.json
 ```
 
 The build inlines both libraries (no CDN needed in class), syntax-checks every script with `node --check`, and refuses to write a page that looks like it contains quiz data.
+
+The build also inlines the shared parts from `src/shared/` at their `/*__NAME__*/` placeholders: `theme.css` (the palette, font, `.btn` buttons, the page links, the keyboard focus ring and `.vh` for file inputs kept reachable by Tab; every page), `theme-dark.css` (the dark palette; the phone pages only), `pack.js` (the pack checker) and `labs.js` / `labs.css` (the lab values sheet). Colours come from the theme's variables (`--accent`, `--soft`, `--track`, `--warn-ink`…); text on a solid accent, green or red fill uses `--accent-ink`, which turns dark in dark mode so it stays readable.
 
 ## Testing
 

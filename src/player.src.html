@@ -12,26 +12,20 @@
 } catch(e){} })();
 </script>
 <style>
-:root{
-  --bg:#f4f3ef; --panel:#ffffff; --ink:#15171c; --muted:#5b616d; --line:#d9d6ce;
-  --accent:#2350b8; --accent-ink:#ffffff; --accent-soft:#dbe4f8;
-  --sure:#2350b8; --guess:#9db1e6; --ghost:#c9c6bd;
-  --good:#16804a; --good-soft:#d7efe0; --bad:#b93a27; --bad-soft:#f6ddd8; --warn:#a86a10;
-  font-size:clamp(16px,1.3vw,28px);
-}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.4}
+/*__THEME__*/
+:root{ --sure:var(--accent); --guess:#9db1e6; --ghost:#c9c6bd; font-size:calc(clamp(16px,1.3vw,28px) * var(--scale, 1)); }
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.4}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 .screen{height:100vh;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
-.top{display:flex;align-items:center;gap:.8rem;padding:.7rem 1.4rem;border-bottom:1px solid var(--line);background:var(--panel)}
+.top{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem .8rem;padding:.7rem 1.4rem;border-bottom:1px solid var(--line);background:var(--panel)}
+.top .chip,.top .badge,.qnum,.net{white-space:nowrap}
 .top .title{font-weight:700;font-size:1.15rem}
 .spacer{flex:1}
 .qnum{font-weight:800;font-size:1.35rem;letter-spacing:-.01em}
 .qnum span{font-weight:500;color:var(--muted);margin-left:.3rem;font-size:1rem}
 .badge{padding:.25rem .7rem;border-radius:999px;font-weight:700;font-size:.85rem}
-.badge.r2{background:#fbe9c6;color:#7a4a00}
+.badge.r2{background:var(--warn-soft);color:var(--warn-ink)}
 .chip{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .8rem;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:.95rem}
 button.chip:hover{border-color:var(--accent)}
 .net{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--muted)}
@@ -57,7 +51,7 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .status .count b{font-size:1.7rem}
 .status .timer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:800;font-size:1.7rem}
 .status .timer.low{color:var(--bad)}
-.tbar{flex-basis:100%;height:.4rem;background:#ebe9e3;border-radius:99px;overflow:hidden}
+.tbar{flex-basis:100%;height:.4rem;background:var(--track);border-radius:99px;overflow:hidden}
 .tbar span{display:block;height:100%;background:var(--accent);transition:width .25s linear}
 .status .note{flex-basis:100%;color:var(--muted);font-size:.85rem}
 .legend{display:inline-flex;gap:.9rem;font-size:.85rem;color:var(--muted);margin-left:auto}
@@ -65,20 +59,20 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .legend span.g::before{background:repeating-linear-gradient(45deg,var(--guess) 0 4px,#c3d0f1 4px 7px)}
 .opts{display:flex;flex-direction:column;gap:.45rem}
 .opt{display:grid;grid-template-columns:2.1rem 1fr auto;gap:.7rem;align-items:center;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:.45rem .8rem}
-.opt .letter{width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;background:#eceae4}
+.opt .letter{width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--soft)}
 .opt .otext{min-width:0}
-.opt .bar{position:relative;height:.75rem;margin-top:.3rem;background:#efede8;border-radius:99px;overflow:hidden;display:flex}
+.opt .bar{position:relative;height:.75rem;margin-top:.3rem;background:var(--track);border-radius:99px;overflow:hidden;display:flex}
 .opt .bar span{height:100%}
 .opt .bar .s{background:var(--sure)}
 .opt .bar .g{background:repeating-linear-gradient(45deg,var(--guess) 0 4px,#c3d0f1 4px 7px)}
-.opt .ghost{height:.3rem;margin-top:.25rem;background:#f1efea;border-radius:99px;overflow:hidden}
+.opt .ghost{height:.3rem;margin-top:.25rem;background:var(--track);border-radius:99px;overflow:hidden}
 .opt .ghost span{display:block;height:100%;background:var(--ghost)}
 .opt .ocount{text-align:right;font-variant-numeric:tabular-nums;min-width:3.6rem}
 .opt .ocount b{font-size:1.25rem;display:block;line-height:1.05}
 .opt .ocount small{color:var(--muted);font-size:.75rem}
 .opt .r1{font-size:.75rem;color:var(--muted)}
 .opt.correct{border-color:var(--good);background:var(--good-soft)}
-.opt.correct .letter{background:var(--good);color:#fff}
+.opt.correct .letter{background:var(--good);color:var(--accent-ink)}
 .opt.correct .bar .s{background:var(--good)}
 .opt.correct .bar .g{background:repeating-linear-gradient(45deg,#7cc39b 0 4px,#b5dfc6 4px 7px)}
 .opt.dim{opacity:.62}
@@ -93,17 +87,10 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .obj{margin-top:1rem;padding-top:.7rem;border-top:1px dashed var(--line)}
 .link{background:none;border:0;color:var(--accent);text-decoration:underline;padding:0;margin-top:.8rem;font-size:.9rem}
 .controls{display:flex;align-items:center;gap:.7rem;padding:.7rem 1.4rem;border-top:1px solid var(--line);background:var(--panel)}
-.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:.6rem 1.1rem;font-weight:600}
-a.btn{display:inline-block;text-decoration:none;color:inherit}
-.btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn.danger{color:var(--bad)}
-.btn.small{padding:.3rem .7rem;font-size:.85rem}
 .btn kbd{font:inherit;font-size:.72rem;opacity:.75;margin-left:.45rem;border:1px solid currentColor;border-radius:4px;padding:0 .3rem}
 
 /* library + lobby */
-.libgrid,.lobbygrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1.4rem;padding:1.2rem 1.4rem;min-height:0;overflow:auto}
+.libgrid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1.4rem;padding:1.2rem 1.4rem;min-height:0;overflow:auto}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.2rem 1.4rem}
 .drop{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.6rem;border:2px dashed var(--line)}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
@@ -112,7 +99,12 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .loaderr{max-width:34rem;text-align:left}
 .loaderr ul{margin:.3rem 0 0 1rem;padding:0}
 .recent{display:flex;flex-direction:column;gap:.5rem}
-.rrow{display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
+/* library: the page stays one screen tall, so "Load a set" stays centred; a long quiz list scrolls inside its card */
+.libgrid{grid-template-rows:minmax(0,1fr);overflow:hidden}
+.libside{display:flex;flex-direction:column;min-height:0}
+.libside .recent{flex:1 1 auto;min-height:0;overflow:auto;padding-right:.2rem}
+.rrow{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;padding:.6rem .7rem;border:1px solid var(--line);border-radius:10px}
+.rrow>div:first-child{flex:1 1 13rem;min-width:0}
 .rrow .rt{font-weight:600}
 .rrow .rm{color:var(--muted);font-size:.8rem}
 .rrow .rd{font-size:.85rem;margin:.1rem 0 .15rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -122,6 +114,34 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .chead>div{flex:1;min-width:0}
 .chead h2{margin:0 0 .2rem}
 .chead .cdesc{margin:.2rem 0 .3rem}
+.chead .warn{margin:.3rem 0 0;font-size:.85rem}
+.badge.self{background:var(--accent-soft);color:var(--accent)}
+.rungrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.2rem;padding:1rem 1.4rem;min-height:0}
+.rungrid .card{overflow:auto}
+.rcol{display:flex;flex-direction:column;gap:1rem;min-height:0}
+.runmain{flex:1}
+.rbig{font-size:1.6rem}
+.rbig b{font-size:3.4rem;font-weight:800;margin-right:.2rem}
+.rline{display:flex;justify-content:space-between;align-items:baseline;margin-top:.9rem;font-size:1.1rem}
+.rline b{font-size:1.6rem;font-variant-numeric:tabular-nums}
+.rline b.low{color:var(--bad)}
+.pbar{height:.8rem;background:var(--track);border-radius:99px;overflow:hidden;margin-top:.3rem}
+.pbar span{display:block;height:100%;background:var(--accent)}
+.runmain .tbar{margin-top:.3rem}
+.runmain .tbar span{display:block;height:100%;background:var(--muted)}
+.runmain h3{margin:1.2rem 0 .5rem;font-size:1rem}
+.runmain h3 small,.runcases h2 small{font-weight:400;color:var(--muted);font-size:.75rem}
+.sbars{display:grid;grid-template-columns:repeat(auto-fill,minmax(6rem,1fr));gap:.45rem .7rem}
+.sb{display:block;height:.6rem;background:var(--track);border-radius:99px;overflow:hidden}
+.sb i{display:block;height:100%;background:var(--accent)}
+.sb.done i{background:var(--good)}
+.runjoin{display:flex;gap:1rem;align-items:center}
+.runjoin .qr{width:7.5rem;aspect-ratio:1;background:#fff;border-radius:8px;flex:none}
+.runjoin .qr svg{width:100%;height:100%;display:block}
+.runjoin .code{font-size:1.8rem;font-weight:800;letter-spacing:.15em}
+.runcases h2{margin-top:0;font-size:1.2rem}
+.hard .lbl .key{display:inline-block;min-width:1.4rem;text-align:center;border-radius:6px;background:var(--good-soft);color:var(--good);font-size:.8rem;padding:0 .2rem}
+.badge.exam{background:#3a3f8f;color:#fff}
 .cpanel>.hint{margin:.6rem 1.3rem 0}
 .clist{list-style:none;margin:0;padding:.4rem 1.3rem;overflow:auto;flex:1}
 .clist li{display:flex;gap:.8rem;padding:.55rem 0;border-bottom:1px solid var(--line)}
@@ -131,25 +151,55 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .clist .cconcept{font-weight:600}
 .clist .cstem{color:var(--muted);font-style:italic;font-size:.9rem}
 .cfoot{display:flex;gap:.5rem;justify-content:flex-end;padding:.8rem 1.3rem;border-top:1px solid var(--line)}
-.join{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.6rem}
-.join .qr{width:min(48vh,28rem);aspect-ratio:1;background:#fff;border-radius:12px;padding:.2rem}
-.join .qr svg{width:100%;height:100%;display:block}
-.join .code{font-size:2.6rem;font-weight:800;letter-spacing:.18em}
-.join .url{font-size:.95rem;color:var(--muted);word-break:break-all;max-width:36rem}
-.join .joined{font-size:1.5rem}
-.join .check,.qrover .check{color:var(--muted);font-size:1rem}
-.join .check b,.qrover .check b{color:var(--ink);font-size:1.25rem;letter-spacing:.12em;margin-left:.3rem}
-.join .warn{max-width:30rem}
-.settings h2{margin:0 0 .8rem;font-size:1.2rem}
-.settings .pack{display:flex;gap:.6rem;align-items:center;padding:.6rem .8rem;background:var(--accent-soft);border-radius:10px;margin-bottom:.4rem}
-.settings .pack b{flex:1}
-.settings label{display:block;margin:.75rem 0 .2rem;font-weight:600;font-size:.95rem}
-.settings input[type=url],.settings input[type=number],.settings select{width:100%;padding:.5rem .6rem;border:1px solid var(--line);border-radius:8px;background:#fff;font-weight:400}
-.settings input[type=number]{width:6rem}
-.settings .check{display:flex;gap:.5rem;align-items:flex-start;font-weight:400}
-.settings .check input{margin-top:.3rem}
-.settings small{color:var(--muted);display:block;font-size:.8rem}
-.settings .row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+/* lobby: the set in the top bar; the join screen; "How to run it" always open on the right; Start in the bottom bar */
+.lobbyhead{display:flex;align-items:baseline;gap:.7rem;min-width:0;flex:1 1 18rem}
+.lobbyhead .title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lobbyhead .hint{white-space:nowrap;font-size:.9rem}
+.pwarn{color:var(--warn-ink);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.vsep{width:1px;height:1.5rem;background:var(--line)}
+.iconbtn{display:inline-grid;place-items:center;padding:.3rem .45rem;color:var(--muted)}
+.lobbybody{display:flex;min-height:0}
+.hero{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1.4rem 2.4rem;padding:1.4rem 2rem;overflow:auto}
+.hero .qr{width:min(54vh,23rem);aspect-ratio:1;background:#fff;border-radius:12px;padding:.2rem;flex:none}
+.hero .qr svg{width:100%;height:100%;display:block}
+.hero .info{display:flex;flex-direction:column;align-items:flex-start;gap:.7rem;min-width:0;max-width:26rem}
+.hero .hl{font-size:1.1rem}
+.hero .code{font-size:3.3rem;font-weight:800;letter-spacing:.18em;line-height:1}
+.hero .check,.qrover .check{color:var(--muted);font-size:1rem}
+.hero .check b,.qrover .check b{color:var(--ink);font-size:1.25rem;letter-spacing:.12em;margin-left:.3rem}
+.hero .joined{font-size:1.5rem}
+.hero .warn,.hero .hint{margin:0}
+.settings{flex:0 0 22rem;max-width:44%;background:var(--panel);border-left:1px solid var(--line);padding:.9rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;overflow:auto;font-size:.88rem}
+.settings h2{margin:0;font-size:1.05rem}
+.settings .sfield{display:flex;flex-direction:column;gap:.3rem}
+.settings .slabel{font-weight:600}
+.settings .shint{color:var(--muted);font-size:.8rem}
+.settings .exonly{background:var(--bg);border-radius:10px;padding:.55rem .7rem;display:flex;flex-direction:column;gap:.6rem;margin-top:-.25rem}
+.settings .trow{display:flex;align-items:center;justify-content:space-between;gap:.8rem}
+.settings select,.settings input[type=number]{font:inherit;padding:.35rem .5rem;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.settings .sline{height:1px;background:var(--line);flex:none}
+.settings .minor{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem}
+.settings .minor label{display:flex;align-items:center;gap:.5rem}
+.settings .minor input[type=number]{width:4.5rem}
+/* two or three buttons that work as one choice (radio buttons underneath) */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:var(--soft);border-radius:10px;padding:3px;gap:2px}
+.seg label{position:relative;display:flex;align-items:center;justify-content:center;min-height:2.15rem;padding:.25rem .6rem;border-radius:8px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center}
+.seg label:has(input:checked){background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.seg input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.seg label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:1px}
+.lobbyfoot .btn.big{width:auto;margin:0;font-size:1.15rem;padding:.7rem 1.8rem}
+#projrow{display:flex;align-items:center;gap:.4rem .8rem;flex-wrap:wrap;flex:1;min-width:0}
+#projrow small{color:var(--muted);font-size:.8rem;max-width:34rem}
+#projrow small.warn{color:var(--bad);font-weight:600}
+#projrow .on{font-weight:700;color:var(--good)}
+.setpanel{max-width:38rem}
+.setpanel .cbody{padding:.9rem 1.3rem;overflow:auto;display:flex;flex-direction:column;gap:.4rem}
+.setpanel label{font-weight:600}
+.setpanel input[type=url]{font:inherit;width:100%;padding:.5rem .6rem;border:1px solid var(--line);border-radius:8px;background:#fff}
+.setpanel h3{margin:.9rem 0 .2rem;font-size:1rem}
+.setpanel .keys{display:grid;grid-template-columns:auto 1fr;gap:.35rem .9rem;font-size:.9rem}
+.setpanel .keys span:nth-child(even){color:var(--muted)}
+.setpanel kbd{font:inherit;font-size:.78rem;border:1px solid var(--line);border-radius:4px;padding:0 .35rem}
 .btn.big{font-size:1.2rem;padding:.8rem 1.6rem;margin-top:1.2rem;width:100%}
 
 /* overlays */
@@ -168,7 +218,7 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .avg{font-size:5rem;font-weight:800;line-height:1}
 .hard{display:grid;grid-template-columns:3.2rem 1fr 6.5rem;gap:.4rem .8rem;align-items:center}
 .hard .lbl{font-weight:700}
-.hard .hb{height:.9rem;background:#efede8;border-radius:99px;overflow:hidden}
+.hard .hb{height:.9rem;background:var(--track);border-radius:99px;overflow:hidden}
 .hard .hb span{display:block;height:100%;background:var(--good)}
 .hard .hb span.low{background:var(--bad)}
 .hard .hb span.mid{background:var(--warn)}
@@ -180,15 +230,14 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .center{display:flex;align-items:center;justify-content:center;padding:2rem}
 .center .card{max-width:38rem}
 .center h1{margin-top:0}
-.settings details.adv{margin-top:1rem;border-top:1px solid var(--line);padding-top:.6rem}
-.settings details.adv summary{cursor:pointer;color:var(--muted);font-size:.9rem;font-weight:600}
-@media (max-width:760px){ .libgrid,.lobbygrid{grid-template-columns:1fr} .top{flex-wrap:wrap} }
+@media (max-width:760px){ .lobbybody{flex-direction:column;overflow:auto} .settings{flex:none;max-width:none;border-left:0;border-top:1px solid var(--line)} .libgrid,.rungrid{grid-template-columns:1fr} .top{flex-wrap:wrap} .libgrid{grid-template-rows:none;overflow:auto} .libside .recent{overflow:visible} }
 
 /* projector window: lobby setting + header chip on the laptop */
-.settings .proj{margin:.8rem 0 .2rem;padding:.7rem .8rem;border:1px dashed var(--line);border-radius:10px}
-.settings .proj .btn{margin:0 .4rem .3rem 0}
-.settings .proj .on{font-weight:700;color:var(--good);margin-right:.5rem}
 .chip.on{border-color:var(--accent);background:var(--accent-soft)}
+.xbtn{font-size:1rem;line-height:1;padding:.35rem .6rem}
+.tsize{display:inline-flex;align-items:center;gap:.2rem;font-size:.85rem;color:var(--muted);white-space:nowrap}
+.tsize .chip{padding:.2rem .55rem;font-weight:700;font-size:.85rem}
+.tsize output{min-width:2.9rem;text-align:center}
 .chip.proj{background:var(--good-soft);border-color:#a9d8bb}
 .mirror{margin:.6rem 1.2rem 0;padding:.5rem .8rem;border-radius:10px;background:var(--bad-soft);color:#6b1d11;font-size:.85rem}
 .mirror:empty{margin:0;padding:0}
@@ -203,7 +252,7 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .ccase figure.qimg img{max-height:26vh}
 .ccase .lead{margin-top:.6rem;font-size:.95rem}
 .opt.key{border-color:var(--good)}
-.opt.key .letter{background:var(--good);color:#fff}
+.opt.key .letter{background:var(--good);color:var(--accent-ink)}
 .opt .keytag{font-size:.72rem;font-weight:700;color:var(--good);margin-left:.4rem;white-space:nowrap}
 .cright{display:flex;flex-direction:column;gap:.6rem}
 .notes{font-size:.88rem;padding:.9rem 1.1rem}
@@ -248,6 +297,7 @@ var APP_VERSION = '4';
 var LET = 'ABCDEFGH'.split('');
 function letters(n){ return LET.slice(0, n); }
 var app = document.getElementById('app');
+function nOf(n, word){ n = +n || 0; return n + ' ' + word + (n === 1 ? '' : 's'); }   // 1 case, 2 cases
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 var store = {
   get: function(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
@@ -348,39 +398,7 @@ function hash(str){ var h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (var i=0, ch; i<st
   return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(36); }
 
 /* ---------- pack checking ---------- */
-var IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
-/* Optional teacher-only fields: the quiz's description, and per case a First Aid topic path
-   (chapter › subtopic › entry, up to 3 levels) and the concept it tests. They are shown only on the
-   quiz-choosing page (and in the results); never sent to phones. A topic may be a list or "A › B › C". */
-function topicOf(q){
-  var t = q && q.topic;
-  if (typeof t === 'string') t = t.split(/\s*[›>]\s*/);
-  if (!Array.isArray(t)) return [];
-  return t.map(function(x){ return typeof x === 'string' ? x.trim() : ''; }).filter(Boolean).slice(0, 3);
-}
-function conceptOf(q){ return q && typeof q.concept === 'string' ? q.concept.trim() : ''; }
-function checkPack(p){
-  var errs = [], warns = [];
-  if (!p || typeof p !== 'object' || Array.isArray(p)) return { errs: ['This file is not a quiz pack.'], warns: [] };
-  if (!Array.isArray(p.questions) || !p.questions.length) return { errs: ['The file has no questions.'], warns: [] };
-  if (p.description != null && typeof p.description !== 'string') errs.push('The quiz description must be text.');
-  var images = (p.images && typeof p.images === 'object') ? p.images : {};
-  Object.keys(images).forEach(function(k){ if (typeof images[k] !== 'string' || !IMG_RE.test(images[k])) errs.push('Image “' + k + '” is not a valid embedded picture.'); });
-  p.questions.forEach(function(q, i){
-    var n = 'Question ' + (i+1) + ': ';
-    if (!q || typeof q !== 'object') { errs.push(n + 'is empty.'); return; }
-    if (typeof q.stem !== 'string' || !q.stem.trim()) errs.push(n + 'the case text is missing.');
-    if (typeof q.lead !== 'string' || !q.lead.trim()) errs.push(n + 'the question line is missing.');
-    if (!Array.isArray(q.options) || q.options.length < 2 || q.options.length > 8 || q.options.some(function(o){ return typeof o !== 'string' || !o.trim(); })) { errs.push(n + 'needs 2 to 8 answer options, none empty.'); return; }
-    var ls = letters(q.options.length);
-    if (ls.indexOf(q.answer) < 0) errs.push(n + 'the correct answer must be one of ' + ls.join(', ') + '.');
-    ['image', 'explainImage'].forEach(function(k){ if (q[k] && !images[q[k]]) errs.push(n + 'picture “' + q[k] + '” is missing from the pack.'); });
-    if (q.topic != null && typeof q.topic !== 'string' && !(Array.isArray(q.topic) && q.topic.length <= 3 && q.topic.every(function(t){ return typeof t === 'string'; }))) errs.push(n + 'the topic must be up to 3 names: chapter, subtopic, entry.');
-    if (q.concept != null && typeof q.concept !== 'string') errs.push(n + 'the concept must be text.');
-    if (!q.explain) warns.push('Question ' + (i+1) + ' has no explanation.');
-  });
-  return { errs: errs, warns: warns };
-}
+/*__PACK__*/
 function packKey(p){ var base = String(p.id || p.title || 'quiz').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'quiz'; return base + '-' + hash(JSON.stringify(p.questions) + JSON.stringify(Object.keys(p.images || {}))); }
 
 /* ---------- the editor page (same folder): write, fix and open quiz packs ---------- */
@@ -392,17 +410,21 @@ function editorUrl(key){
 }
 
 /* ---------- library: choose a quiz pack ---------- */
+function pageNav(){                                // the teacher pages, the same in the player and the editor
+  return '<nav class="pagenav" aria-label="Pages"><a aria-current="page">Player</a><a href="'+esc(editorUrl())+'" id="navEditor">Editor</a><a href="study/" id="navStudy">Self-study</a></nav>';
+}
 function library(msgHtml){
+  document.documentElement.style.removeProperty('--scale');
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">Live quiz · player</div><div class="spacer"></div><span class="hint">v'+APP_VERSION+'</span></header>'+
+    '<div class="screen"><header class="top"><div class="title">Live quiz</div>'+pageNav()+'<div class="spacer"></div><span class="hint">v'+APP_VERSION+'</span></header>'+
     '<main class="libgrid">'+
-      '<section class="card drop" id="drop"><h1>Load a quiz</h1>'+
-        '<p>Choose a quiz pack file (<b>.quiz.json</b>), for example from your Google Drive folder, or drag it onto this box.</p>'+
-        '<label class="btn primary big filebtn">Choose quiz file…<input type="file" id="file" accept=".json,application/json" hidden></label>'+
+      '<section class="card drop" id="drop"><h1>Load a set</h1>'+
+        '<p>Choose a quiz file (<b>.quiz.json</b>), for example from your Google Drive folder, or drag it onto this box.</p>'+
+        '<label class="btn primary big filebtn">Choose quiz file…<input type="file" id="file" class="vh" accept=".json,application/json"></label>'+
         '<div class="loaderr" id="loaderr">'+(msgHtml || '')+'</div></section>'+
-      '<section class="card"><h2 style="margin-top:0">Recent quizzes</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>'+
-        '<p class="hint">Quizzes you load are remembered in this browser on this computer.</p>'+
-        '<p><a class="btn" id="editorLink" href="'+esc(editorUrl())+'">Write or edit a quiz in the editor</a></p></section>'+
+      '<section class="card libside"><h2 style="margin-top:0">Recent sets</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>'+
+        '<p class="hint">Sets you load are remembered in this browser on this computer.</p>'+
+        '<p><a class="btn" id="editorLink" href="'+esc(editorUrl())+'">Write or edit a set in the editor</a></p></section>'+
     '</main><footer></footer></div>';
   var drop = document.getElementById('drop'), inp = document.getElementById('file');
   inp.addEventListener('change', function(){ if (inp.files && inp.files[0]) readFile(inp.files[0]); inp.value = ''; });
@@ -418,35 +440,37 @@ function renderRecent(){
     if (!list.length) { el.innerHTML = '<p class="hint">None yet.</p>'; return; }
     el.innerHTML = list.map(function(r){
       var d = r.pack && typeof r.pack.description === 'string' ? r.pack.description.trim() : '';
-      return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div>'+(d ? '<div class="rd">'+esc(d)+'</div>' : '')+'<div class="rm">'+r.n+' questions · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
-      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><button class="btn small" data-cases="'+esc(r.key)+'" title="What each case is about (only on this screen)">Cases</button>'+
-      '<a class="btn small" href="'+esc(editorUrl(r.key))+'" title="Open this quiz in the editor">Edit</a><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
+      return '<div class="rrow"><div><div class="rt">'+esc(r.title)+'</div>'+(d ? '<div class="rd">'+esc(d)+'</div>' : '')+'<div class="rm">'+nOf(r.n, 'case')+' · loaded '+new Date(r.loadedAt).toLocaleDateString()+'</div></div>'+
+      '<button class="btn small primary" data-use="'+esc(r.key)+'">Use</button><button class="btn small" data-cases="'+esc(r.key)+'" title="The set description and what each case tests">Contents</button>'+
+      '<a class="btn small" href="'+esc(editorUrl(r.key))+'" title="Open this set in the editor">Edit</a><button class="btn small" data-forget="'+esc(r.key)+'" title="Remove from this list">Remove</button></div>'; }).join('');
     el.onclick = function(e){
       var u = e.target.closest('[data-use]'), f = e.target.closest('[data-forget]'), c = e.target.closest('[data-cases]');
       if (u) useRecent(u.getAttribute('data-use'));
       if (c) idb.get(c.getAttribute('data-cases')).then(function(r){ if (r) casesDialog(r); });
       if (f) idb.del(f.getAttribute('data-forget')).then(renderRecent, renderRecent);
     };
-  }, function(){ el.innerHTML = '<p class="hint">This browser can’t remember quizzes here — just choose the file each time.</p>'; });
+  }, function(){ el.innerHTML = '<p class="hint">This browser can’t remember sets here — just choose the file each time.</p>'; });
 }
 function useRecent(key){ idb.get(key).then(function(r){ if (r) { r.loadedAt = Date.now(); idb.put(r).catch(function(){}); start(r.pack, r.key, 'new'); } }); }
 /* The list of cases with their topic and concept: for the teacher choosing a quiz. It names what each case
    tests, so it exists only on this page, never in the lobby, the quiz screens or the projector window. */
-function casesDialog(r){
+function casesDialog(r, opt){
+  opt = opt || {};
   var p = r.pack, qs = p.questions || [], d = typeof p.description === 'string' ? p.description.trim() : '';
   var any = qs.some(function(q){ return conceptOf(q) || topicOf(q).length; });
   var o = document.createElement('div'); o.className = 'casesover'; o.id = 'casesover';
   o.innerHTML = '<div class="cpanel" role="dialog" aria-modal="true" aria-labelledby="casesTitle">'+
     '<div class="chead"><div><h2 id="casesTitle">'+esc(r.title)+'</h2>'+(d ? '<p class="cdesc">'+esc(d)+'</p>' : '')+
-      '<p class="rm">'+qs.length+' cases · the concepts give the answers away, so this list is only shown here, never during the quiz</p></div>'+
-      '<button class="btn small" data-close>Close</button></div>'+
-    (any ? '' : '<p class="hint">This quiz has no topics or concepts yet; each case shows its first words. Add them in the editor (Edit).</p>')+
+      '<p class="rm">'+nOf(qs.length, 'case')+' · the concepts give the answers away, so this list is never shown during the quiz</p>'+
+      (opt.oneScreen ? '<p class="warn" id="casesWarn">If this screen is on the projector, students can see this list now.</p>' : '')+'</div>'+
+      '<button class="btn small xbtn" data-close aria-label="Close" title="Close (Esc)">✕</button></div>'+
+    (any ? '' : '<p class="hint">This set has no topics or concepts yet; each case shows its first words. Add them in the editor (Edit).</p>')+
     '<ol class="clist">'+qs.map(function(q, i){
       var t = topicOf(q), c = conceptOf(q), s = String(q.stem || '').replace(/\n• /g, '; ').replace(/\s+/g, ' ').trim();
       return '<li><span class="cn">'+(i+1)+'</span><div>'+(t.length ? '<div class="ctopic">'+t.map(esc).join(' › ')+'</div>' : '')+
         (c ? '<div class="cconcept">'+esc(c)+'</div>' : '<div class="cstem">'+esc(s.length > 120 ? s.slice(0, 118) + '…' : s)+'</div>')+'</div></li>';
     }).join('')+'</ol>'+
-    '<div class="cfoot"><button class="btn" data-close>Close</button><button class="btn primary" data-usecase>Use this quiz</button></div></div>';
+    '<div class="cfoot"><button class="btn" data-close>Close</button>'+(opt.lobby ? '' : '<button class="btn primary" data-usecase>Use this set</button>')+'</div></div>';
   function close(){ document.removeEventListener('keydown', onKey); o.remove(); }
   function onKey(e){ if (e.key === 'Escape') close(); }
   o.addEventListener('click', function(e){
@@ -464,7 +488,7 @@ function showLoadError(lines){
 function readFile(file){
   var fr = new FileReader();
   fr.onload = function(){
-    var p; try { p = JSON.parse(fr.result); } catch(e){ showLoadError(['It is not a quiz pack (the file could not be read as JSON).']); return; }
+    var p; try { p = JSON.parse(fr.result); } catch(e){ showLoadError(['It is not a quiz file (it could not be read as JSON).']); return; }
     var c = checkPack(p); if (c.errs.length) { showLoadError(c.errs); return; }
     var key = packKey(p), rec = { key: key, title: p.title || file.name.replace(/\.quiz\.json$|\.json$/i, ''), n: p.questions.length, loadedAt: Date.now(), pack: p };
     p.title = rec.title;
@@ -490,7 +514,7 @@ function start(pack, key, mode, warns){
   if (openKey) {
     try { var u = new URL(location.href); u.searchParams.delete('open'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch(e){}
     idb.get(openKey).then(function(rec){
-      if (!rec || !rec.pack) { library('<p class="warn">That quiz is no longer in this browser. Choose the file instead.</p>'); return; }
+      if (!rec || !rec.pack) { library('<p class="warn">That set is no longer in this browser. Choose the file instead.</p>'); return; }
       rec.loadedAt = Date.now(); idb.put(rec).catch(function(){});
       store.del(SESSION_KEY); start(rec.pack, rec.key, 'new');
     }, function(){ library(); });
@@ -499,12 +523,12 @@ function start(pack, key, mode, warns){
   var saved = store.get(SESSION_KEY);
   if (saved && saved.packKey && saved.savedAt && Date.now() - saved.savedAt < 12*3600*1000 && (saved.played || []).length) {
     idb.get(saved.packKey).then(function(rec){
-      if (!rec || !rec.pack) { library('<p class="hint">Your last session used “'+esc(saved.packTitle || 'a quiz')+'”. Load that file again to continue it, or choose another quiz.</p>'); return; }
-      var where = saved.phase === 'end' ? 'finished' : 'at question ' + (saved.qi+1) + ' of ' + rec.n;
+      if (!rec || !rec.pack) { library('<p class="hint">Your last session used “'+esc(saved.packTitle || 'a set')+'”. Load that file again to continue it, or choose another set.</p>'); return; }
+      var where = saved.phase === 'end' ? 'finished' : saved.phase === 'run' ? 'running self-paced' : 'at case ' + (saved.qi+1) + ' of ' + rec.n;
       app.innerHTML = '<div class="screen"><header class="top"><div class="title">Live quiz · player</div></header><main class="center"><div class="card">'+
-        '<h1>Continue the last session?</h1><p><b>'+esc(rec.title)+'</b> — session <b>'+esc(saved.code)+'</b> was '+where+', with '+Object.keys(saved.everyone||{}).length+' students. Phones reconnect by themselves if you continue.</p>'+
+        '<h1>Continue the last session?</h1><p><b>'+esc(rec.title)+'</b> — session <b>'+esc(saved.code)+'</b> was '+where+', with '+nOf(Object.keys(saved.everyone||{}).length, 'student')+'. Phones reconnect by themselves if you continue.</p>'+
         '<p><button class="btn primary big" id="resumeBtn">Continue session '+esc(saved.code)+'</button></p>'+
-        '<p><button class="btn" id="freshBtn">Choose a quiz instead</button></p></div></main><footer></footer></div>';
+        '<p><button class="btn" id="freshBtn">Choose a set instead</button></p></div></main><footer></footer></div>';
       document.getElementById('resumeBtn').onclick = function(){ start(rec.pack, rec.key, 'resume'); };
       document.getElementById('freshBtn').onclick = function(){ store.del(SESSION_KEY); library(); };
     }, function(){ library(); });
@@ -555,7 +579,12 @@ function checkPretty(){ if (VIEW) return V ? String(V.check || '') : ''; return 
 function hashImages(){ return Promise.all(Object.keys(IMAGES).map(function(id){ return sha256(IMAGES[id]).then(function(h){ IMG_HASH[id] = b64u(h); }); })); }
 function signText(text){ return crypto.subtle.sign({ name:'ECDSA', hash:'SHA-256' }, KEYPAIR.privateKey, new TextEncoder().encode(text)).then(b64u); }
 
-var settings = Object.assign({ studentUrl:'', t1:90, t2:60, autoClose:true, confidence:true, startAt:1 }, store.get(SETTINGS_KEY) || {});
+var settings = Object.assign({ studentUrl:'', mode:'practice', t1:90, t2:60, tp:90, pace:'together', order:'set', confidence:true, startAt:1, scale:1 }, store.get(SETTINGS_KEY) || {});
+if (settings.shuffle === true && settings.order === 'set') settings.order = 'shuffle';   // the old checkbox
+delete settings.shuffle; delete settings.autoClose;
+function selfPaced(){ return settings.mode === 'exam' && settings.pace === 'self'; }   // Practice always runs together
+var SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.4];     // text size on the room's screen (A− / A+)
+if (SCALES.indexOf(+settings.scale) < 0) settings.scale = 1;
 if (/^https?:$/.test(location.protocol)) {
   // The phone page used to be this folder itself; the folder now opens the player and the phone page is join/.
   var SITE = new URL('./', location.href).href;
@@ -641,7 +670,8 @@ function setupConn(conn){
     if (!sid || !conns[sid] || conns[sid].conn !== conn) return;
     conns[sid].last = Date.now();
     if (msg.t === 'hb') { try { conn.send({ t:'pong' }); } catch(e){} return; }
-    if (msg.t === 'answer') onAnswer(sid, msg);
+    if (msg.t === 'answer') { if (S.phase === 'run') runAnswer(sid, msg); else onAnswer(sid, msg); }
+    else if (msg.t === 'rev') onRev(sid, msg);
   });
   conn.on('close', function(){ if (sid && conns[sid] && conns[sid].conn === conn) { delete conns[sid]; refreshCounts(); } });
   conn.on('error', function(){});
@@ -663,7 +693,7 @@ function onAnswer(sid, m){
   send(sid); refreshCounts(); maybeAutoClose();
 }
 function maybeAutoClose(){
-  if (VIEW || !S || S.phase !== 'vote' || !settings.autoClose) return;
+  if (VIEW || !S || S.phase !== 'vote') return;   // voting closes as soon as every connected student has answered
   var on = onlineSids(); if (!on.length) return;
   var b = peekBucket(S.qi, S.round);
   for (var i=0;i<on.length;i++) if (!b[on[i]]) return;
@@ -672,25 +702,39 @@ function maybeAutoClose(){
 
 /* ---------- messages to phones ---------- */
 function imgRef(id, cap){ return id && IMAGES[id] ? { id: PACK_KEY + ':' + id, caption: cap || '', hash: IMG_HASH[id] || '' } : null; }
+function revealOf(q){ return { answer: q.answer, explain: q.explain || '', why: q.why || {}, objective: q.objective || '', image: imgRef(q.explainImage, q.explainCaption) }; }
+function caseOf(q){ return { stem: q.stem, lead: q.lead, options: q.options, image: imgRef(q.image, q.imageCaption) }; }
 function stateFor(sid){
   var st = { t:'state', v: 2, title: QUIZ.title, phase: S.phase, qi: S.qi, total: TOTAL, round: S.round, confidence: !!settings.confidence };
+  if (isExam()) { st.exam = true; if (S.review) st.review = true; }
+  if (S.phase === 'run') return runStateFor(sid, st);
   if (S.phase === 'vote' || S.phase === 'closed' || S.phase === 'reveal') {
     var q = QUESTIONS[S.qi];
-    st.q = { stem: q.stem, lead: q.lead, options: q.options, image: imgRef(q.image, q.imageCaption) };
+    st.q = caseOf(q);
     st.mine = peekBucket(S.qi, S.round)[sid] || null;
     st.first = S.round === 2 ? (peekBucket(S.qi, 1)[sid] || null) : null;
     if (S.phase === 'vote' && S.deadline) st.remaining = Math.max(0, Math.round((S.deadline - Date.now())/1000));
-    if (S.phase === 'reveal') { st.reveal = { answer: q.answer, explain: q.explain || '', why: q.why || {}, objective: q.objective || '', image: imgRef(q.explainImage, q.explainCaption) }; st.final = finalBucket(S.qi)[sid] || null; }
+    if (S.phase === 'reveal') { st.reveal = revealOf(q); st.final = finalBucket(S.qi)[sid] || null; }
   }
-  if (S.phase === 'end') st.result = resultFor(sid);
+  if (S.phase === 'end') {
+    st.result = resultFor(sid);
+    var rv = revOf(sid);                            // the case this student opened from their results
+    if (rv >= 0) st.rev = { qi: rv, q: caseOf(QUESTIONS[rv]), reveal: revealOf(QUESTIONS[rv]), final: finalBucket(rv)[sid] || null };
+  }
   return st;
 }
 var CHUNK = 15000;
+function caseView(sid){                            // the case this phone shows now, and whether with its explanation
+  if (['vote','closed','reveal'].indexOf(S.phase) >= 0) return { qi: S.qi, reveal: S.phase === 'reveal' };
+  if (S.phase === 'run' && !S.timeUp) { var qi = seatCase(S.seats && S.seats[sid]); if (qi >= 0) return { qi: qi, reveal: false }; }
+  if (S.phase === 'end') { var rv = revOf(sid); if (rv >= 0) return { qi: rv, reveal: true }; }
+  return null;
+}
 function pushImages(sid){
-  var c = conns[sid]; if (!c || !c.conn.open || ['vote','closed','reveal'].indexOf(S.phase) < 0) return;
-  var q = QUESTIONS[S.qi], ids = [];
+  var c = conns[sid], v = c && c.conn.open ? caseView(sid) : null; if (!v) return;
+  var q = QUESTIONS[v.qi], ids = [];
   if (q.image) ids.push(q.image);
-  if (S.phase === 'reveal' && q.explainImage) ids.push(q.explainImage);
+  if (v.reveal && q.explainImage) ids.push(q.explainImage);
   ids.forEach(function(id){
     var key = PACK_KEY + ':' + id, data = IMAGES[id];
     if (!data || c.sent[key]) return;
@@ -718,7 +762,11 @@ function send(sid){
 function broadcast(){ for (var sid in conns) send(sid); }
 
 /* ---------- flow ---------- */
-function startQuiz(){ var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)); S.qi = s-1; startVote(1); }
+/* Practice: results and the answer after each case. Exam: cases one after another with no results or answers;
+   at the end a review steps through every case asked (class results, answer, explanation), then the results. */
+function isExam(){ return !!S && S.mode === 'exam'; }
+function startQuiz(){ if (selfPaced()) return startRun(); var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)); S.pace = 'together'; S.mode = settings.mode === 'exam' ? 'exam' : 'practice'; S.review = false; S.qi = s-1; startVote(1); }
+function startReview(){ if (!S.played.length) return finish(); S.review = true; S.round = 1; S.qi = S.played[0]; reveal(); }
 function startVote(round){
   S.phase = 'vote'; S.round = round; showStem = false;
   if (S.played.indexOf(S.qi) < 0) S.played.push(S.qi);
@@ -728,38 +776,119 @@ function startVote(round){
 }
 function closeVoting(){ if (S.phase !== 'vote') return; S.phase = 'closed'; S.deadline = null; save(); broadcast(); render(true); }
 function reveal(){ S.phase = 'reveal'; showStem = false; save(); broadcast(); render(true); }
-function next(){ if (S.qi < TOTAL-1) { S.qi++; startVote(1); } else finish(); }
+function next(){
+  if (isExam() && S.review) { var i = S.played.indexOf(S.qi); if (i >= 0 && i < S.played.length - 1) { S.qi = S.played[i+1]; reveal(); } else finish(); return; }
+  if (S.qi < TOTAL-1) { S.qi++; startVote(1); } else if (isExam()) startReview(); else finish();
+}
+function lastReview(){ return S.played.indexOf(S.qi) === S.played.length - 1; }
 function finish(){ S.phase = 'end'; S.deadline = null; save(); broadcast(); render(true); }
 function addTime(){ if (S.phase !== 'vote') return; S.deadline = Math.max(S.deadline || Date.now(), Date.now()) + 30000; S.dur = (S.dur || 0) + 30; save(); broadcast(); updateScreen(); }
 function leaveToLibrary(){ store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.reload(); }
 
+/* ---------- self-paced: every phone moves through the cases on its own; the room's screen shows only progress ----------
+   Each student has a seat: their order of the cases (the same for everyone, or shuffled) and how far they are.
+   A phone is sent only the case its student is on. Self-paced is always an exam (Practice runs together): an answer
+   is saved and the next case follows at once; the answers come when the teacher ends the exam.
+   One total time for the whole set (or none); when it is up, no more answers are taken. */
+function isSelf(){ return !!S && S.pace === 'self'; }
+function shuffled(a){ a = a.slice(); var r = new Uint32Array(a.length || 1); crypto.getRandomValues(r); for (var i = a.length - 1; i > 0; i--) { var j = r[i] % (i + 1), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function startRun(){
+  var s = Math.min(TOTAL, Math.max(1, parseInt(settings.startAt,10) || 1)), list = [], per = +settings.tp;
+  for (var i = s - 1; i < TOTAL; i++) list.push(i);
+  S.pace = 'self'; S.mode = 'exam'; S.review = false; S.shuffle = settings.order === 'shuffle';
+  S.phase = 'run'; S.qi = -1; S.round = 1; S.played = list; S.seats = {}; S.timeUp = false;
+  S.dur = per > 0 ? per * list.length : 0; S.deadline = per > 0 ? Date.now() + S.dur * 1000 : null;
+  save(); broadcast(); render(true);
+}
+function seatOf(sid){                               // a student's seat; a student who joins during the run gets one at once
+  if (!S.seats) S.seats = {};
+  var st = S.seats[sid];
+  if ((!st || !st.order) && S.phase === 'run' && !S.timeUp) { st = S.seats[sid] = { order: S.shuffle ? shuffled(S.played) : S.played.slice(), i: 0 }; save(); }
+  return st && st.order ? st : null;
+}
+function seatCase(st){ return st && st.order && st.i < st.order.length ? st.order[st.i] : -1; }
+function runStateFor(sid, st){
+  var seat = seatOf(sid), qi = seatCase(seat);
+  st.pace = 'self'; st.count = S.played.length;
+  if (S.deadline) st.remaining = Math.max(0, Math.round((S.deadline - Date.now()) / 1000));
+  if (qi < 0 || S.timeUp) {
+    var answered = 0;
+    S.played.forEach(function(q){ if (peekBucket(q, 1)[sid]) answered++; });
+    st.phase = 'done'; st.done = { answered: answered, timeUp: !!S.timeUp, finished: !!seat && qi < 0 };
+    return st;
+  }
+  var q = QUESTIONS[qi], mine = peekBucket(qi, 1)[sid] || null;
+  st.qi = qi; st.pos = seat.i + 1; st.q = caseOf(q); st.mine = mine; st.phase = 'vote';
+  return st;
+}
+function runAnswer(sid, m){
+  var seat = seatOf(sid), qi = seatCase(seat);
+  if (!seat || S.timeUp || qi < 0 || m.qi !== qi || m.round !== 1 || LQ(qi).indexOf(m.c) < 0) { send(sid); return; }
+  var b = bucket(qi, 1);
+  if (!b[sid]) { b[sid] = { c: m.c, sure: settings.confidence ? m.sure !== false : null }; seat.i++; save(); }
+  send(sid); refreshCounts();
+}
+function revOf(sid){ var r = S.seats && S.seats[sid] && S.seats[sid].rev; return typeof r === 'number' && S.played.indexOf(r) >= 0 ? r : -1; }
+function onRev(sid, m){                             // after the end: a student opens one case from their results (or goes back)
+  if (!S || S.phase !== 'end' || typeof m.qi !== 'number') { send(sid); return; }
+  if (!S.seats) S.seats = {};
+  var seat = S.seats[sid] || (S.seats[sid] = {});
+  seat.rev = S.played.indexOf(m.qi) >= 0 ? m.qi : null;
+  send(sid);
+}
+function runTimeUp(){ if (!S || S.phase !== 'run' || S.timeUp) return; S.timeUp = true; S.deadline = null; save(); broadcast(); render(true); }
+function addRunTime(){                              // +5 minutes, also after the time is up
+  if (!S || S.phase !== 'run' || (!S.deadline && !S.timeUp)) return;
+  S.deadline = Math.max(S.deadline || 0, Date.now()) + 300000; S.dur = (S.dur || 0) + 300; S.timeUp = false;
+  save(); broadcast(); render(true);
+}
+function runSummary(full){                          // full: the laptop while the projector window shows the room
+  var seats = S.seats || {}, n = S.played.length, done = 0, answered = 0, bars = [], students = 0;
+  Object.keys(seats).forEach(function(sid){
+    var st = seats[sid]; if (!st.order) return;
+    var a = 0; S.played.forEach(function(qi){ if (peekBucket(qi, 1)[sid]) a++; });
+    students++; answered += a; if (a >= n || seatCase(st) < 0) done++; bars.push(n ? a / n : 0);
+  });
+  bars.sort(function(x, y){ return y - x; });
+  var cases = (!isExam() || full) ? S.played.map(function(qi){
+    var t = tallyOf(peekBucket(qi, 1), qi), k = t.opts[LQ(qi).indexOf(QUESTIONS[qi].answer)].all;
+    return { qi: qi, n: t.n, pc: t.n ? Math.round(k * 100 / t.n) : 0, key: full ? QUESTIONS[qi].answer : '' };
+  }) : null;
+  return { students: students, done: done, answered: answered, possible: students * n, count: n, bars: bars, cases: cases, timeUp: !!S.timeUp, full: !!full };
+}
+
 var actions = {
   start: startQuiz,
   close: closeVoting,
-  revote: function(){ if (S.phase === 'closed' && S.round === 1) startVote(2); },
-  reveal: function(){ if (S.phase === 'closed') reveal(); },
-  next: function(){ if (S.phase === 'reveal') next(); },
+  revote: function(){ if (S.phase === 'closed' && S.round === 1 && !isExam()) startVote(2); },
+  reveal: function(){ if (S.phase === 'closed' && !isExam()) reveal(); },
+  next: function(){ if (S.phase === 'reveal' || (S.phase === 'closed' && isExam() && !S.review)) next(); },
   more: addTime,
   qr: function(){ qrOpen = !qrOpen; var o = document.querySelector('.qrover'); if (o) o.classList.toggle('open', qrOpen); renderProjChip(); pushView(); },
   unzoom: function(){ setZoom(null); },
   togglestem: function(){ showStem = !showStem; if (consoleOn()) { updateControls(); renderProjChip(); } else renderLeft(); pushView(); },
   peek: function(){ peek = !ansShown(); notesKey = ''; updateConsole(); },
+  contents: function(){ if (S.phase === 'lobby') casesDialog({ key: PACK_KEY, title: QUIZ.title, pack: QUIZ }, { lobby: true, oneScreen: !audienceOn() }); },
   audience: openAudience,
   closeaud: function(){ vsend({ t:'close' }); try { if (aud.win && !aud.win.closed) aud.win.close(); } catch(e){} aud.win = null; aud.beat = 0; audCheck(); },
-  end: function(){ if (isArmed('end')) { armed.k = ''; finish(); } else arm('end', updateControls); },
+  end: function(){ if (isArmed('end')) { armed.k = ''; if (isExam() && !S.review && S.phase !== 'lobby' && !isSelf()) startReview(); else finish(); } else arm('end', updateControls); },
+  more5: addRunTime,
   csv: downloadCsv,
   newsession: function(){ if (isArmed('new')) { armed.k = ''; store.del(SESSION_KEY); conns = {}; try { peer && peer.destroy(); } catch(e){} peer = null; newSession(); } else arm('new', function(){ render(true); }); },
   change: function(){ if (S.phase === 'lobby' || isArmed('change')) leaveToLibrary(); else arm('change', function(){ render(true); }); },
   edit: function(){ if (S.phase !== 'lobby') return; store.del(SESSION_KEY); try { if (peer) peer.destroy(); } catch(e){} location.href = editorUrl(PACK_KEY); },
   newcode: function(){ newCode(); },
+  settings: function(){ if (S && S.phase === 'lobby') settingsDialog(); },
+  smaller: function(){ stepScale(-1); },
+  bigger: function(){ stepScale(1); },
   copylink: function(){
     var u = joinUrl(), b = document.getElementById('copyBtn'); if (!u) return;
     var done = function(){ if (b) { b.textContent = 'Link copied ✓'; setTimeout(function(){ if (b.isConnected) b.textContent = 'Copy link'; }, 2500); } };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(done, function(){ selectUrl(); });
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u).then(done, selectUrl);
     else selectUrl();
   }
 };
-function selectUrl(){ var el = document.querySelector('#join .url'); if (!el) return; var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+function selectUrl(){ if (!qrOpen) actions.qr(); var el = document.querySelector('.qrover .url'); if (!el) return; var r = document.createRange(); r.selectNodeContents(el); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
 on('click', function(e){
   var z = e.target.closest('img[data-zoom]'), el = e.target.closest('[data-act]');
   if (VIEW) {                                       // projector window: the presenter window decides
@@ -776,16 +905,17 @@ function handleKey(k){
   var zo = !!zoomId || !!document.querySelector('.zoomover.open');
   if (k === 'Escape') { if (zo) actions.unzoom(); else if (qrOpen) actions.qr(); return; }
   if (k === 'q' || k === 'Q') { actions.qr(); return; }
+  if (S.phase === 'run') { if (k === '+') addRunTime(); return; }   // self-paced: the phones move on, not the screen
   if (STEP_KEYS.indexOf(k) >= 0) {
     if (zo) actions.unzoom();
-    if (S.phase === 'lobby') startQuiz(); else if (S.phase === 'vote') closeVoting(); else if (S.phase === 'closed') reveal(); else if (S.phase === 'reveal') next();
+    if (S.phase === 'lobby') startQuiz(); else if (S.phase === 'vote') closeVoting(); else if (S.phase === 'closed') { if (isExam()) next(); else reveal(); } else if (S.phase === 'reveal') next();
     return;
   }
-  if ((k === 'd' || k === 'D') && S.phase === 'closed' && S.round === 1) startVote(2);
+  if ((k === 'd' || k === 'D') && S.phase === 'closed' && S.round === 1 && !isExam()) startVote(2);
   if (k === '+' && S.phase === 'vote') addTime();
 }
 on('keydown', function(e){
-  if (!S || e.target.matches('input,select,textarea')) return;
+  if (!S || e.target.matches('input,select,textarea') || document.getElementById('casesover') || document.getElementById('setover')) return;
   var k = e.key, step = STEP_KEYS.indexOf(k) >= 0;
   if (VIEW) { if (step || /^(Escape|q|Q|d|D|\+)$/.test(k)) { if (step) e.preventDefault(); vsend({ t:'key', key: k }); } return; }
   if (step) e.preventDefault();
@@ -793,8 +923,11 @@ on('keydown', function(e){
 });
 on('change', function(e){
   var el = e.target, key = el.getAttribute('data-set'); if (!key) return;
-  settings[key] = el.type === 'checkbox' ? el.checked : (el.type === 'number' || el.tagName === 'SELECT') ? +el.value : el.value.trim();
-  saveSettings(); if (key === 'studentUrl') updateLobby(); pushView();
+  settings[key] = el.type === 'checkbox' ? el.checked : el.hasAttribute('data-bool') ? el.value === '1' : (el.type === 'number' || el.tagName === 'SELECT') ? +el.value : el.value.trim();
+  saveSettings(); if (key === 'studentUrl') updateLobby();
+  if (['mode', 'pace', 'order', 'confidence'].indexOf(key) >= 0) renderSetup(key);
+  if (key === 'startAt') { var tp = document.getElementById('tp'); if (tp) tp.innerHTML = tpOpts(); }
+  pushView();
 });
 on('input', function(e){ if (e.target.getAttribute('data-set') === 'studentUrl') { settings.studentUrl = e.target.value.trim(); saveSettings(); updateLobby(); pushView(); } });
 
@@ -827,8 +960,8 @@ function audienceOn(){ if (VIEW || !VIEW_CH) return false; if (aud.win && aud.wi
 function consoleOn(){ return !!S && audienceOn() && ['vote','closed','reveal'].indexOf(S.phase) >= 0; }
 function audCheck(){
   var now = audienceOn(); if (now === audWas) return;
-  audWas = now;
-  if (S && ['vote','closed','reveal'].indexOf(S.phase) >= 0) render(true); else renderProj();
+  audWas = now; applyScale();
+  if (S && ['vote','closed','reveal','run'].indexOf(S.phase) >= 0) render(true); else renderProj();
 }
 function audienceUrl(){ return location.pathname + '?audience=' + VIEW_ID; }
 function openAudience(){
@@ -869,9 +1002,10 @@ function viewState(){
   var ans = {};
   if (S.phase === 'end') ans = S.answers; else if (S.qi >= 0 && S.answers[S.qi]) ans[S.qi] = S.answers[S.qi];
   return { t:'view', key: PACK_KEY,
-    S: { code: S.code, phase: S.phase, qi: S.qi, round: S.round, deadline: S.deadline, dur: S.dur, played: S.played.slice(), answers: ans, n: Object.keys(S.everyone).length },
+    S: { code: S.code, phase: S.phase, qi: S.qi, round: S.round, deadline: S.deadline, dur: S.dur, played: S.played.slice(), answers: ans, n: Object.keys(S.everyone).length, mode: S.mode, review: !!S.review, pace: S.pace, timeUp: !!S.timeUp },
+    run: S.phase === 'run' ? runSummary(false) : null,
     online: onlineSids().length, net: { st: peerStatus, stuck: !!netStuck(), err: lastErr }, join: joinUrl(), check: checkPretty(),
-    confidence: !!settings.confidence, qr: qrOpen, stem: showStem, zoom: zoomId && onProjector(zoomId) ? zoomId : null };
+    confidence: !!settings.confidence, qr: qrOpen, stem: showStem, zoom: zoomId && onProjector(zoomId) ? zoomId : null, scale: settings.scale };
 }
 var lastPush = 0, pushTimer = null;
 function pushView(){
@@ -894,9 +1028,10 @@ function applyView(m){                              // projector window: draw wh
 /* ---------- what the laptop shows about the projector ---------- */
 function projShows(){
   if (!S) return '';
+  if (S.phase === 'run') return qrOpen ? 'QR code' : 'progress, no cases';
   if (zoomId && onProjector(zoomId)) return 'enlarged picture';
   if (qrOpen && ['vote','closed','reveal'].indexOf(S.phase) >= 0) return 'QR code';
-  return { lobby:'join screen', vote:'question · results hidden', closed:'question · results', end:'class results' }[S.phase] || (showStem ? 'question · results' : 'answer & explanation');
+  return { lobby:'join screen', vote:'case · results hidden', closed: isExam() ? 'case · answers saved' : 'case · results', end:'class results' }[S.phase] || (showStem ? 'case · results' : 'answer & explanation');
 }
 function renderProjChip(){
   var c = document.getElementById('projchip'); if (c) c.innerHTML = '🖥 Projector: <b>'+esc(projShows())+'</b>';
@@ -905,15 +1040,14 @@ function renderProjChip(){
 function mirrorHtml(){
   return window.screen && screen.isExtended === false ? '<b>Only one screen in use.</b> If the projector shows a copy of this laptop, students can see this presenter view. Set the display to <b>Extend</b> (Windows: <b>Win + P → Extend</b> · Mac: <b>System Settings → Displays</b>, turn mirroring off) and move the projector window there.' : '';
 }
-function renderProj(){                              // the "Projector window" box in the lobby
+function renderProj(){                              // the projector window, in the lobby's bottom bar
   var el = document.getElementById('projrow'); if (!el) return;
   if (!VIEW_CH) { el.innerHTML = '<small>A projector window needs Chrome or Edge.</small>'; return; }
   el.innerHTML = audienceOn()
     ? '<span class="on">🖥 Projector window is open</span><button class="btn small" data-act="audience">Show it</button><button class="btn small" data-act="closeaud" id="closeAudBtn">Close it</button>'+
-      '<small>The projector shows the join screen now and, during the quiz, only what students should see. This laptop shows the answer, live results and your notes.</small>'+
-      (screen.isExtended === false ? '<small class="warn">Only one screen in use: set the display to Extend (not mirror) before you start.</small>' : '')
+      (screen.isExtended === false ? '<small class="warn">Only one screen in use: set the display to Extend (not mirror) before you start.</small>' : '<small>The projector shows only what students should see.</small>')
     : '<button class="btn" data-act="audience" id="audBtn">🖥 Open projector window</button>'+
-      '<small>Two screens: the projector shows the questions; this laptop keeps a presenter view with the answer, live results and notes. Set the display to Extend, not mirror.</small>'+
+      '<small>Two screens: the projector shows the cases, this laptop keeps the answers. Set the display to Extend.</small>'+
       (aud.msg ? '<small class="warn">'+esc(aud.msg)+'</small>' : '');
 }
 function onScreenChange(){ renderProj(); var el = document.getElementById('mirror'); if (el) el.innerHTML = mirrorHtml(); if (consoleOn() && peek === null) { notesKey = ''; updateConsole(); } }
@@ -933,7 +1067,7 @@ function qrSvg(text){
 }
 function qrOverlay(){
   var u = joinUrl();
-  return '<div class="qrover'+(qrOpen?' open':'')+'" data-act="qr"><div class="box">'+(u ? '<div class="qr">'+qrSvg(u)+'</div>' : '<p class="warn">Add the phone page address under Advanced in the lobby to show a QR code.</p>')+
+  return '<div class="qrover'+(qrOpen?' open':'')+'" data-act="qr"><div class="box">'+(u ? '<div class="qr">'+qrSvg(u)+'</div>' : '<p class="warn">Add the phone page address in Settings (top right of the lobby) to show a QR code.</p>')+
     '<div>Scan to join · or enter code</div><div class="code">'+esc(S.code)+'</div><div class="check">check code <b>'+esc(checkPretty())+'</b></div><div class="url">'+esc(u)+'</div><div class="hint">Click anywhere or press Q to close</div></div></div>';
 }
 
@@ -946,53 +1080,126 @@ function netHtml(){
   return '<span class="net '+m[0]+'" id="net" title="'+esc(err || '')+'"><i></i>'+(stuck ? 'Another device is holding this session’s code' + (VIEW ? '' : ' <button class="btn small primary" data-act="newcode" id="newCodeBtn">Move to a new code</button>') : esc(m[1]))+'</span>';
 }
 function renderNet(){ var el = document.getElementById('net'); if (el) el.outerHTML = netHtml(); }
+/* Text size for the room: A− / A+ in the top bar. With a projector window open it sizes the projector and this laptop stays as it is;
+   with one screen it sizes this screen. Ctrl + / Ctrl − still zooms whichever window has the focus. */
+function scaleNow(){
+  if (VIEW) return V && SCALES.indexOf(+V.scale) >= 0 ? +V.scale : 1;
+  return audienceOn() ? 1 : settings.scale;
+}
+function tsizeTitle(){ return 'Text size on ' + (audienceOn() ? 'the projector' : 'this screen'); }
+function applyScale(){
+  document.documentElement.style.setProperty('--scale', String(scaleNow()));
+  var o = document.getElementById('tsizeval'); if (o) o.textContent = Math.round(settings.scale * 100) + '%';
+  var t = document.getElementById('tsize'); if (t) t.title = tsizeTitle();
+}
+function stepScale(d){
+  var i = SCALES.indexOf(+settings.scale); if (i < 0) i = SCALES.indexOf(1);
+  i = Math.max(0, Math.min(SCALES.length - 1, i + d));
+  settings.scale = SCALES[i]; saveSettings(); applyScale(); pushView();
+}
+function tsizeHtml(){
+  if (VIEW) return '';
+  return '<span class="tsize" id="tsize" role="group" aria-label="Text size" title="'+tsizeTitle()+'"><button class="chip" data-act="smaller" aria-label="Smaller text">A−</button>'+
+    '<output id="tsizeval">'+Math.round(settings.scale * 100)+'%</output><button class="chip" data-act="bigger" aria-label="Bigger text">A+</button></span>';
+}
 var screenBase = '';
 function render(full){                              // returns true when the whole screen was rebuilt
   if (!S) return false;
+  applyScale();
   var base = S.phase + ':' + S.qi + ':' + S.round, key = base + (consoleOn() ? ':console' : '');
   if (!full && key === screenKey) { updateScreen(); return false; }
   if (!VIEW && base !== screenBase && zoomId) { zoomId = null; showZoom(null); }   // a new step closes an enlarged picture
   screenKey = key; screenBase = base;
-  if (S.phase === 'lobby') buildLobby(); else if (S.phase === 'end') buildEnd(); else if (consoleOn()) buildConsole(); else buildQuestion();
+  if (S.phase === 'lobby') buildLobby(); else if (S.phase === 'end') buildEnd(); else if (S.phase === 'run') buildRun(); else if (consoleOn()) buildConsole(); else buildQuestion();
   pushView(); return true;
 }
 function updateScreen(){
   if (!S) return;
-  if (S.phase === 'lobby') updateLobby(); else if (S.phase !== 'end') { if (consoleOn()) updateConsole(); else updateQuestion(); }
+  if (S.phase === 'lobby') updateLobby(); else if (S.phase === 'run') updateRun(); else if (S.phase !== 'end') { if (consoleOn()) updateConsole(); else updateQuestion(); }
   pushView();
 }
 function refreshCounts(){ updateScreen(); }
 
+function runCount(){ return Math.max(1, TOTAL - Math.min(TOTAL, Math.max(1, parseInt(settings.startAt, 10) || 1)) + 1); }
+function tpOpts(){                                  // self-paced: one total time, shown in minutes, chosen as seconds per case
+  var n = runCount();
+  return [60, 75, 90, 120, 0].map(function(v){
+    var m = Math.ceil(v * n / 60), t = m >= 60 ? Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '') : m + ' min';
+    return '<option value="'+v+'"'+(+settings.tp === v ? ' selected' : '')+'>'+(v ? t + ' (' + v + ' s per case)' : 'No time limit')+'</option>';
+  }).join('');
+}
+function tOpts(sel, list){ return list.map(function(v){ return '<option value="'+v+'"'+(+sel === v ? ' selected' : '')+'>'+(v ? (v+' seconds') : 'No time limit')+'</option>'; }).join(''); }
+function seg(key, label, opts, cur){                // a row of buttons that work as one choice; each is a radio button underneath
+  return '<div class="seg" role="radiogroup" aria-label="'+label+'">'+opts.map(function(o){
+    return '<label><input type="radio" name="'+key+'" data-set="'+key+'" value="'+o[0]+'"'+(o[2] ? ' id="'+o[2]+'"' : '')+(o[3] ? ' data-bool' : '')+(String(cur) === String(o[0]) ? ' checked' : '')+'><span>'+o[1]+'</span></label>';
+  }).join('')+'</div>';
+}
+var SLIDERS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>';
+/* "How to run it", always open on the right of the lobby. Mode first; Pace only for an exam (Practice always runs
+   together); the order of the cases only for a self-paced exam; Revote only for Practice. */
+function renderSetup(focusKey){
+  var el = document.getElementById('setup'); if (!el) return;
+  var exam = settings.mode === 'exam', self = selfPaced(), shuf = settings.order === 'shuffle';
+  el.innerHTML = '<h2 id="setupT">How to run it</h2>'+
+    '<div class="sfield"><span class="slabel">Mode</span>'+seg('mode', 'Mode', [['practice','Practice','modePractice'],['exam','Exam','modeExam']], exam ? 'exam' : 'practice')+
+      '<span class="shint">'+(exam ? 'No answers until the end.' : 'Results, then the answer, after each case.')+'</span></div>'+
+    (exam ? '<div class="exonly">'+
+      '<div class="sfield"><span class="slabel">Pace</span>'+seg('pace', 'Pace', [['together','Together','paceTogether'],['self','Self-paced','paceSelf']], self ? 'self' : 'together')+
+        '<span class="shint">'+(self ? 'Each student at their own speed.' : 'You move the class case by case.')+'</span></div>'+
+      (self ? '<div class="sfield"><span class="slabel">Order of the cases</span>'+seg('order', 'Order of the cases', [['set','As in the set','orderSet'],['shuffle','Shuffled','orderShuffle']], shuf ? 'shuffle' : 'set')+
+        '<span class="shint">'+(shuf ? 'A different order on each phone.' : 'The same order on every phone.')+'</span></div>' : '')+
+      '</div>' : '')+
+    (self ? '<div class="trow"><label for="tp" class="slabel">Total time</label><select id="tp" data-set="tp">'+tpOpts()+'</select></div>'
+      : '<div class="trow"><label for="t1" class="slabel">Time per case</label><select id="t1" data-set="t1">'+tOpts(settings.t1, [30,45,60,90,120,180,0])+'</select></div>')+
+    '<div class="sfield"><span class="slabel">Sure or guessing?</span>'+seg('confidence', 'Sure or guessing', [['1','Ask','confAsk',1],['0','Don’t ask','confNo',1]], settings.confidence ? '1' : '0')+
+      '<span class="shint">'+(settings.confidence ? 'Each answer is marked sure or guessing.' : 'Students just pick an answer.')+'</span></div>'+
+    '<div class="sline"></div><div class="minor">'+
+      (exam ? '' : '<label>Revote <select id="t2" data-set="t2" title="The second vote after the discussion">'+tOpts(settings.t2, [30,45,60,90,0])+'</select></label>')+
+      '<label>Start at case <input id="sa" type="number" min="1" max="'+TOTAL+'" data-set="startAt" value="'+Math.min(TOTAL, settings.startAt || 1)+'" title="To continue a long set in the next lecture"></label></div>';
+  if (focusKey) { var f = el.querySelector('input[name="'+focusKey+'"]:checked'); if (f) f.focus(); }
+}
+function settingsDialog(){                          // rarely changed things: the phone page address and the keys
+  if (document.getElementById('setover')) return;
+  var o = document.createElement('div'); o.className = 'casesover'; o.id = 'setover';
+  var k = function(keys, what){ return '<span>'+keys.map(function(x){ return '<kbd>'+x+'</kbd>'; }).join(' ')+'</span><span>'+what+'</span>'; };
+  o.innerHTML = '<div class="cpanel setpanel" role="dialog" aria-modal="true" aria-labelledby="setT">'+
+    '<div class="chead"><div><h2 id="setT">Settings</h2></div><button class="btn small xbtn" data-close aria-label="Close" title="Close (Esc)">✕</button></div>'+
+    '<div class="cbody">'+
+      '<label for="su">Phone page address</label><input id="su" type="url" data-set="studentUrl" placeholder="https://your-name.github.io/live-quiz/join/" value="'+esc(settings.studentUrl)+'">'+
+      '<span class="hint">Where the phone page is online; the QR code and the link open it. It fills itself in (this site’s join/ address), so there is normally nothing to change.</span>'+
+      '<h3>Keys and clicker</h3><div class="keys">'+
+        k(['Enter','Space','→'], 'Next step (a clicker’s Next button too)')+k(['D'], 'Discuss and revote (Practice)')+
+        k(['+'], '30 more seconds (self-paced: 5 more minutes)')+k(['Q'], 'Show the QR code and the link full screen')+
+        k(['Esc'], 'Close an enlarged picture or the QR code')+'</div>'+
+      '<h3>Before class</h3><span class="hint">Keep this tab open and the computer awake until the end. With two screens, set the display to Extend, not mirror. A− / A+ in the top bar sets the text size on the room’s screen.</span>'+
+    '</div><div class="cfoot"><button class="btn primary" data-close>Done</button></div></div>';
+  function close(){ document.removeEventListener('keydown', onKey); o.remove(); var b = document.getElementById('settingsBtn'); if (b) b.focus(); }
+  function onKey(e){ if (e.key === 'Escape') close(); }
+  o.addEventListener('click', function(e){ if (e.target === o || e.target.closest('[data-close]')) close(); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(o);
+  var f = o.querySelector('[data-close]'); if (f) f.focus();
+}
+offs.push(function(){ var o = document.getElementById('setover'); if (o) o.remove(); });
 function buildLobby(){
   if (VIEW) {                                       // projector: a big join screen
-    app.innerHTML = '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div><span class="chip">'+TOTAL+' questions</span>'+netHtml()+'</header>'+
+    app.innerHTML = '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div><span class="chip">'+nOf(TOTAL, 'case')+'</span>'+netHtml()+'</header>'+
       '<main class="audjoin" id="join"></main><footer></footer></div>';
     updateLobby(); return;
   }
-  var tOpts = function(sel, list){ return list.map(function(v){ return '<option value="'+v+'"'+(+sel===v?' selected':'')+'>'+(v ? (v+' seconds') : 'No time limit')+'</option>'; }).join(''); };
   app.innerHTML =
     '<div class="screen">'+
-      '<header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="spacer"></div>'+netHtml()+'</header>'+
-      '<main class="lobbygrid">'+
-        '<section class="card join" id="join"></section>'+
-        '<section class="card settings">'+
-          '<div class="pack"><b>'+esc(QUIZ.title)+'</b><span>'+TOTAL+' questions</span><button class="btn small" data-act="edit" id="editBtn">Edit</button><button class="btn small" data-act="change" id="changeBtn">Change quiz</button></div>'+
-          (WARNS && WARNS.length ? '<small class="warn">'+esc(WARNS.slice(0,3).join(' '))+(WARNS.length>3?' …':'')+'</small>' : '')+
-          '<div class="proj" id="projrow"></div>'+
-          '<div class="row"><div><label for="t1">Time per question</label><select id="t1" data-set="t1">'+tOpts(settings.t1,[30,45,60,90,120,180,0])+'</select></div>'+
-          '<div><label for="t2">Revote time</label><select id="t2" data-set="t2">'+tOpts(settings.t2,[30,45,60,90,0])+'</select></div></div>'+
-          '<label class="check"><input type="checkbox" data-set="autoClose"'+(settings.autoClose?' checked':'')+'> Close voting automatically when every connected student has answered</label>'+
-          '<label class="check"><input type="checkbox" data-set="confidence"'+(settings.confidence?' checked':'')+'> Ask “sure or guessing?” with each answer</label>'+
-          '<label for="sa">Start at question</label><input id="sa" type="number" min="1" max="'+TOTAL+'" data-set="startAt" value="'+Math.min(TOTAL, settings.startAt||1)+'">'+
-          '<button class="btn primary big" data-act="start" id="startBtn">Start quiz ▶</button>'+
-          '<details class="adv" id="adv"'+(joinUrl() ? '' : ' open')+'><summary>Advanced</summary>'+
-            '<label for="su">Phone page address</label><input id="su" type="url" data-set="studentUrl" placeholder="https://your-name.github.io/live-quiz/join/" value="'+esc(settings.studentUrl)+'">'+
-            '<small>Where the phone page is online; the QR code and the link open it. It fills itself in (this site’s join/ address), so there is normally nothing to change.</small></details>'+
-          '<p class="hint">Keep this tab open and the computer awake until the end. Keys: Enter, Space, → or a clicker’s Next = next step, D = revote, + = 30 more seconds, Q = show QR. Ctrl + / Ctrl − changes text size.</p>'+
-        '</section>'+
-      '</main>'+
+      '<header class="top"><div class="lobbyhead"><div class="title" id="packtitle" title="'+esc(QUIZ.title)+'">'+esc(QUIZ.title)+'</div><span class="hint" id="packinfo">'+nOf(TOTAL, 'case')+'</span>'+
+        (WARNS && WARNS.length ? '<span class="pwarn" id="packwarn" title="'+esc(WARNS.join(' '))+'">⚠ '+esc(WARNS[0])+(WARNS.length > 1 ? ' (+'+(WARNS.length-1)+' more)' : '')+'</span>' : '')+'</div>'+
+        '<button class="btn small" data-act="contents" id="contentsBtn" title="The set description and what each case tests">Contents</button>'+
+        '<button class="btn small" data-act="edit" id="editBtn">Edit</button><button class="btn small" data-act="change" id="changeBtn">Change set</button>'+
+        '<span class="vsep" aria-hidden="true"></span>'+tsizeHtml()+netHtml()+
+        '<button class="btn small iconbtn" data-act="settings" id="settingsBtn" aria-label="Settings" title="Settings: phone page address, keys">'+SLIDERS+'</button></header>'+
+      '<div class="lobbybody"><main class="hero" id="join"></main><aside class="settings" id="setup" aria-labelledby="setupT"></aside></div>'+
+      '<footer class="controls lobbyfoot"><div id="projrow"></div>'+
+        '<button class="btn primary big" data-act="start" id="startBtn">Start quiz ▶<kbd>Enter</kbd></button></footer>'+
     '</div>';
-  updateLobby(); renderProj();
+  renderSetup(); updateLobby(); renderProj();
 }
 function updateLobby(){
   var el = document.getElementById('join'); if (!el || S.phase !== 'lobby') return;
@@ -1003,21 +1210,21 @@ function updateLobby(){
     el.setAttribute('data-u', u + '|' + S.code);
     el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + '<div class="info">'+
       (u ? '<div class="big">Scan the QR code with your phone camera to join</div><div>or open the link below and enter the code</div>'
-         : '<p class="warn">The phone page address is missing. Add it under Advanced in the lobby on the laptop.</p><div>Code</div>')+
+         : '<p class="warn">The phone page address is missing. Add it in Settings on the laptop’s lobby.</p><div>Code</div>')+
       '<div class="code" id="code">'+esc(S.code)+'</div>'+
       '<div class="check">check code <b id="check">'+esc(checkPretty())+'</b></div>'+
       (u ? '<div class="url">'+esc(u)+'</div>' : '')+
       '<div class="joined" id="joined">'+joined+'</div></div>';
     return;
   }
-  if (!u) warn = '<p class="warn">Add the phone page address under Advanced (right) to show the QR code.</p>';
+  if (!u) warn = '<p class="warn">Add the phone page address in Settings (top right) to show the QR code.</p>';
   else if (peerStatus === 'unreachable') warn = '<p class="warn" id="neterr">Can’t reach the PeerJS server ('+esc(lastErr)+'). Retrying… If this doesn’t clear, open this page from its https address in Chrome, or check that the network allows it.</p>';
   else if (peerStatus !== 'online') warn = '<p class="hint">Connecting to the PeerJS server… phones can join once the corner shows “Live”.</p>';
-  el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + warn +
-    '<div>Scan to join · or enter code</div><div class="code" id="code">'+esc(S.code)+'</div>'+
+  el.innerHTML = (u ? '<div class="qr" id="qr">'+qrSvg(u)+'</div>' : '') + '<div class="info">' + warn +
+    '<div class="hl">Scan to join · or enter code</div><div class="code" id="code">'+esc(S.code)+'</div>'+
     '<div class="check">check code <b id="check">'+esc(checkPretty())+'</b></div>'+
-    (u ? '<div class="url">'+esc(u)+'</div><button class="btn small" data-act="copylink" id="copyBtn">Copy link</button>' : '') +
-    '<div class="joined" id="joined"><b>'+n+'</b> student'+(n===1?'':'s')+' connected</div>';
+    (u ? '<button class="btn small" data-act="copylink" id="copyBtn" data-url="'+esc(u)+'">Copy link</button>' : '') +
+    '<div class="joined" id="joined"><b>'+n+'</b> student'+(n===1?'':'s')+' connected</div></div>';
 }
 
 function stemHtml(stem){
@@ -1030,18 +1237,19 @@ function figHtml(id, cap){ if (!hasImg(id)) return ''; return '<figure class="qi
 function buildQuestion(){                           // the projector screen (one window, or the projector window)
   app.innerHTML =
     '<div class="screen">'+
-      '<header class="top"><div class="qnum">Question '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
-      (S.round === 2 ? '<div class="badge r2">Round 2 · revote after discussion</div>' : '')+
+      '<header class="top"><div class="qnum">Case '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
+      (S.round === 2 ? '<div class="badge r2">Round 2 · revote after discussion</div>' : '')+examBadge()+
       '<div class="spacer"></div>'+
       (!VIEW && VIEW_CH ? '<button class="chip" data-act="audience" id="audChip" title="Open a second window for the projector; this laptop then shows a presenter view">🖥 Projector window</button>' : '')+
       '<button class="chip" data-act="qr" title="Show QR code (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
-      '<span class="chip" id="online"></span>'+netHtml()+'</header>'+
+      '<span class="chip" id="online"></span>'+tsizeHtml()+netHtml()+'</header>'+
       '<main class="grid"><section class="left" id="left"></section>'+
       '<section class="right"><div class="status" id="status"></div><div class="opts" id="opts"></div></section></main>'+
       (VIEW ? '<footer></footer>' : '<footer class="controls" id="controls"></footer>')+
     '</div>' + qrOverlay();
   renderLeft(); updateQuestion();
 }
+function examBadge(){ return isExam() ? '<div class="badge exam">'+(S.review ? 'Exam · review of answers' : 'Exam')+'</div>' : ''; }
 function topWrong(qi){
   var q = QUESTIONS[qi], ls = LQ(qi), t = tallyOf(finalBucket(qi), qi), best = null, max = 0;
   t.opts.forEach(function(o,i){ if (ls[i] !== q.answer && o.all > max) { max = o.all; best = ls[i]; } });
@@ -1060,7 +1268,7 @@ function renderLeft(){
   var el = document.getElementById('left'); if (!el) return;
   var q = QUESTIONS[S.qi];
   if (S.phase === 'reveal' && !showStem) {
-    el.innerHTML = '<div class="explain">'+explainHtml()+(VIEW ? '' : '<button class="link" data-act="togglestem">Show the question again</button>')+'</div>';
+    el.innerHTML = '<div class="explain">'+explainHtml()+(VIEW ? '' : '<button class="link" data-act="togglestem">Show the case again</button>')+'</div>';
   } else {
     el.innerHTML = '<div class="stem">'+stemHtml(q.stem)+'</div>'+figHtml(q.image, q.imageCaption)+'<p class="lead">'+esc(q.lead)+'</p>'+
       (S.phase === 'reveal' && !VIEW ? '<button class="link" data-act="togglestem">Back to the explanation</button>' : '');
@@ -1076,6 +1284,7 @@ function statusHtml(con){                           // con: the laptop's present
       (S.deadline ? '<div class="timer" id="timer">'+fmt(S.deadline - Date.now())+'</div><div class="tbar"><span id="tfill"></span></div>' : '<div class="timer">no limit</div>') +
       (con ? '<div class="live">Live results below are only on this laptop. The projector keeps them hidden until you close voting.</div>' : '<div class="note">Results stay hidden until voting closes.</div>');
   }
+  if (S.phase === 'closed' && isExam()) return '<div class="count">Answers saved · <b>'+n+'</b> answer'+(n===1?'':'s')+'</div><div class="note">Exam: the answers and explanations come at the end.</div>';
   if (S.phase === 'closed') return '<div class="count">Voting closed · <b>'+n+'</b> answer'+(n===1?'':'s')+'</div>'+legend;
   var fb = finalBucket(S.qi), t = tallyOf(fb, S.qi), k = t.opts[ls.indexOf(q.answer)].all, cw = 0;
   for (var sid in fb) if (fb[sid].c !== q.answer && fb[sid].sure === true) cw++;
@@ -1104,16 +1313,16 @@ function updateQuestion(){
   var onEl = document.getElementById('online'); if (onEl) onEl.innerHTML = '👥 <b>'+onlineN()+'</b> connected';
   var st = document.getElementById('status'), op = document.getElementById('opts'); if (!st || !op) return;
   st.innerHTML = statusHtml(false); tickTimer(true);
-  op.innerHTML = optsHtml(S.phase !== 'vote', S.phase === 'reveal' ? 'reveal' : '');
+  op.innerHTML = optsHtml(S.phase === 'reveal' || (S.phase === 'closed' && !isExam()), S.phase === 'reveal' ? 'reveal' : '');
   updateControls();
 }
 
 /* ---------- presenter view on the laptop (while the projector window is open) ---------- */
 function ansShown(){ return S.phase === 'reveal' || (peek === null ? (window.screen && screen.isExtended === true) : peek); }
 function nextHtml(){
-  if (S.qi >= TOTAL-1) return '<b>Last question.</b> Next comes the class results screen.';
+  if (S.qi >= TOTAL-1) return '<b>Last case.</b> Next comes the class results screen.';
   var s = String(QUESTIONS[S.qi+1].stem).replace(/\n• /g, '; ').replace(/\s+/g, ' ').trim();
-  return '<b>Next · Question '+(S.qi+2)+':</b> '+esc(s.length > 170 ? s.slice(0, 168) + '…' : s);
+  return '<b>Next · Case '+(S.qi+2)+':</b> '+esc(s.length > 170 ? s.slice(0, 168) + '…' : s);
 }
 function notesHtml(){
   var head = '<div class="nh"><h2>Answer and teaching notes</h2>' + (S.phase === 'reveal' ? '' : '<button class="btn small" data-act="peek" id="peekBtn">'+(ansShown() ? 'Hide answer' : 'Show answer')+'</button>') + '</div>';
@@ -1126,11 +1335,11 @@ function buildConsole(){
   var notes = '<div class="card notes" id="notes"></div>';
   app.innerHTML =
     '<div class="screen console">'+
-      '<header class="top"><div class="qnum">Question '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
-      (S.round === 2 ? '<div class="badge r2">Round 2</div>' : '')+
+      '<header class="top"><div class="qnum">Case '+(S.qi+1)+'<span>of '+TOTAL+'</span></div>'+
+      (S.round === 2 ? '<div class="badge r2">Round 2</div>' : '')+examBadge()+
       '<span class="chip proj" id="projchip"></span><div class="spacer"></div>'+
       '<button class="chip'+(qrOpen ? ' on' : '')+'" data-act="qr" id="qrchip" title="Show or hide the QR code on the projector (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
-      '<span class="chip" id="online"></span>'+netHtml()+'</header>'+
+      '<span class="chip" id="online"></span>'+tsizeHtml()+netHtml()+'</header>'+
       '<div class="mirror" id="mirror">'+mirrorHtml()+'</div>'+
       // left: what is happening now (live results, the answer marked); right: the case and the notes,
       // the case first while students vote and the notes first after the reveal
@@ -1153,16 +1362,33 @@ function updateConsole(){
 function updateControls(){
   var el = document.getElementById('controls'); if (!el) return;
   var con = consoleOn();
-  var left = '<button class="btn danger" data-act="end">'+(isArmed('end') ? 'Click again to end the quiz' : 'End quiz')+'</button>'+
+  if (S.phase === 'run') {
+    var ex = isExam();
+    el.innerHTML = '<button class="btn danger" data-act="end">'+(isArmed('end') ? (ex ? 'Click again to end the exam and send the answers' : 'Click again to end and show the results') : (ex ? 'End exam' : 'End quiz'))+'</button>'+
+      (audienceOn() ? '<button class="btn" data-act="closeaud" id="closeAudBtn">Close projector window</button>' : '')+'<div class="spacer"></div>'+
+      (S.deadline || S.timeUp ? '<button class="btn" data-act="more5" id="more5Btn">+5 min<kbd>+</kbd></button>' : '');
+    return;
+  }
+  var exam = isExam(), endTxt = !exam ? (isArmed('end') ? 'Click again to end the quiz' : 'End quiz')
+    : S.review ? (isArmed('end') ? 'Click again for the results' : 'Skip to the results') : (isArmed('end') ? 'Click again to end and review the answers' : 'End exam');
+  var left = '<button class="btn danger" data-act="end">'+endTxt+'</button>'+
     (con ? '<button class="btn" data-act="closeaud" id="closeAudBtn">Close projector window</button>' : '')+'<div class="spacer"></div>';
   var right = '';
   if (S.phase === 'vote') right = (S.deadline ? '<button class="btn" data-act="more">+30 s<kbd>+</kbd></button>' : '') + '<button class="btn primary" data-act="close">Close voting<kbd>Enter</kbd></button>';
+  else if (S.phase === 'closed' && exam) right = '<button class="btn primary" data-act="next">'+(S.qi < TOTAL-1 ? 'Next case' : 'Finish &amp; review the answers')+'<kbd>Enter</kbd></button>';
   else if (S.phase === 'closed') right = (S.round === 1 ? '<button class="btn" data-act="revote">Discuss &amp; revote<kbd>D</kbd></button>' : '') + '<button class="btn primary" data-act="reveal">Reveal answer<kbd>Enter</kbd></button>';
-  else if (S.phase === 'reveal') right = (con ? '<button class="btn" data-act="togglestem" id="stemBtn">'+(showStem ? 'Projector: back to the explanation' : 'Projector: show the question again')+'</button>' : '') +
-    '<button class="btn primary" data-act="next">'+(S.qi < TOTAL-1 ? 'Next question' : 'Finish &amp; show results')+'<kbd>Enter</kbd></button>';
+  else if (S.phase === 'reveal') right = (con ? '<button class="btn" data-act="togglestem" id="stemBtn">'+(showStem ? 'Projector: back to the explanation' : 'Projector: show the case again')+'</button>' : '') +
+    '<button class="btn primary" data-act="next">'+(exam && S.review ? (lastReview() ? 'Show the results' : 'Next answer') : S.qi < TOTAL-1 ? 'Next case' : exam ? 'Finish &amp; review the answers' : 'Finish &amp; show results')+'<kbd>Enter</kbd></button>';
   el.innerHTML = left + right;
 }
 function tickTimer(displayOnly){
+  if (S && S.phase === 'run' && S.deadline) {
+    var rl = S.deadline - Date.now(), rt = document.getElementById('rtimer');
+    if (rl <= 0) { if (!displayOnly && !VIEW) runTimeUp(); return; }
+    if (rt) { rt.textContent = fmt(rl); rt.classList.toggle('low', rl <= 60000); }
+    var rf = document.getElementById('rtfill'); if (rf && S.dur) rf.style.width = Math.max(0, Math.min(100, rl * 100 / (S.dur * 1000))) + '%';
+    return;
+  }
   if (!S || S.phase !== 'vote' || !S.deadline) return;
   var left = S.deadline - Date.now();
   if (left <= 0) { if (!displayOnly && !VIEW) closeVoting(); return; }
@@ -1173,29 +1399,69 @@ function tickTimer(displayOnly){
 every(function(){ tickTimer(false); }, 250);
 every(function(){ if (S) { refreshCounts(); maybeAutoClose(); } }, 2500);
 
+/* ---------- self-paced: the progress screen (projector, or the laptop) ---------- */
+function buildRun(){
+  var con = !VIEW && audienceOn();
+  app.innerHTML =
+    '<div class="screen">'+
+      '<header class="top"><div class="title">'+esc(QUIZ.title)+'</div><div class="badge self">Self-paced · '+(isExam() ? 'Exam' : 'Practice')+'</div>'+
+      (con ? '<span class="chip proj" id="projchip"></span>' : '')+'<div class="spacer"></div>'+
+      (!VIEW && VIEW_CH && !con ? '<button class="chip" data-act="audience" id="audChip" title="Open a second window for the projector; this laptop then also shows the answer key">🖥 Projector window</button>' : '')+
+      '<button class="chip'+(qrOpen ? ' on' : '')+'" data-act="qr" id="qrchip" title="Show the QR code full screen (Q)">Join code <b>'+esc(S.code)+'</b></button>'+
+      '<span class="chip" id="online"></span>'+tsizeHtml()+netHtml()+'</header>'+
+      '<main class="rungrid" id="rungrid"></main>'+
+      (VIEW ? '<footer></footer>' : '<footer class="controls" id="controls"></footer>')+
+    '</div>' + qrOverlay();
+  updateRun(); if (con) renderProjChip();
+}
+function updateRun(){
+  var el = document.getElementById('rungrid'); if (!el || !S || S.phase !== 'run') return;
+  var onEl = document.getElementById('online'); if (onEl) onEl.innerHTML = '👥 <b>'+onlineN()+'</b> connected';
+  var R = VIEW ? (V && V.run) : runSummary(audienceOn()); if (!R) return;
+  var pc = R.possible ? Math.round(R.answered * 100 / R.possible) : 0, exam = isExam();
+  var timeTxt = R.timeUp ? 'Time is up' : S.deadline ? fmt(S.deadline - Date.now()) : 'no limit';
+  var main = '<section class="card runmain">'+
+      '<div class="rbig"><b id="rdone">'+R.done+'</b> of '+nOf(R.students, 'student')+' finished</div>'+
+      '<div class="rline"><span>Completion</span><b id="rpc">'+pc+'%</b></div><div class="pbar"><span style="width:'+pc+'%"></span></div>'+
+      '<div class="rline"><span>'+(R.timeUp ? 'No more answers' : 'Time left')+'</span><b id="rtimer"'+(R.timeUp ? ' class="low"' : '')+'>'+timeTxt+'</b></div>'+
+      (S.deadline ? '<div class="tbar"><span id="rtfill"></span></div>' : '')+
+      '<h3>Each student <small>anonymous · the furthest first</small></h3>'+
+      (R.bars.length ? '<div class="sbars">'+R.bars.map(function(f){ return '<span class="sb'+(f >= 1 ? ' done' : '')+'"><i style="width:'+Math.round(f * 100)+'%"></i></span>'; }).join('')+'</div>'
+        : '<p class="hint">Nobody has started yet. A student who joins now starts at the first case.</p>')+
+    '</section>';
+  var u = joinUrl();
+  var late = u && !R.timeUp ? '<section class="card runjoin"><div class="qr">'+qrSvg(u)+'</div><div><div class="hint">Late? Scan to join</div><div class="code">'+esc(S.code)+'</div><div class="hint">check code <b>'+esc(checkPretty())+'</b></div></div></section>' : '';
+  var cases = R.cases ? '<section class="card runcases"><h2>'+(exam ? 'Cases so far' : '% correct per case so far')+(R.full ? ' <small>with the answer key: only on this laptop</small>' : '')+'</h2><div class="hard">'+
+      R.cases.map(function(c){ var cl = c.pc < 50 ? 'low' : c.pc < 70 ? 'mid' : '';
+        return '<div class="lbl">'+(c.qi + 1)+(c.key ? ' <span class="key">'+esc(c.key)+'</span>' : '')+'</div><div class="hb"><span class="'+(c.n ? cl : '')+'" style="width:'+(c.n ? c.pc : 0)+'%"></span></div>'+
+          '<div class="pc">'+(c.n ? c.pc+'% <small>('+c.n+')</small>' : '<small>no answers yet</small>')+'</div>'; }).join('')+'</div></section>'
+    : '<section class="card runcases"><h2>Cases</h2><p class="hint">Exam: the results per case appear when you end the exam, so nobody learns which cases are hard while others are still working.</p></section>';
+  el.innerHTML = '<div class="rcol">'+main+late+'</div>'+cases;
+  tickTimer(true); updateControls();
+}
 function buildEnd(){
   var rows = S.played.map(function(qi){ var t = tallyOf(finalBucket(qi), qi), k = t.opts[LQ(qi).indexOf(QUESTIONS[qi].answer)].all; return { qi: qi, n: t.n, pc: t.n ? k*100/t.n : 0 }; });
   var withVotes = rows.filter(function(r){ return r.n; });
   var avg = withVotes.length ? withVotes.reduce(function(a,r){ return a + r.pc; }, 0) / withVotes.length : 0;
-  rows.sort(function(a,b){ return a.pc - b.pc; });
+  rows.sort(function(a,b){ return (!a.n - !b.n) || (a.pc - b.pc); });   // hardest first; cases nobody answered at the end
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+' · results</div><div class="spacer"></div>'+netHtml()+'</header>'+
-    '<main class="endgrid"><section class="card"><div class="avg">'+Math.round(avg)+'%</div><p>class average · '+everyoneN()+' students · '+S.played.length+' questions</p>'+
-    '<p class="hint">Each student now sees their own score on their phone. Nobody else sees it.</p>'+
+    '<div class="screen"><header class="top"><div class="title">'+esc(QUIZ.title)+' · results</div><div class="spacer"></div>'+tsizeHtml()+netHtml()+'</header>'+
+    '<main class="endgrid"><section class="card"><div class="avg">'+(withVotes.length ? Math.round(avg)+'%' : '—')+'</div><p>'+(withVotes.length ? 'class average' : 'no answers were recorded')+' · '+nOf(everyoneN(), 'student')+' · '+nOf(S.played.length, 'case')+'</p>'+
+    (withVotes.length ? '<p class="hint">Each student now sees their own score on their phone. Nobody else sees it.</p>' : '')+
     (VIEW ? '' :
     '<p><button class="btn primary" data-act="csv">Download results (CSV)</button></p>'+
-    '<p><button class="btn" data-act="newsession">'+(isArmed('new') ? 'Click again — this clears these results' : 'Run this quiz again (new session)')+'</button></p>'+
-    '<p><button class="btn" data-act="change">'+(isArmed('change') ? 'Click again — this clears these results' : 'Load another quiz')+'</button></p>')+'</section>'+
-    '<section class="card"><h2 style="margin-top:0">Questions by % correct (hardest first)</h2><div class="hard">'+
+    '<p><button class="btn" data-act="newsession">'+(isArmed('new') ? 'Click again to clear these results and start again' : 'Run this set again (new session)')+'</button></p>'+
+    '<p><button class="btn" data-act="change">'+(isArmed('change') ? 'Click again to clear these results and load another set' : 'Load another set')+'</button></p>')+'</section>'+
+    '<section class="card"><h2 style="margin-top:0">Cases by % correct (hardest first)</h2><div class="hard">'+
     rows.map(function(r){ var c = r.pc < 50 ? 'low' : r.pc < 70 ? 'mid' : '', t = topicOf(QUESTIONS[r.qi]), k = conceptOf(QUESTIONS[r.qi]);
       // the case's First Aid topic and concept (teacher-written), shown only here at the end and in the quiz-choosing page
-      return '<div class="lbl">Q'+(r.qi+1)+'</div><div class="hb"><span class="'+c+'" style="width:'+r.pc+'%"></span></div><div class="pc">'+Math.round(r.pc)+'% <small>('+r.n+')</small></div>'+
+      return '<div class="lbl">'+(r.qi+1)+'</div><div class="hb"><span class="'+c+'" style="width:'+r.pc+'%"></span></div><div class="pc">'+(r.n ? Math.round(r.pc)+'% <small>('+r.n+')</small>' : '<small>no answers</small>')+'</div>'+
         (t.length || k ? '<div class="hmeta">'+(t.length ? '<span class="ht">'+t.map(esc).join(' › ')+'</span>' : '')+(k ? '<span class="hk">'+esc(k)+'</span>' : '')+'</div>' : ''); }).join('')+
     '</div></section></main>'+(VIEW ? '<footer></footer>' : '<footer class="controls"></footer>')+'</div>';
 }
 function downloadCsv(){
   var maxN = S.played.reduce(function(m, qi){ return Math.max(m, QUESTIONS[qi].options.length); }, 0), LS = letters(maxN);
-  var head = ['Question','Correct','R1 answered','R1 % correct'].concat(LS.map(function(l){ return 'R1 '+l; }), ['R2 answered','R2 % correct'], LS.map(function(l){ return 'R2 '+l; }), ['Final answered','Final % correct','Sure but wrong']);
+  var head = ['Case','Correct','R1 answered','R1 % correct'].concat(LS.map(function(l){ return 'R1 '+l; }), ['R2 answered','R2 % correct'], LS.map(function(l){ return 'R2 '+l; }), ['Final answered','Final % correct','Sure but wrong']);
   var withTopics = S.played.some(function(qi){ return topicOf(QUESTIONS[qi]).length || conceptOf(QUESTIONS[qi]); });
   if (withTopics) head = head.concat(['Chapter', 'Subtopic', 'Entry', 'Concept']);
   function cell(x){ x = String(x || ''); if (/^[=+\-@]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g, '""') + '"'; }   // quoted; no spreadsheet formulas
@@ -1223,6 +1489,7 @@ hashImages().then(function(){
   if (MODE === 'resume') {
     S = store.get(SESSION_KEY); S.answers = S.answers || {}; S.played = S.played || []; S.everyone = S.everyone || {}; conns = {};
     if (S.phase === 'vote' && S.deadline && S.deadline < Date.now()) { S.phase = 'closed'; S.deadline = null; save(); }
+    if (S.phase === 'run' && S.deadline && S.deadline < Date.now()) { S.timeUp = true; S.deadline = null; save(); }
     loadKeys(true).then(function(fresh){
       // The session key is kept in this browser. If it is gone, phones would (rightly) refuse this screen,
       // so move to a new code and show the QR for everyone to scan again.

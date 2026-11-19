@@ -35,7 +35,7 @@ async function phone(browser, url, tag, dark) {
   s.on('pageerror', e => { errors++; log(`[${tag} pageerror]`, e.message); });
   await s.goto(url); return s;
 }
-async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSelector('.net.ok', { timeout: 20000 }); return (await P.textContent('#join .url')).trim(); }
+async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSelector('.net.ok', { timeout: 20000 }); await P.waitForSelector('#copyBtn'); return (await P.getAttribute('#copyBtn', 'data-url')).trim(); }
 
 (async () => {
   start(process.execPath, [path.join(ROOT, 'node_modules/peer/dist/bin/peerjs.js'), '--port', '9000', '--host', '127.0.0.1', '--path', '/']);
@@ -60,17 +60,40 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
 
   log('Library');
   await P.waitForSelector('#file', { state: 'attached' });
+  assert((await P.getAttribute('.pagenav [aria-current]', 'aria-current')) === 'page' && (await P.textContent('.pagenav [aria-current]')) === 'Player' &&
+    (await P.getAttribute('#navEditor', 'href')).startsWith('editor.html') && (await P.getAttribute('#navStudy', 'href')) === 'study/', 'the top bar links the teacher pages: Player · Editor · Self-study');
+  { let id = ''; for (let i = 0; i < 8 && id !== 'file'; i++) { await P.keyboard.press('Tab'); id = await P.evaluate(() => document.activeElement && document.activeElement.id); }
+    assert(id === 'file', '“Choose quiz file…” can be reached with the Tab key'); }
   await P.setInputFiles('#file', path.join(FIX, 'not-json.quiz.json'));
   await P.waitForSelector('#loaderr .warn');
-  assert((await P.textContent('#loaderr')).includes('not a quiz pack'), 'non-JSON file is rejected with a message');
+  assert((await P.textContent('#loaderr')).includes('not a quiz file'), 'non-JSON file is rejected with a message');
   await P.setInputFiles('#file', path.join(FIX, 'broken.quiz.json'));
-  await P.waitForFunction(() => document.querySelector('#loaderr').textContent.includes('Question 1: needs 2 to 8'));
+  await P.waitForFunction(() => document.querySelector('#loaderr').textContent.includes('Case 1: needs 2 to 8'));
   assert(true, 'broken pack is rejected, naming the question and the problem');
   await P.setInputFiles('#file', path.join(FIX, 'sample-25.quiz.json'));
   let url = await lobbyUrl(P);
-  assert((await P.textContent('.settings .pack')).includes('25 questions'), 'lobby shows the loaded pack');
+  assert((await P.textContent('#packinfo')) === '25 cases' && (await P.textContent('#packtitle')).length > 0, 'the top bar shows the loaded set');
   assert(url.startsWith(BASE + '/join/?') && url.includes('ph=127.0.0.1'), 'the QR code opens the phone page (join/); an old remembered address is moved there');
-  assert(!(await P.$eval('#adv', d => d.open)) && !!(await P.$('#adv #su')), 'the phone page address sits under a closed “Advanced”');
+  { const b = await P.$eval('#startBtn', e => e.getBoundingClientRect().bottom), sc = await P.$eval('#setup', e => e.scrollHeight <= e.clientHeight + 1);
+    assert(b <= 768 && sc, '“Start quiz” and the whole “How to run it” panel fit a 1366×768 laptop'); }
+  assert(!(await P.$('#join .url')) && !!(await P.$('#copyBtn')), 'the join screen offers “Copy link”, not the long link');
+  assert(await P.$eval('#modePractice', i => i.checked) && !(await P.$('#paceSelf')) && !!(await P.$('#t2')) && !!(await P.$('#sa')) && !(await P.$('#su')), 'Practice: no Pace choice (it runs together); Revote and Start at case are in view; the phone page address is not');
+  await P.check('#modeExam');
+  assert(!!(await P.$('#paceSelf')) && !(await P.$('#t2')) && !(await P.$('#orderShuffle')), 'Exam: the Pace choice appears and Revote goes');
+  await P.check('#paceSelf');
+  assert(!!(await P.$('#orderShuffle')) && !!(await P.$('#tp')) && !(await P.$('#t1')), 'Exam · Self-paced: the order of the cases and a total time');
+  await P.check('#modePractice');
+  assert(!(await P.$('#paceSelf')) && !!(await P.$('#t1')), 'back to Practice: together again');
+  await P.click('#settingsBtn'); await P.waitForSelector('#setover #su');
+  assert((await P.inputValue('#su')) === BASE + '/join/' && (await P.textContent('#setover')).includes('Keys and clicker'), 'Settings (top bar): the phone page address and the keys');
+  await P.keyboard.press('Escape'); await P.waitForSelector('#setover', { state: 'detached' });
+  const rootScale = pg => pg.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--scale').trim());
+  const fs0 = await P.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
+  await P.click('[data-act="bigger"]'); await P.click('[data-act="bigger"]');
+  const fs1 = await P.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
+  assert((await P.textContent('#tsizeval')) === '125%' && (await rootScale(P)) === '1.25' && Math.abs(fs1 / fs0 - 1.25) < 0.02, 'A+ makes the text bigger on a single screen (125%)');
+  await P.click('[data-act="smaller"]'); await P.click('[data-act="smaller"]');
+  assert((await P.textContent('#tsizeval')) === '100%', 'A− brings it back');
   await P.screenshot({ path: `${OUT}/01-lobby.png` });
 
   log('Session with three phones');
@@ -119,7 +142,7 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   assert((await S[1].$$('.why li')).length === 4, 'phone shows the four “why not” lines');
   await P.screenshot({ path: `${OUT}/02-reveal.png` });
   await P.click('[data-act="next"]');
-  await S[0].waitForSelector('text=Question 2 of 25');
+  await S[0].waitForSelector('text=Case 2 of 25');
   await answer(S[0], 'D', true);
   await S[0].reload(); await S[0].waitForSelector('.dock .msg >> text=Answer sent: D', { timeout: 25000 });
   assert(true, 'a phone that reloads keeps its answer');
@@ -141,7 +164,7 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   const [dl] = await Promise.all([P.waitForEvent('download'), P.click('[data-act="csv"]')]);
   const csvPath = path.join(OUT, 'results.csv'); await dl.saveAs(csvPath);
   const csv = fs.readFileSync(csvPath, 'utf8').split('\n');
-  assert(csv[0].includes('Sample quiz') && csv[1].startsWith('Question,Correct') && csv.length === 4, 'CSV export: title, header, one row per question');
+  assert(csv[0].includes('Sample quiz') && csv[1].startsWith('Case,Correct') && csv.length === 4, 'CSV export: title, header, one row per question');
 
   log('Pictures, 6 options, missing explanation');
   await P.click('[data-act="change"]'); await P.click('[data-act="change"]');
@@ -149,7 +172,18 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   assert((await P.textContent('#recent')).includes('Sample quiz'), 'recent list remembers the loaded quiz');
   await P.setInputFiles('#file', path.join(FIX, 'pictures.quiz.json'));
   url = await lobbyUrl(P);
-  assert((await P.textContent('.settings')).includes('Question 3 has no explanation'), 'lobby warns about a missing explanation');
+  assert((await P.textContent('#packwarn')).includes('Case 3 has no explanation'), 'lobby warns about a missing explanation');
+  await P.click('#contentsBtn');
+  await P.waitForSelector('#casesover .clist li');
+  assert((await P.$$('#casesover .clist li')).length === 3 && (await P.textContent('#casesover')).includes('Placeholder concept one') &&
+    !!(await P.$('#casesWarn')) && !(await P.$('[data-usecase]')), 'the lobby’s Contents button shows the quiz’s cases, warns that one screen may be the projector, and has no “Use this set”');
+  await P.keyboard.press('Enter');
+  await P.waitForSelector('#casesover', { state: 'detached' });
+  await P.waitForTimeout(300);
+  assert(!!(await P.$('#startBtn')) && !(await P.$('#status')), 'Enter in the list closes it and does not start the quiz behind it');
+  await P.click('#contentsBtn'); await P.waitForSelector('#casesover');
+  await P.keyboard.press('Escape');
+  await P.waitForSelector('#casesover', { state: 'detached' });
   const T = [];
   for (let i = 0; i < 2; i++) T.push(await phone(browser, url, 'T' + i));
   for (const s of T) await s.waitForSelector('text=You’re in', { timeout: 25000 });
@@ -171,7 +205,7 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   for (const s of T.concat([late])) await answer(s, 'C', true);
   await P.waitForSelector('text=Voting closed'); await P.keyboard.press('Enter');
   await P.waitForSelector('.explain'); await P.keyboard.press('Enter');
-  for (const s of T) await s.waitForSelector('text=Question 2 of 3');
+  for (const s of T) await s.waitForSelector('text=Case 2 of 3');
   assert((await T[0].$$('.opt')).length === 6 && (await P.$$('.opt')).length === 6, 'six options on phone and screen');
   for (const s of T.concat([late])) await answer(s, 'F', true);
   await P.waitForSelector('text=Voting closed'); await P.keyboard.press('Enter');
@@ -180,7 +214,7 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   assert(/100%\s*correct/.test(await P.textContent('#status')), 'option F scores as correct');
   assert(true, 'explanation picture shown on screen and phones');
   await P.keyboard.press('Enter');
-  for (const s of T) await s.waitForSelector('text=Question 3 of 3');
+  for (const s of T) await s.waitForSelector('text=Case 3 of 3');
   assert((await T[0].$$('.opt')).length === 4, 'four options');
   for (const s of T.concat([late])) await answer(s, 'B', false);
   await P.waitForSelector('text=Voting closed'); await P.keyboard.press('Enter');
@@ -203,16 +237,23 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   assert(csv2[1].endsWith(',Chapter,Subtopic,Entry,Concept') && csv2.some(l => l.endsWith('"Hematology and Oncology","Placeholder subtopic","Placeholder entry one","Placeholder concept one"')),
     'CSV export adds the topic and concept columns at the end');
 
-  log('Recent quizzes');
+  log('Recent sets');
   await P.click('[data-act="change"]'); await P.click('[data-act="change"]');
   await P.waitForSelector('#recent .rrow');
   assert((await P.$$('#recent .rrow')).length === 2, 'recent list has both quizzes');
+  { const m = await P.evaluate(() => {           // a long list: add 20 copies of a row, measure, remove them
+      const r = document.getElementById('recent'), extra = [];
+      for (let i = 0; i < 20; i++) { const c = r.querySelector('.rrow').cloneNode(true); c.classList.add('fake'); r.appendChild(c); extra.push(c); }
+      const d = document.querySelector('#drop h1').getBoundingClientRect(), main = document.querySelector('.libgrid').getBoundingClientRect();
+      const out = { mid: Math.abs((d.top + d.bottom) / 2 - (main.top + main.bottom) / 2), listScrolls: r.scrollHeight > r.clientHeight, pageScrolls: document.scrollingElement.scrollHeight > innerHeight + 1, gridScrolls: document.querySelector('.libgrid').scrollHeight > document.querySelector('.libgrid').clientHeight + 1 };
+      extra.forEach(c => c.remove()); return out; });
+    assert(m.listScrolls && !m.pageScrolls && !m.gridScrolls && m.mid < 140, '“Load a set” stays centred when the recent list is long; the list scrolls in its own card'); }
   assert((await P.textContent('#recent .rrow:has-text("pictures") .rd')).includes('Placeholder quiz for testing'), 'the recent list shows a quiz’s description');
   await P.click('#recent .rrow:has-text("pictures") [data-cases]');
   await P.waitForSelector('#casesover .clist li');
   const items = await P.$$eval('#casesover .clist li', ls => ls.map(l => l.innerText.replace(/\s+/g, ' ').trim()));
   assert(items.length === 3 && items[0].includes('Hematology and Oncology › Placeholder subtopic › Placeholder entry one') && items[0].includes('Placeholder concept one'),
-    '“Cases” lists each case with its First Aid topic path and concept');
+    '“Contents” lists each case with its First Aid topic path and concept');
   assert(items[1].includes('Immunology › Placeholder subtopic') && items[1].includes('Placeholder concept two'), '… a topic written as “A › B” works too');
   assert(items[2].includes('Test case three'), '… and a case without them shows its first words');
   await P.screenshot({ path: `${OUT}/09-cases.png` });
@@ -224,8 +265,8 @@ async function lobbyUrl(P) { await P.waitForSelector('#code'); await P.waitForSe
   await P.click('#casesover .cfoot [data-close]');
   await P.waitForSelector('#casesover', { state: 'detached' });
   await P.click('#recent .rrow:has-text("Sample quiz") [data-use]');
-  await P.waitForSelector('.settings .pack');
-  assert((await P.textContent('.settings .pack')).includes('25 questions'), '“Use” reopens a quiz without the file');
+  await P.waitForSelector('#packinfo');
+  assert((await P.textContent('#packinfo')).includes('25 cases'), '“Use” reopens a quiz without the file');
 
   log('Timer');
   await P.selectOption('#t1', '30');

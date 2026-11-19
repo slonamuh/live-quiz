@@ -5,15 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Live Quiz — Editor</title>
 <style>
-:root{
-  --bg:#f4f3ef; --panel:#ffffff; --ink:#15171c; --muted:#5b616d; --line:#d9d6ce;
-  --accent:#2350b8; --accent-ink:#ffffff; --accent-soft:#dbe4f8;
-  --good:#16804a; --good-soft:#d7efe0; --bad:#b93a27; --bad-soft:#f6ddd8; --warn:#a86a10; --warn-soft:#f8ecd3;
-  font-size:16px;
-}
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.45}
+/*__THEME__*/
+:root{ font-size:clamp(15px, 1.15vw, 20px); }   /* grows with a laptop or desktop window */
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.45}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:var(--accent)}
@@ -23,15 +17,7 @@ a{color:var(--accent)}
 .spacer{flex:1}
 .status{color:var(--muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:22rem}
 .status.dirty{color:var(--warn)}
-.btn{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:.45rem .9rem;font-weight:600;white-space:nowrap}
-a.btn{display:inline-block;text-decoration:none;color:inherit}
-.btn:hover{border-color:var(--accent)}
-.btn:disabled{opacity:.45;cursor:default}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn.danger{color:var(--bad)}
-.btn.armed{background:var(--bad);border-color:var(--bad);color:#fff}
-.btn.small{padding:.25rem .6rem;font-size:.85rem}
+.btn{white-space:nowrap}
 .btn.big{padding:.75rem 1.3rem;font-size:1.05rem}
 .hint{color:var(--muted);font-size:.85rem}
 .err{color:var(--bad)}
@@ -53,7 +39,7 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .loaderr{margin-top:.6rem}
 
 /* editor */
-.ed{display:grid;grid-template-columns:20rem minmax(0,1fr);min-height:0}
+.ed{display:grid;grid-template-columns:minmax(16rem, 22%) minmax(0,1fr);min-height:0}
 .side{border-right:1px solid var(--line);background:#faf9f6;display:flex;flex-direction:column;min-height:0}
 .meta{padding:.8rem 1rem;border-bottom:1px solid var(--line)}
 .meta label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.2rem}
@@ -75,7 +61,7 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .item.sel{background:var(--panel);border-color:var(--accent)}
 .item .n{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
 .item .s{font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.item .k{font-weight:800;font-size:.8rem;min-width:1.5rem;text-align:center;border-radius:6px;padding:.05rem .3rem;background:#eceae4}
+.item .k{font-weight:800;font-size:.8rem;min-width:1.5rem;text-align:center;border-radius:6px;padding:.05rem .3rem;background:var(--soft)}
 .item.e .n{color:var(--bad)} .item.e .k{background:var(--bad-soft);color:var(--bad)}
 .item.w .n{color:var(--warn)}
 .sidefoot{padding:.6rem;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:.5rem}
@@ -92,7 +78,7 @@ a.btn{display:inline-block;text-decoration:none;color:inherit}
 .checks.e{background:var(--bad-soft)} .checks.w{background:var(--warn-soft)} .checks.ok{background:var(--good-soft);color:var(--good);font-weight:600}
 .checks ul{margin:0;padding-left:1.1rem}
 .checks li.e{color:var(--bad);font-weight:600}
-.checks li.w{color:#7a4c06}
+.checks li.w{color:var(--warn-ink)}
 .field{margin-bottom:1rem}
 .field>label{display:block;font-weight:700;margin-bottom:.25rem}
 .field .sub{font-weight:400;color:var(--muted);font-size:.85rem;margin-left:.4rem}
@@ -106,8 +92,8 @@ textarea:focus,input:focus{outline:2px solid var(--accent-soft);border-color:var
 .optrow.correct{border-color:var(--good);background:var(--good-soft)}
 .pick{display:flex;align-items:center;gap:.35rem;cursor:pointer;font-weight:800}
 .pick input{width:1.1rem;height:1.1rem;accent-color:var(--good);margin:0}
-.pick .L{width:1.8rem;height:1.8rem;border-radius:50%;display:grid;place-items:center;background:#eceae4}
-.optrow.correct .pick .L{background:var(--good);color:#fff}
+.pick .L{width:1.8rem;height:1.8rem;border-radius:50%;display:grid;place-items:center;background:var(--soft)}
+.optrow.correct .pick .L{background:var(--good);color:var(--accent-ink)}
 .optrow input.otext{width:100%;padding:.45rem .6rem;border:1px solid var(--line);border-radius:8px;background:#fff}
 .oact{display:flex;gap:.2rem}
 .oact button{border:1px solid var(--line);background:#fff;border-radius:7px;width:1.9rem;height:1.9rem;padding:0;line-height:1}
@@ -179,20 +165,21 @@ textarea:focus,input:focus{outline:2px solid var(--accent-soft);border-color:var
 
 /* =====================================================================================
    Live Quiz editor: open, write and fix quiz packs (.quiz.json) in the browser.
-   Nothing leaves this computer. It shares "Recent quizzes" with the player (same site).
+   Nothing leaves this computer. It shares "Recent sets" with the player (same site).
    ===================================================================================== */
 
 const LET = 'ABCDEFGH'.split('');
 const IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]+$/;
 const SESSION_KEY = 'livequiz-session-v2';
 const app = document.getElementById('app'), fileInput = document.getElementById('fileInput'), picInput = document.getElementById('picInput'), printView = document.getElementById('printView');
+const nOf = (n, word) => { n = +n || 0; return n + ' ' + word + (n === 1 ? '' : 's'); };   // 1 case, 2 cases
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const str = v => (typeof v === 'string' ? v : (v == null ? '' : String(v)));
 const today = () => new Date().toISOString().slice(0, 10);
 const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const params = new URLSearchParams(location.search);
 
-/* ---------- storage: the player's recent quizzes (same database), and this editor's draft ---------- */
+/* ---------- storage: the player's recent sets (same database), and this editor's draft ---------- */
 function openDb(name, version, upgrade){
   return new Promise((res, rej) => {
     try { const r = indexedDB.open(name, version); r.onupgradeneeded = () => upgrade(r.result); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }
@@ -216,7 +203,7 @@ const drafts = store(() => draftDb || (draftDb = openDb('livequiz-editor', 1, db
   if (!db.objectStoreNames.contains('drafts')) db.createObjectStore('drafts', { keyPath: 'key' });
 })), 'drafts');
 
-/* same key as the player gives a pack in "Recent quizzes" */
+/* same key as the player gives a pack in "Recent sets" */
 function hash(s){ let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0, ch; i < s.length; i++){ ch = s.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
   h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909); h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
   return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(36); }
@@ -234,7 +221,7 @@ let Q = null;           // { meta: {format, version, id, title, created, …}, i
 let cur = 0;            // selected case
 let fileHandle = null;  // Chrome: the file to save back to
 let fileName = '';
-let sourceKey = null;   // the "Recent quizzes" entry this came from
+let sourceKey = null;   // the "Recent sets" entry this came from
 let dirty = false;
 let armed = '';         // a destructive button waiting for its second click
 
@@ -291,7 +278,7 @@ function checkItem(it){
   const seen = {};
   it.opts.forEach((o, i) => { const k = o.t.trim().toLowerCase(); if (!k) return; if (k in seen) e.push('Options ' + ls[seen[k]] + ' and ' + ls[i] + ' are the same.'); else seen[k] = i; });
   if (it.c < 0 || it.c >= n) e.push('Tick the correct answer.');
-  ['image', 'explainImage'].forEach(k => { if (it.extra[k] && !(typeof Q.images[it.extra[k]] === 'string' && IMG_RE.test(Q.images[it.extra[k]]))) e.push('Picture “' + it.extra[k] + '” is missing from the quiz.'); });
+  ['image', 'explainImage'].forEach(k => { if (it.extra[k] && !(typeof Q.images[it.extra[k]] === 'string' && IMG_RE.test(Q.images[it.extra[k]]))) e.push('Picture “' + it.extra[k] + '” is missing from the set.'); });
   ['image', 'explainImage'].forEach(k => { const u = it.extra[k] && Q.images[it.extra[k]]; if (typeof u === 'string' && u.length > 600 * 1024) w.push('A picture is large (' + Math.round(u.length / 1024) + ' KB); phones may load it slowly. Add it again to shrink it.'); });
   if (!it.explain.trim()) w.push('No explanation.');
   const noWhy = ls.filter((l, i) => i !== it.c && it.opts[i].t.trim() && !it.opts[i].w.trim());
@@ -310,7 +297,7 @@ function checkItem(it){
     if (absWrong && !abs.test(it.opts[it.c].t)) w.push('“Always” or “never” appears only in wrong options: it gives them away.');
   }
   const ch = it.topic[0].trim();
-  if (ch && !FA_CHAPTERS.some(c => c.toLowerCase() === ch.toLowerCase())) w.push('“' + ch + '” is not a First Aid chapter name; pick one from the list so topics line up across quizzes.');
+  if (ch && !FA_CHAPTERS.some(c => c.toLowerCase() === ch.toLowerCase())) w.push('“' + ch + '” is not a First Aid chapter name; pick one from the list so topics line up across sets.');
   if (!it.topic[0].trim() && (it.topic[1].trim() || it.topic[2].trim())) w.push('The topic has no chapter; fill in the levels from the left.');
   if (it.concept.trim().length > 90) w.push('Keep the concept short (a few words, like a flash-card title).');
   if (!it.concept.trim() && Q.items.some(x => x.concept.trim())) w.push('No concept (other cases have one).');
@@ -324,7 +311,7 @@ function checkItem(it){
 }
 function checkQuiz(){
   const per = Q.items.map(checkItem), w = [];
-  if (!Q.meta.title || !String(Q.meta.title).trim()) w.push('Give the quiz a title (it is shown on the screens).');
+  if (!Q.meta.title || !String(Q.meta.title).trim()) w.push('Give the set a title (it is shown on the screens).');
   const keys = Q.items.map(it => it.c >= 0 ? LET[it.c] : '');
   const dist = {}; keys.forEach(k => { if (k) dist[k] = (dist[k] || 0) + 1; });
   const maxOpts = Math.min(5, Math.max.apply(null, Q.items.map(it => it.opts.length).concat([2])));
@@ -339,16 +326,15 @@ function checkQuiz(){
 function startScreen(msg){
   armed = '';
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">Live quiz · editor</div><div class="spacer"></div>' +
-      '<a class="btn small" href="' + esc(playerUrl()) + '">Open the player</a></header>' +
+    '<div class="screen"><header class="top"><div class="title">Live quiz</div>' + pageNav() + '<div class="spacer"></div></header>' +
     '<main class="start"><div class="startgrid">' +
       '<div class="wide" id="draftSlot"></div>' +
-      '<section class="card"><h2>New quiz</h2><p>Start from an empty case and write your own.</p><button class="btn primary" id="newBtn">New quiz</button></section>' +
-      '<section class="card drop" id="drop"><h2>Open a quiz file</h2><p>A <b>.quiz.json</b> file, for example from the Quiz packs folder. You can also drag it here.</p><button class="btn" id="openBtn">Open file…</button>' +
+      '<section class="card"><h2>New set</h2><p>Start from an empty case and write your own.</p><button class="btn primary" id="newBtn">New set</button></section>' +
+      '<section class="card drop" id="drop"><h2>Open a quiz file</h2><p>A <b>.quiz.json</b> file, for example from your quiz files folder. You can also drag it here.</p><button class="btn" id="openBtn">Open file…</button>' +
         '<div class="loaderr" id="loaderr">' + (msg || '') + '</div></section>' +
-      '<section class="card"><h2>Paste from an AI assistant</h2><p>Paste the reply that contains the quiz (the code block). No need to save a file first.</p><button class="btn" id="pasteBtn">Paste…</button></section>' +
-      '<section class="card wide"><h2>Recent quizzes</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>' +
-        '<p class="hint">Quizzes opened in the player or the editor on this computer.</p></section>' +
+      '<section class="card"><h2>Paste from an AI assistant</h2><p>Paste the reply that contains the set (the code block). No need to save a file first.</p><button class="btn" id="pasteBtn">Paste…</button></section>' +
+      '<section class="card wide"><h2>Recent sets</h2><div class="recent" id="recent"><p class="hint">Loading…</p></div>' +
+        '<p class="hint">Sets opened in the player or the editor on this computer.</p></section>' +
     '</div></main></div>';
   document.getElementById('newBtn').onclick = () => guardDiscard(() => { setQuiz(fromPack({ format: 'acsom-live-quiz', version: 1, id: '', title: '', created: today(), questions: [] }), null, '', null, false); editor(); });
   document.getElementById('openBtn').onclick = openFile;
@@ -365,16 +351,16 @@ function renderRecent(){
     list = (list || []).filter(r => r && r.pack).sort((a, b) => b.loadedAt - a.loadedAt);
     if (!list.length) { el.innerHTML = '<p class="hint">None yet.</p>'; return; }
     el.innerHTML = list.map(r => '<div class="rrow"><div><div class="rt">' + esc(r.title) + '</div>' + (typeof r.pack.description === 'string' && r.pack.description.trim() ? '<div class="rd">' + esc(r.pack.description.trim()) + '</div>' : '') +
-      '<div class="rm">' + esc(r.n) + ' cases · ' + esc(new Date(r.loadedAt).toLocaleDateString()) + '</div></div>' +
+      '<div class="rm">' + esc(nOf(r.n, 'case')) + ' · ' + esc(new Date(r.loadedAt).toLocaleDateString()) + '</div></div>' +
       '<button class="btn small" data-edit="' + esc(r.key) + '">Edit</button></div>').join('');
     el.onclick = e => { const b = e.target.closest('[data-edit]'); if (b) guardDiscard(() => openRecent(b.getAttribute('data-edit'))); };
-  }, () => { el.innerHTML = '<p class="hint">This browser can’t list quizzes here — open the file instead.</p>'; });
+  }, () => { el.innerHTML = '<p class="hint">This browser can’t list sets here — open the file instead.</p>'; });
 }
 function renderDraftSlot(){
   const el = document.getElementById('draftSlot'); if (!el) return;
   drafts.get('current').then(d => {
     if (!d || !d.dirty || !d.pack) { el.innerHTML = ''; return; }
-    el.innerHTML = '<section class="card draft"><h2>Unsaved changes</h2><p><b>' + esc(d.pack.title || 'Untitled quiz') + '</b> · ' + esc((d.pack.questions || []).length) + ' cases · changed ' +
+    el.innerHTML = '<section class="card draft"><h2>Unsaved changes</h2><p><b>' + esc(d.pack.title || 'Untitled set') + '</b> · ' + esc(nOf((d.pack.questions || []).length, 'case')) + ' · changed ' +
       esc(new Date(d.savedAt).toLocaleString()) + '. These changes were kept in this browser.</p><button class="btn primary" id="resumeBtn">Continue editing</button> <button class="btn" id="dropDraftBtn">Discard them</button></section>';
     document.getElementById('resumeBtn').onclick = () => { setQuiz(fromPack(d.pack), d.handle || null, d.fileName || '', d.sourceKey || null, true); cur = Math.min(d.cur || 0, Q.items.length - 1); editor(); };
     document.getElementById('dropDraftBtn').onclick = () => drafts.del('current').then(renderDraftSlot, renderDraftSlot);
@@ -382,7 +368,7 @@ function renderDraftSlot(){
 }
 function guardDiscard(go){
   if (!dirty) { go(); return; }
-  modal('<h2>Discard unsaved changes?</h2><p>“' + esc(Q.meta.title || 'Untitled quiz') + '” has changes that are not saved to a file.</p>',
+  modal('<h2>Discard unsaved changes?</h2><p>“' + esc(Q.meta.title || 'Untitled set') + '” has changes that are not saved to a file.</p>',
     [{ label: 'Keep editing', fn: close => { close(); if (Q) editor(); } }, { label: 'Discard changes', cls: 'danger', fn: close => { close(); dirty = false; drafts.del('current').catch(() => {}); go(); } }]);
 }
 
@@ -393,18 +379,18 @@ function parseQuiz(text){
   let p;
   try { p = JSON.parse(text); }
   catch(e){ try { p = JSON.parse(text.replace(/,\s*([}\]])/g, '$1')); } catch(e2){ throw new Error('The text is not valid quiz JSON (' + e.message + ').'); } }
-  if (!p || typeof p !== 'object' || Array.isArray(p) || !Array.isArray(p.questions)) throw new Error('This is not a quiz: it has no list of questions.');
+  if (!p || typeof p !== 'object' || Array.isArray(p) || !Array.isArray(p.questions)) throw new Error('This is not a quiz file: it has no list of cases.');
   return p;
 }
 function loadText(text, name, handle){
   let p; try { p = parseQuiz(text); } catch(e){ startScreen('<p class="err">' + esc(e.message) + '</p>'); return; }
-  setQuiz(fromPack(p), handle, name || '', null, false); editor('Opened ' + (name || 'the quiz') + '.');
+  setQuiz(fromPack(p), handle, name || '', null, false); editor('Opened ' + (name || 'the set') + '.');
 }
 function openFile(){
   guardDiscard(async () => {
     if (window.showOpenFilePicker) {
       try {
-        const [h] = await window.showOpenFilePicker({ types: [{ description: 'Quiz pack', accept: { 'application/json': ['.json'] } }] });
+        const [h] = await window.showOpenFilePicker({ types: [{ description: 'Quiz file', accept: { 'application/json': ['.json'] } }] });
         const f = await h.getFile(); loadText(await f.text(), f.name, h); return;
       } catch(e){ if (e && e.name === 'AbortError') return; }
     }
@@ -414,16 +400,16 @@ function openFile(){
 fileInput.addEventListener('change', () => { const f = fileInput.files && fileInput.files[0]; if (f) f.text().then(t => loadText(t, f.name, null)); });
 function openRecent(key){
   packs.get(key).then(r => {
-    if (!r || !r.pack) { startScreen('<p class="err">That quiz is no longer in this browser. Open the file instead.</p>'); return; }
-    setQuiz(fromPack(r.pack), null, '', r.key, false); editor('Opened from Recent quizzes. Save it to a file to keep it.');
-  }, () => startScreen('<p class="err">This browser can’t open recent quizzes. Open the file instead.</p>'));
+    if (!r || !r.pack) { startScreen('<p class="err">That set is no longer in this browser. Open the file instead.</p>'); return; }
+    setQuiz(fromPack(r.pack), null, '', r.key, false); editor('Opened from Recent sets. Save it to a file to keep it.');
+  }, () => startScreen('<p class="err">This browser can’t open recent sets. Open the file instead.</p>'));
 }
 function extractFromReply(text){
   const blocks = []; const re = /```[a-zA-Z]*\s*\n([\s\S]*?)```/g; let m;
   while ((m = re.exec(text))) blocks.push(m[1]);
   let src = blocks.find(b => /"questions"\s*:/.test(b)) || text;
   const a = src.indexOf('{'), b = src.lastIndexOf('}');
-  if (a < 0 || b < a) throw new Error('No quiz found in the pasted text. Copy the whole reply, including the code block.');
+  if (a < 0 || b < a) throw new Error('No set found in the pasted text. Copy the whole reply, including the code block.');
   return parseQuiz(src.slice(a, b + 1));
 }
 function pasteDialog(){
@@ -431,7 +417,7 @@ function pasteDialog(){
     modal('<h2>Paste from an AI assistant</h2><p class="hint">Copy the assistant’s whole reply (or just its code block) and paste it here.</p>' +
       '<textarea id="pasteBox" spellcheck="false" placeholder="Paste here…"></textarea><p class="err" id="pasteErr"></p>',
       [{ label: 'Cancel', fn: close => close() }, { label: 'Open in editor', cls: 'primary', fn: close => {
-        try { const p = extractFromReply(document.getElementById('pasteBox').value); close(); setQuiz(fromPack(p), null, (p.id ? slug(p.id) : 'quiz') + '.quiz.json', null, true); saveDraft(); editor('Pasted ' + p.questions.length + ' cases. Save to keep them as a file.'); }
+        try { const p = extractFromReply(document.getElementById('pasteBox').value); close(); setQuiz(fromPack(p), null, (p.id ? slug(p.id) : 'quiz') + '.quiz.json', null, true); saveDraft(); editor('Pasted ' + nOf(p.questions.length, 'case') + '. Save to keep them as a file.'); }
         catch(e){ document.getElementById('pasteErr').textContent = e.message; }
       } }]);
     setTimeout(() => { const t = document.getElementById('pasteBox'); if (t) t.focus(); }, 0);
@@ -442,14 +428,14 @@ function pasteDialog(){
 function editor(statusMsg){
   armed = '';
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">Live quiz · editor</div>' +
-      '<button class="btn small" id="homeBtn" title="New, open or paste another quiz">Quizzes</button>' +
+    '<div class="screen"><header class="top"><div class="title">Live quiz</div>' + pageNav() +
+      '<button class="btn small" id="homeBtn" title="New, open or paste another set">Sets</button>' +
       '<div class="spacer"></div><span class="status" id="status"></span>' +
       '<button class="btn" id="saveBtn" title="Ctrl+S">Save</button><button class="btn" id="saveAsBtn">Save as…</button><button class="btn" id="printBtn">Print…</button>' +
       '<button class="btn primary" id="playBtn">Play now ▶</button></header>' +
     '<div class="ed"><aside class="side">' +
-      '<div class="meta"><label for="titleIn">Quiz title</label><input id="titleIn" type="text" value="' + esc(Q.meta.title || '') + '" placeholder="e.g. Lymphomas Practice Test">' +
-        '<label for="descIn" class="m2">Description <span class="sub">shown when choosing a quiz</span></label><textarea id="descIn" rows="2" placeholder="e.g. Hodgkin and non-Hodgkin lymphomas, plasma cell disorders, translocations">' + esc(typeof Q.meta.description === 'string' ? Q.meta.description : '') + '</textarea>' +
+      '<div class="meta"><label for="titleIn">Set title</label><input id="titleIn" type="text" value="' + esc(Q.meta.title || '') + '" placeholder="e.g. Lymphomas Practice Test">' +
+        '<label for="descIn" class="m2">Description <span class="sub">shown when choosing a set</span></label><textarea id="descIn" rows="2" placeholder="e.g. Hodgkin and non-Hodgkin lymphomas, plasma cell disorders, translocations">' + esc(typeof Q.meta.description === 'string' ? Q.meta.description : '') + '</textarea>' +
         '<div class="summary" id="summary"></div></div>' +
       '<div class="list" id="list"></div>' +
       '<div class="sidefoot"><button class="btn" id="addBtn">+ Add case</button><button class="btn" id="balanceBtn">Balance answer letters…</button>' +
@@ -529,7 +515,7 @@ function renderCase(){
           LET.slice(0, n).map((l, i) => '<option value="' + i + '"' + (i === it.c ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' : '') + '</div></div>' +
     '<div class="field"><label for="expIn">Explanation<span class="sub">2–4 sentences: the decisive clue and the principle</span></label><textarea id="expIn" data-f="explain">' + esc(it.explain) + '</textarea></div>' +
     '<div class="field"><label for="objIn">Take-home point<span class="sub">one sentence</span></label><textarea id="objIn" data-f="objective">' + esc(it.objective) + '</textarea></div>' +
-    '<div class="field topic"><label for="tp0">Topic and concept<span class="sub">First Aid names; for you: shown when choosing a quiz and in the results at the end, never during the quiz</span></label>' +
+    '<div class="field topic"><label for="tp0">Topic and concept<span class="sub">First Aid names; for you: shown when choosing a set and in the results at the end, never during the quiz</span></label>' +
       '<div class="tprow">' + [['Chapter', 'Hematology and Oncology'], ['Subtopic', 'Lymphomas'], ['Entry (if applicable)', 'Hodgkin lymphoma']].map((l, k) =>
         '<label class="mini"><span>' + l[0] + '</span><input type="text" id="tp' + k + '" data-tp="' + k + '" list="dl' + k + '" value="' + esc(it.topic[k]) + '" placeholder="e.g. ' + l[1] + '" autocomplete="off"></label>').join('') + '</div>' +
       '<label class="mini"><span>Concept tested</span><input type="text" id="conceptIn" data-f="concept" value="' + esc(it.concept) + '" placeholder="e.g. Reed–Sternberg cells: CD15/CD30"></label>' + topicLists() + '</div>' +
@@ -676,7 +662,7 @@ document.addEventListener('dragover', e => {
 document.addEventListener('dragleave', e => { const sl = e.target.closest && e.target.closest('[data-slot]'); if (sl) sl.classList.remove('over'); });
 document.addEventListener('drop', e => {
   const sl = e.target.closest && e.target.closest('[data-slot]');
-  if (!sl || !Q) { if (hasFiles(e) && document.getElementById('main')) { e.preventDefault(); toast('Drop pictures on a picture box. To open another quiz, use Quizzes.'); } return; }
+  if (!sl || !Q) { if (hasFiles(e) && document.getElementById('main')) { e.preventDefault(); toast('Drop pictures on a picture box. To open another set, use Sets.'); } return; }
   e.preventDefault(); sl.classList.remove('over');
   const f = imageFrom(e.dataTransfer && e.dataTransfer.files); if (f) addPicture(f, sl.getAttribute('data-slot')); else toast('Drop a picture file (PNG, JPEG, GIF, WebP or SVG).');
 });
@@ -747,9 +733,9 @@ function setupDrag(list){
 /* ---------- print sheets ---------- */
 function printDialog(){
   modal('<h2>Print</h2>' +
-    '<label class="choice"><input type="radio" name="pmode" value="q" checked><span><b>Questions only</b><br><span class="hint">For students: cases, pictures and options, no answers.</span></span></label>' +
-    '<label class="choice"><input type="radio" name="pmode" value="k"><span><b>Questions and answer key</b><br><span class="hint">The answer key on its own page at the end.</span></span></label>' +
-    '<label class="choice"><input type="radio" name="pmode" value="x"><span><b>Everything</b><br><span class="hint">Questions, answer key, and every explanation with the “why not” lines.</span></span></label>' +
+    '<label class="choice"><input type="radio" name="pmode" value="q" checked><span><b>Cases only</b><br><span class="hint">For students: cases, pictures and options, no answers.</span></span></label>' +
+    '<label class="choice"><input type="radio" name="pmode" value="k"><span><b>Cases and answer key</b><br><span class="hint">The answer key on its own page at the end.</span></span></label>' +
+    '<label class="choice"><input type="radio" name="pmode" value="x"><span><b>Everything</b><br><span class="hint">Cases, answer key, and every explanation with the “why not” lines.</span></span></label>' +
     '<p class="hint">Choose “Save as PDF” in the print window to make a PDF.</p>',
     [{ label: 'Cancel', fn: c => c() }, { label: 'Print', cls: 'primary', fn: c => { const m = (document.querySelector('input[name=pmode]:checked') || {}).value || 'q'; c(); buildPrint(m); setTimeout(() => window.print(), 50); } }]);
 }
@@ -761,7 +747,7 @@ function stemPrint(stem){
 }
 function picPrint(it, k){ const id = it.extra[k]; if (!id || !(typeof Q.images[id] === 'string' && IMG_RE.test(Q.images[id]))) return ''; return '<img alt="" data-src="' + esc(id) + '">' + (it.extra[CAP[k]] ? '<p class="cap">' + esc(it.extra[CAP[k]]) + '</p>' : ''); }
 function buildPrint(mode){
-  const title = Q.meta.title || 'Untitled quiz', n = Q.items.length;
+  const title = Q.meta.title || 'Untitled set', n = Q.items.length;
   let html = '<h1>' + esc(title) + '</h1><p class="subt">' + n + ' case' + (n === 1 ? '' : 's') + (mode === 'q' ? '' : ' · with answers') + '</p>';
   html += Q.items.map((it, i) => '<div class="q"><h3>' + (i + 1) + '.</h3>' + stemPrint(it.stem) + picPrint(it, 'image') + '<p class="lead">' + esc(it.lead) + '</p>' +
     '<ul class="popts">' + it.opts.map((o, j) => '<li>' + LET[j] + '. ' + esc(o.t) + '</li>').join('') + '</ul></div>').join('');
@@ -807,35 +793,38 @@ async function save(asNew){
   }
   if (window.showSaveFilePicker) {
     try {
-      const h = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'Quiz pack', accept: { 'application/json': ['.json'] } }] });
+      const h = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'Quiz file', accept: { 'application/json': ['.json'] } }] });
       await writeTo(h); fileHandle = h; return saved('Saved · ' + h.name);
     } catch(e){ if (e && e.name === 'AbortError') return; }
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = name;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-  fileName = name; saved('Downloaded ' + name + ' · move it to the Quiz packs folder');
+  fileName = name; saved('Downloaded ' + name + ' · move it to your quiz files folder');
 }
 function saved(msg){ dirty = false; setStatus(msg); saveDraft(); }
 document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && Q && document.getElementById('main')) { e.preventDefault(); save(false); } });
 window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
-/* ---------- play: hand the quiz to the player through "Recent quizzes" ---------- */
+/* ---------- play: hand the quiz to the player through "Recent sets" ---------- */
 function relayParams(q){ if (/^(127\.0\.0\.1|localhost)$/.test(params.get('ph') || '')) ['ph', 'pp', 'ps', 'pt'].forEach(k => { if (params.get(k)) q.set(k, params.get(k)); }); return q; }
+function pageNav(){                                // the teacher pages, the same in the player and the editor
+  return '<nav class="pagenav" aria-label="Pages"><a href="' + esc(playerUrl()) + '" id="navPlayer">Player</a><a aria-current="page">Editor</a><a href="study/" id="navStudy">Self-study</a></nav>';
+}
 function playerUrl(open){ const q = relayParams(new URLSearchParams()); if (open) q.set('open', open); const s = q.toString(); return './' + (s ? '?' + s : ''); }
 async function playNow(){
   const chk = checkQuiz(), bad = chk.per.map((r, i) => r.e.length ? i : -1).filter(i => i >= 0);
   if (bad.length) {
-    modal('<h2>Fix these first</h2><p>The player can’t load the quiz while these cases have problems:</p><ul>' +
+    modal('<h2>Fix these first</h2><p>The player can’t load the set while these cases have problems:</p><ul>' +
       bad.slice(0, 8).map(i => '<li><b>Case ' + (i + 1) + ':</b> ' + esc(chk.per[i].e.join(' ')) + '</li>').join('') + '</ul>',
       [{ label: 'Go to case ' + (bad[0] + 1), cls: 'primary', fn: close => { close(); cur = bad[0]; renderList(); renderCase(); } }]);
     return;
   }
-  const p = toPack(); if (!p.title) p.title = 'Untitled quiz';
+  const p = toPack(); if (!p.title) p.title = 'Untitled set';
   const key = packKey(p);
   try {
     await packs.put({ key: key, title: p.title, n: p.questions.length, loadedAt: Date.now(), pack: p });
     if (sourceKey && sourceKey !== key && !inSession(sourceKey)) await packs.del(sourceKey).catch(() => {});
-  } catch(e){ modal('<h2>Can’t hand the quiz to the player</h2><p>This browser blocks storage here. Save the file and open it in the player instead.</p>', [{ label: 'OK', fn: c => c() }]); return; }
+  } catch(e){ modal('<h2>Can’t hand the set to the player</h2><p>This browser blocks storage here. Save the file and open it in the player instead.</p>', [{ label: 'OK', fn: c => c() }]); return; }
   sourceKey = key; await saveDraft();
   dirty = false;   // the changes are kept in the draft and in Recent quizzes
   location.href = playerUrl(key);
@@ -862,7 +851,7 @@ if (openKey) {
     const resume = () => { setQuiz(fromPack(d.pack), d.handle || null, d.fileName || '', d.sourceKey || null, true); cur = Math.min(d.cur || 0, Q.items.length - 1); editor(); };
     if (d.sourceKey === openKey) { resume(); return; }          // coming back from "Play now": same quiz, keep its file
     startScreen();
-    modal('<h2>You have unsaved changes</h2><p>“' + esc(d.pack.title || 'Untitled quiz') + '” has changes that are not saved to a file. Continue with them, or open the quiz you chose and discard them?</p>',
+    modal('<h2>You have unsaved changes</h2><p>“' + esc(d.pack.title || 'Untitled set') + '” has changes that are not saved to a file. Continue with them, or open the set you chose and discard them?</p>',
       [{ label: 'Continue my changes', cls: 'primary', fn: close => { close(); resume(); } },
        { label: 'Discard and open', cls: 'danger', fn: close => { close(); drafts.del('current').catch(() => {}); openRecent(openKey); } }]);
   }, () => openRecent(openKey));

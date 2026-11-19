@@ -27,7 +27,7 @@ async function phone(browser, url, tag) {
   s.on('pageerror', e => { pageErrors++; log(`[${tag} pageerror]`, e.message); });
   await s.goto(url); return s;
 }
-async function lobby(P) { await P.waitForSelector('.net.ok', { timeout: 20000 }); return { code: (await P.textContent('#code')).trim(), url: (await P.textContent('#join .url')).trim(), check: (await P.textContent('#check')).trim() }; }
+async function lobby(P) { await P.waitForSelector('.net.ok', { timeout: 20000 }); return { code: (await P.textContent('#code')).trim(), url: (await P.waitForSelector('#copyBtn'), await P.getAttribute('#copyBtn', 'data-url')).trim(), check: (await P.textContent('#check')).trim() }; }
 const UNTRUSTED = 'text=This isn’t your teacher’s screen';
 const pwned = s => s.evaluate(() => document.title.indexOf('PWNED') >= 0 || !!window.__pwned || !!document.querySelector('img[src="x"]'));
 
@@ -211,7 +211,7 @@ const XSS = '<img src=x onerror="document.title=\'PWNED\';window.__pwned=1">';
   await R2.waitForSelector('#code');
   await R1.waitForTimeout(4000);
   assert(seen.length > 0 && !seen.some(u => u.includes('evil.example')), 'phone page and player never contact a relay named in the link (' + [...new Set(seen.map(u => new URL(u).host))].join(', ') + ')');
-  assert(!(await R2.textContent('#join .url')).includes('evil.example'), 'the player does not pass that relay on to phones');
+  assert(!((await R2.waitForSelector('#copyBtn'), await R2.getAttribute('#copyBtn', 'data-url'))).includes('evil.example'), 'the player does not pass that relay on to phones');
   await ctx.close();
 
   assert(pageErrors === 0, 'no script errors on any page');

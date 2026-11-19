@@ -1,0 +1,7 @@
+/* Dark palette for the phone pages (join, study), when the phone is set to dark mode. Same names as theme.css. */
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14161a; --panel:#1d2026; --ink:#eceae5; --muted:#a3a8b3; --line:#343842; --soft:#2c3038; --track:#2a2e36;
+    --accent:#6f95f0; --accent-soft:#25335a; --accent-ink:#10131a;
+    --good:#4cc283; --good-soft:#173826; --bad:#f07a66; --bad-soft:#40211c;
+    --warn:#e0a643; --warn-soft:#3d3015; --warn-ink:#f2c46d; }
+}

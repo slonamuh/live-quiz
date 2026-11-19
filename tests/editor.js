@@ -79,7 +79,10 @@ const WHY = {
   log('A new quiz, written from scratch');
   await E.goto(`${BASE}/editor.html?${PQ}`);
   await E.screenshot({ path: `${OUT}/20-editor-start.png` });
+  assert((await E.textContent('.pagenav [aria-current]')) === 'Editor' && (await E.getAttribute('#navPlayer', 'href')).startsWith('./?') && (await E.getAttribute('#navStudy', 'href')) === 'study/', 'the top bar links the teacher pages: Player · Editor · Self-study');
   await E.click('#newBtn');
+  await E.waitForSelector('#homeBtn');
+  assert(!!(await E.$('header .pagenav #navPlayer')), '… on the editing screen too');
   assert((await E.textContent('#checks')).includes('case text is missing'), 'an empty case shows what is missing');
   await E.fill('#titleIn', 'Editor Test Quiz');
   await E.fill('#stemIn', STEM);
@@ -302,7 +305,7 @@ const WHY = {
   await P.click('.item[data-i="0"]');
   await P.click('#playBtn');
   await P.waitForSelector('.net.ok', { timeout: 20000 });
-  assert((await P.textContent('.settings .pack b')) === 'Sample 25 (edited)', 'Play now opens the edited quiz in the player, ready for students');
+  assert((await P.textContent('#packtitle')) === 'Sample 25 (edited)', 'Play now opens the edited quiz in the player, ready for students');
   assert(new URL(P.url()).pathname === '/', 'Play now opens the player at the site’s main address');
   await P.click('#changeBtn');
   await P.waitForSelector('#recent .rrow');
