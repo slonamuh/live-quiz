@@ -6,7 +6,7 @@
 <title>Live Quiz — Editor</title>
 <style>
 /*__THEME__*/
-:root{ font-size:16px; }
+:root{ font-size:clamp(15px, 1.15vw, 22px); }   /* grows with a laptop or desktop window */
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.45}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -39,7 +39,7 @@ a{color:var(--accent)}
 .loaderr{margin-top:.6rem}
 
 /* editor */
-.ed{display:grid;grid-template-columns:20rem minmax(0,1fr);min-height:0}
+.ed{display:grid;grid-template-columns:minmax(16rem, 22%) minmax(0,1fr);min-height:0}
 .side{border-right:1px solid var(--line);background:#faf9f6;display:flex;flex-direction:column;min-height:0}
 .meta{padding:.8rem 1rem;border-bottom:1px solid var(--line)}
 .meta label{display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:.2rem}
@@ -173,6 +173,7 @@ const IMG_RE = /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/=]
 const SESSION_KEY = 'livequiz-session-v2';
 const app = document.getElementById('app'), fileInput = document.getElementById('fileInput'), picInput = document.getElementById('picInput'), printView = document.getElementById('printView');
 const nOf = (n, word) => { n = +n || 0; return n + ' ' + word + (n === 1 ? '' : 's'); };   // 1 case, 2 cases
+const BUILD = '/*__BUILD__*/';                      // filled in by tools/build_pages.py
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const str = v => (typeof v === 'string' ? v : (v == null ? '' : String(v)));
 const today = () => new Date().toISOString().slice(0, 10);
@@ -326,7 +327,7 @@ function checkQuiz(){
 function startScreen(msg){
   armed = '';
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">Live quiz</div>' + pageNav() + '<div class="spacer"></div></header>' +
+    '<div class="screen"><header class="top"><div class="title">Live quiz</div>' + pageNav() + '<div class="spacer"></div><span class="hint" id="build" title="The build this site is serving">' + BUILD + '</span></header>' +
     '<main class="start"><div class="startgrid">' +
       '<div class="wide" id="draftSlot"></div>' +
       '<section class="card"><h2>New set</h2><p>Start from an empty case and write your own.</p><button class="btn primary" id="newBtn">New set</button></section>' +

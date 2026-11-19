@@ -169,27 +169,32 @@ figure.qimg figcaption{color:var(--muted);font-size:.8rem;margin-top:.3rem}
 .hero .check b,.qrover .check b{color:var(--ink);font-size:1.25rem;letter-spacing:.12em;margin-left:.3rem}
 .hero .joined{font-size:1.5rem}
 .hero .warn,.hero .hint{margin:0}
-.settings{flex:0 0 22rem;max-width:44%;background:var(--panel);border-left:1px solid var(--line);padding:.9rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;overflow:auto;font-size:.88rem}
-.settings h2{margin:0;font-size:1.05rem}
-.settings .sfield{display:flex;flex-direction:column;gap:.3rem}
+/* the panel and the bottom bar are for the teacher: A− / A+ (the room's text size) leaves them as they are, so they always fit */
+.settings{flex:0 0 calc(22rem / var(--scale, 1));max-width:44%;background:var(--panel);border-left:1px solid var(--line);padding:.8em 1.3em;display:flex;flex-direction:column;gap:.65em;overflow:auto;font-size:calc(.88rem / var(--scale, 1))}
+.settings h2{margin:0;font-size:1.15em}
+.settings .sfield{display:flex;flex-direction:column;gap:.3em}
 .settings .slabel{font-weight:600}
-.settings .shint{color:var(--muted);font-size:.8rem}
-.settings .exonly{background:var(--bg);border-radius:10px;padding:.55rem .7rem;display:flex;flex-direction:column;gap:.6rem;margin-top:-.25rem}
-.settings .trow{display:flex;align-items:center;justify-content:space-between;gap:.8rem}
-.settings select,.settings input[type=number]{font:inherit;padding:.35rem .5rem;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.settings .shint{color:var(--muted);font-size:.9em}
+.settings .exonly{background:var(--bg);border-radius:10px;padding:.5em .75em;display:flex;flex-direction:column;gap:.55em;margin-top:-.2em}
+.settings .trow{display:flex;align-items:center;justify-content:space-between;gap:.9em}
+.settings select,.settings input[type=number]{font:inherit;padding:.3em .5em;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
 .settings .sline{height:1px;background:var(--line);flex:none}
-.settings .minor{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem}
-.settings .minor label{display:flex;align-items:center;gap:.5rem}
-.settings .minor input[type=number]{width:4.5rem}
+.settings .minor{display:flex;flex-wrap:wrap;gap:.6em 1.3em}
+.settings .minor label{display:flex;align-items:center;gap:.5em}
+.settings .minor input[type=number]{width:5em}
 /* two or three buttons that work as one choice (radio buttons underneath) */
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);background:var(--soft);border-radius:10px;padding:3px;gap:2px}
-.seg label{position:relative;display:flex;align-items:center;justify-content:center;min-height:2.15rem;padding:.25rem .6rem;border-radius:8px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center}
+.seg label{position:relative;display:flex;align-items:center;justify-content:center;min-height:2.25em;padding:.2em .6em;border-radius:8px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center}
 .seg label:has(input:checked){background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
 .seg input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
 .seg label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:1px}
-.lobbyfoot .btn.big{width:auto;margin:0;font-size:1.15rem;padding:.7rem 1.8rem}
-#projrow{display:flex;align-items:center;gap:.4rem .8rem;flex-wrap:wrap;flex:1;min-width:0}
-#projrow small{color:var(--muted);font-size:.8rem;max-width:34rem}
+.lobbyfoot{font-size:calc(1rem / var(--scale, 1));padding:.6em 1.4em}
+.lobbyfoot .btn{font-size:1em}
+.lobbyfoot .btn.small{font-size:.85em}
+.lobbyfoot .btn.big{width:auto;margin:0;font-size:1.15em;padding:.6em 1.8em;flex:none}
+#projrow{display:flex;align-items:center;gap:.4em .8em;flex:1;min-width:0}
+#projrow .btn{flex:none}
+#projrow small{color:var(--muted);font-size:.8em;max-width:34em;min-width:10em}
 #projrow small.warn{color:var(--bad);font-weight:600}
 #projrow .on{font-weight:700;color:var(--good)}
 .setpanel{max-width:38rem}
@@ -293,7 +298,7 @@ body.aud.idle{cursor:none}
 <script>
 (function(){
 'use strict';
-var APP_VERSION = '4';
+var BUILD = '/*__BUILD__*/';                      // filled in by tools/build_pages.py
 var LET = 'ABCDEFGH'.split('');
 function letters(n){ return LET.slice(0, n); }
 var app = document.getElementById('app');
@@ -416,7 +421,7 @@ function pageNav(){                                // the teacher pages, the sam
 function library(msgHtml){
   document.documentElement.style.removeProperty('--scale');
   app.innerHTML =
-    '<div class="screen"><header class="top"><div class="title">Live quiz</div>'+pageNav()+'<div class="spacer"></div><span class="hint">v'+APP_VERSION+'</span></header>'+
+    '<div class="screen"><header class="top"><div class="title">Live quiz</div>'+pageNav()+'<div class="spacer"></div><span class="hint" id="build" title="The build this site is serving">'+BUILD+'</span></header>'+
     '<main class="libgrid">'+
       '<section class="card drop" id="drop"><h1>Load a set</h1>'+
         '<p>Choose a quiz file (<b>.quiz.json</b>), for example from your Google Drive folder, or drag it onto this box.</p>'+
@@ -1172,6 +1177,7 @@ function settingsDialog(){                          // rarely changed things: th
         k(['+'], '30 more seconds (self-paced: 5 more minutes)')+k(['Q'], 'Show the QR code and the link full screen')+
         k(['Esc'], 'Close an enlarged picture or the QR code')+'</div>'+
       '<h3>Before class</h3><span class="hint">Keep this tab open and the computer awake until the end. With two screens, set the display to Extend, not mirror. A− / A+ in the top bar sets the text size on the room’s screen.</span>'+
+      '<span class="hint" style="margin-top:.8rem">Live Quiz '+BUILD+'</span>'+
     '</div><div class="cfoot"><button class="btn primary" data-close>Done</button></div></div>';
   function close(){ document.removeEventListener('keydown', onKey); o.remove(); var b = document.getElementById('settingsBtn'); if (b) b.focus(); }
   function onKey(e){ if (e.key === 'Escape') close(); }

@@ -83,9 +83,12 @@ def main():
     # shared parts: the look (every page; the dark palette on the phone pages), the pack checker (player, self-study)
     # and the lab values sheet (phones, self-study)
     sh = lambda name: read(ROOT, 'src', 'shared', name)
+    # the build label each page shows ("v22 · 2026-11-19"), so a teacher can see which build the site is serving
+    import datetime
+    build = 'v' + read(ROOT, 'VERSION').strip() + ' \u00b7 ' + datetime.datetime.now(datetime.timezone.utc).date().isoformat()
     theme, theme_dark, pack, labs_js, labs_css = sh('theme.css'), sh('theme-dark.css'), sh('pack.js'), sh('labs.js'), sh('labs.css')
     def shared(html):
-        for k, v in (('THEME', theme), ('THEMEDARK', theme_dark), ('PACK', pack), ('LABS', labs_js), ('LABSCSS', labs_css)):
+        for k, v in (('BUILD', build), ('THEME', theme), ('THEMEDARK', theme_dark), ('PACK', pack), ('LABS', labs_js), ('LABSCSS', labs_css)):
             html = html.replace('/*__' + k + '__*/', v, 1)
         return html
     player = shared(read(ROOT, 'src', 'player.src.html'))
